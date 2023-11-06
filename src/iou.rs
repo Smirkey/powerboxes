@@ -86,5 +86,36 @@ fn test_distance_box_iou() {
     let parallel_iou_result = parallel_distance_box_iou(&array1, &array2);
     assert_eq!(iou_result, arr2(&[[0.7142857142857143]]));
     assert_eq!(parallel_iou_result, arr2(&[[0.7142857142857143]]));
-    // Add more test cases as needed
+
+    // Test case 2
+    let array1 = arr2(&[[0.0, 0.0, 2.0, 2.0]]);
+    let array2 = arr2(&[[3.0, 3.0, 4.0, 4.0]]);
+    let iou_result = distance_box_iou(&array1, &array2);
+    let parallel_iou_result = parallel_distance_box_iou(&array1, &array2);
+    assert_eq!(iou_result, arr2(&[[1.0]]));
+    assert_eq!(parallel_iou_result, arr2(&[[1.0]]));
+
+    // Test case 3
+    let array1 = arr2(&[[2.5, 2.5, 3.0, 3.0]]);
+    let array2 = arr2(&[[1.0, 1.0, 3.0, 3.0]]);
+    let iou_result = distance_box_iou(&array1, &array2);
+    let parallel_iou_result = parallel_distance_box_iou(&array1, &array2);
+    assert_eq!(iou_result, arr2(&[[0.75]]));
+    assert_eq!(parallel_iou_result, arr2(&[[0.75]]));
+
+    // Test case 4
+    let array1 = arr2(&[[0.0, 0.0, 2.0, 2.0]]);
+    let array2 = arr2(&[[0.0, 0.0, 2.0, 2.0]]);
+    let iou_result = distance_box_iou(&array1, &array2);
+    let parallel_iou_result = parallel_distance_box_iou(&array1, &array2);
+    assert_eq!(iou_result, arr2(&[[0.0]]));
+    assert_eq!(parallel_iou_result, arr2(&[[0.0]]));
+
+    // Test case 5
+    let array1 = arr2(&[[0.0, 0.0, 2.0, 2.0]]);
+    let array2 = arr2(&[[3.0, 3.0, 4.0, 4.0]]);
+    let iou_result = distance_box_iou(&array1, &array2);
+    let parallel_iou_result = parallel_distance_box_iou(&array1, &array2);
+    assert_eq!(iou_result, arr2(&[[1.0]]));
+    assert_eq!(parallel_iou_result, arr2(&[[1.0]]));
 }
