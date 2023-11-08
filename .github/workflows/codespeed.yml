@@ -21,6 +21,9 @@ jobs:
       - name: Install dependencies
         run: pip install -r tests/requirements.txt
 
+      - name: Install project
+        run: pip install . 
+
       - name: Run benchmarks
         uses: CodSpeedHQ/action@v1
         with:
