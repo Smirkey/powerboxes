@@ -13,4 +13,7 @@ classifiers = [
 
 
 [tool.maturin]
+python-source = "python"
+module-name = "powerboxes._powerboxes"
+bindings = "pyo3"
 features = ["pyo3/extension-module"]
