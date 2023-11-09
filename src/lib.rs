@@ -1,4 +1,5 @@
 pub mod boxes;
+pub mod giou;
 pub mod iou;
 pub mod utils;
 
@@ -10,24 +11,26 @@ use utils::preprocess_array;
 /// A Python module implemented in Rust.
 #[pymodule]
 fn _powerboxes(_py: Python, m: &PyModule) -> PyResult<()> {
-    m.add_function(wrap_pyfunction!(distance_box_iou, m)?)?;
-    m.add_function(wrap_pyfunction!(parallel_distance_box_iou, m)?)?;
+    m.add_function(wrap_pyfunction!(iou_distance, m)?)?;
+    m.add_function(wrap_pyfunction!(parallel_iou_distance, m)?)?;
     m.add_function(wrap_pyfunction!(remove_small_boxes, m)?)?;
     m.add_function(wrap_pyfunction!(boxes_areas, m)?)?;
     m.add_function(wrap_pyfunction!(box_convert, m)?)?;
+    m.add_function(wrap_pyfunction!(giou_distance, m)?)?;
+    m.add_function(wrap_pyfunction!(parallel_giou_distance, m)?)?;
     Ok(())
 }
 
 #[pyfunction]
-fn distance_box_iou(
+fn giou_distance(
     _py: Python,
-    array1: &PyArrayDyn<f64>,
-    array2: &PyArrayDyn<f64>,
+    boxes1: &PyArrayDyn<f64>,
+    boxes2: &PyArrayDyn<f64>,
 ) -> PyResult<Py<PyArray<f64, Dim<[usize; 2]>>>> {
-    let array1 = utils::preprocess_array(array1).unwrap();
-    let array2 = utils::preprocess_array(array2).unwrap();
+    let boxes1 = utils::preprocess_array(boxes1).unwrap();
+    let boxes2 = utils::preprocess_array(boxes2).unwrap();
 
-    let iou = iou::distance_box_iou(&array1, &array2);
+    let iou = giou::giou_distance(&boxes1, &boxes2);
 
     let iou_as_numpy: Py<numpy::PyArray<f64, Dim<[usize; 2]>>> =
         utils::array_to_numpy(_py, iou).unwrap().to_owned();
@@ -36,15 +39,49 @@ fn distance_box_iou(
 }
 
 #[pyfunction]
-fn parallel_distance_box_iou(
+fn parallel_giou_distance(
     _py: Python,
-    array1: &PyArrayDyn<f64>,
-    array2: &PyArrayDyn<f64>,
+    boxes1: &PyArrayDyn<f64>,
+    boxes2: &PyArrayDyn<f64>,
 ) -> PyResult<Py<PyArray<f64, Dim<[usize; 2]>>>> {
-    let array1 = utils::preprocess_array(array1).unwrap();
-    let array2 = utils::preprocess_array(array2).unwrap();
+    let boxes1 = utils::preprocess_array(boxes1).unwrap();
+    let boxes2 = utils::preprocess_array(boxes2).unwrap();
 
-    let iou = iou::parallel_distance_box_iou(&array1, &array2);
+    let iou = giou::parallel_giou_distance(&boxes1, &boxes2);
+
+    let iou_as_numpy: Py<numpy::PyArray<f64, Dim<[usize; 2]>>> =
+        utils::array_to_numpy(_py, iou).unwrap().to_owned();
+
+    return Ok(iou_as_numpy.to_owned());
+}
+
+#[pyfunction]
+fn iou_distance(
+    _py: Python,
+    boxes1: &PyArrayDyn<f64>,
+    boxes2: &PyArrayDyn<f64>,
+) -> PyResult<Py<PyArray<f64, Dim<[usize; 2]>>>> {
+    let boxes1 = utils::preprocess_array(boxes1).unwrap();
+    let boxes2 = utils::preprocess_array(boxes2).unwrap();
+
+    let iou = iou::iou_distance(&boxes1, &boxes2);
+
+    let iou_as_numpy: Py<numpy::PyArray<f64, Dim<[usize; 2]>>> =
+        utils::array_to_numpy(_py, iou).unwrap().to_owned();
+
+    return Ok(iou_as_numpy.to_owned());
+}
+
+#[pyfunction]
+fn parallel_iou_distance(
+    _py: Python,
+    boxes1: &PyArrayDyn<f64>,
+    boxes2: &PyArrayDyn<f64>,
+) -> PyResult<Py<PyArray<f64, Dim<[usize; 2]>>>> {
+    let boxes1 = utils::preprocess_array(boxes1).unwrap();
+    let boxes2 = utils::preprocess_array(boxes2).unwrap();
+
+    let iou = iou::parallel_iou_distance(&boxes1, &boxes2);
 
     let iou_as_numpy: Py<numpy::PyArray<f64, Dim<[usize; 2]>>> =
         utils::array_to_numpy(_py, iou).unwrap().to_owned();
