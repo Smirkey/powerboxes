@@ -49,12 +49,12 @@ def parallel_distance_box_iou(boxes1: np.ndarray, boxes2: np.ndarray) -> np.ndar
         np.ndarray: 2d matrix of pairwise distances
     """
 
-def remove_small_boxes(boxes: np.ndarray, min_area) -> np.ndarray:
+def remove_small_boxes(boxes: np.ndarray, min_size) -> np.ndarray:
     """Removes boxes with area less than min_area.
 
     Args:
         boxes: 2d array of boxes in xyxy format
-        min_area: minimum area of boxes to keep
+        min_size: minimum area of boxes to keep
 
     Returns:
         np.ndarray: 2d array of boxes in xyxy format
