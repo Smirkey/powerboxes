@@ -3,24 +3,40 @@ import pytest
 from powerboxes import (
     box_convert,
     boxes_areas,
-    distance_box_iou,
-    parallel_distance_box_iou,
+    giou_distance,
+    iou_distance,
+    parallel_giou_distance,
+    parallel_iou_distance,
     remove_small_boxes,
 )
 
 
-@pytest.mark.benchmark(group="distance_box_iou")
-def test_distance_box_iou(benchmark):
+@pytest.mark.benchmark(group="giou_distance")
+def test_giou_distance(benchmark):
     boxes1 = np.random.random((100, 4))
     boxes2 = np.random.random((100, 4))
-    benchmark(distance_box_iou, boxes1, boxes2)
+    benchmark(giou_distance, boxes1, boxes2)
 
 
-@pytest.mark.benchmark(group="parallel_distance_box_iou")
-def test_parallel_distance_box_iou(benchmark):
+@pytest.mark.benchmark(group="parallel_giou_distance")
+def test_parallel_giou_distance(benchmark):
     boxes1 = np.random.random((100, 4))
     boxes2 = np.random.random((100, 4))
-    benchmark(parallel_distance_box_iou, boxes1, boxes2)
+    benchmark(parallel_giou_distance, boxes1, boxes2)
+
+
+@pytest.mark.benchmark(group="iou_distance")
+def test_iou_distance(benchmark):
+    boxes1 = np.random.random((100, 4))
+    boxes2 = np.random.random((100, 4))
+    benchmark(iou_distance, boxes1, boxes2)
+
+
+@pytest.mark.benchmark(group="parallel_iou_distance")
+def test_parallel_iou_distance(benchmark):
+    boxes1 = np.random.random((100, 4))
+    boxes2 = np.random.random((100, 4))
+    benchmark(parallel_iou_distance, boxes1, boxes2)
 
 
 @pytest.mark.benchmark(group="remove_small_boxes")

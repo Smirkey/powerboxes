@@ -1,6 +1,6 @@
 use ndarray::{Array2, Zip};
 
-pub fn distance_box_iou(boxes1: &Array2<f64>, boxes2: &Array2<f64>) -> Array2<f64> {
+pub fn iou_distance(boxes1: &Array2<f64>, boxes2: &Array2<f64>) -> Array2<f64> {
     let num_boxes1 = boxes1.nrows();
     let num_boxes2 = boxes2.nrows();
 
@@ -37,7 +37,7 @@ pub fn distance_box_iou(boxes1: &Array2<f64>, boxes2: &Array2<f64>) -> Array2<f6
     return iou_matrix;
 }
 
-pub fn parallel_distance_box_iou(boxes1: &Array2<f64>, boxes2: &Array2<f64>) -> Array2<f64> {
+pub fn parallel_iou_distance(boxes1: &Array2<f64>, boxes2: &Array2<f64>) -> Array2<f64> {
     let num_boxes1 = boxes1.nrows();
     let num_boxes2 = boxes2.nrows();
 
@@ -77,45 +77,45 @@ pub fn parallel_distance_box_iou(boxes1: &Array2<f64>, boxes2: &Array2<f64>) -> 
 }
 
 #[test]
-fn test_distance_box_iou() {
+fn test_iou_distance() {
     use ndarray::arr2;
     // Test case 1
     let boxes1 = arr2(&[[0.0, 0.0, 2.0, 2.0]]);
     let boxes2 = arr2(&[[1.0, 1.0, 3.0, 3.0]]);
-    let iou_result = distance_box_iou(&boxes1, &boxes2);
-    let parallel_iou_result = parallel_distance_box_iou(&boxes1, &boxes2);
+    let iou_result = iou_distance(&boxes1, &boxes2);
+    let parallel_iou_result = parallel_iou_distance(&boxes1, &boxes2);
     assert_eq!(iou_result, arr2(&[[0.7142857142857143]]));
     assert_eq!(parallel_iou_result, arr2(&[[0.7142857142857143]]));
 
     // Test case 2
     let boxes1 = arr2(&[[0.0, 0.0, 2.0, 2.0]]);
     let boxes2 = arr2(&[[3.0, 3.0, 4.0, 4.0]]);
-    let iou_result = distance_box_iou(&boxes1, &boxes2);
-    let parallel_iou_result = parallel_distance_box_iou(&boxes1, &boxes2);
+    let iou_result = iou_distance(&boxes1, &boxes2);
+    let parallel_iou_result = parallel_iou_distance(&boxes1, &boxes2);
     assert_eq!(iou_result, arr2(&[[1.0]]));
     assert_eq!(parallel_iou_result, arr2(&[[1.0]]));
 
     // Test case 3
     let boxes1 = arr2(&[[2.5, 2.5, 3.0, 3.0]]);
     let boxes2 = arr2(&[[1.0, 1.0, 3.0, 3.0]]);
-    let iou_result = distance_box_iou(&boxes1, &boxes2);
-    let parallel_iou_result = parallel_distance_box_iou(&boxes1, &boxes2);
+    let iou_result = iou_distance(&boxes1, &boxes2);
+    let parallel_iou_result = parallel_iou_distance(&boxes1, &boxes2);
     assert_eq!(iou_result, arr2(&[[0.75]]));
     assert_eq!(parallel_iou_result, arr2(&[[0.75]]));
 
     // Test case 4
     let boxes1 = arr2(&[[0.0, 0.0, 2.0, 2.0]]);
     let boxes2 = arr2(&[[0.0, 0.0, 2.0, 2.0]]);
-    let iou_result = distance_box_iou(&boxes1, &boxes2);
-    let parallel_iou_result = parallel_distance_box_iou(&boxes1, &boxes2);
+    let iou_result = iou_distance(&boxes1, &boxes2);
+    let parallel_iou_result = parallel_iou_distance(&boxes1, &boxes2);
     assert_eq!(iou_result, arr2(&[[0.0]]));
     assert_eq!(parallel_iou_result, arr2(&[[0.0]]));
 
     // Test case 5
     let boxes1 = arr2(&[[0.0, 0.0, 2.0, 2.0]]);
     let boxes2 = arr2(&[[3.0, 3.0, 4.0, 4.0]]);
-    let iou_result = distance_box_iou(&boxes1, &boxes2);
-    let parallel_iou_result = parallel_distance_box_iou(&boxes1, &boxes2);
+    let iou_result = iou_distance(&boxes1, &boxes2);
+    let parallel_iou_result = parallel_iou_distance(&boxes1, &boxes2);
     assert_eq!(iou_result, arr2(&[[1.0]]));
     assert_eq!(parallel_iou_result, arr2(&[[1.0]]));
 }

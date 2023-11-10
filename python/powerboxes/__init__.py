@@ -1,15 +1,19 @@
 from ._powerboxes import (
     box_convert,
     boxes_areas,
-    distance_box_iou,
-    parallel_distance_box_iou,
+    giou_distance,
+    iou_distance,
+    parallel_giou_distance,
+    parallel_iou_distance,
     remove_small_boxes,
 )
 
 __all__ = [
-    "distance_box_iou",
-    "parallel_distance_box_iou",
+    "iou_distance",
+    "parallel_iou_distance",
     "remove_small_boxes",
     "boxes_areas",
     "box_convert",
+    "giou_distance",
+    "parallel_giou_distance",
 ]
