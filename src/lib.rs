@@ -1,7 +1,7 @@
 pub mod boxes;
 pub mod giou;
 pub mod iou;
-pub mod utils;
+mod utils;
 
 use ndarray::Dim;
 use numpy::{PyArray, PyArrayDyn};

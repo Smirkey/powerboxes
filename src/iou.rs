@@ -1,5 +1,27 @@
 use ndarray::{Array2, Zip};
 
+/// Calculates the intersection over union (IoU) distance between two sets of bounding boxes.
+///
+/// # Arguments
+///
+/// * `boxes1` - A 2D array of shape (N, 4) representing N bounding boxes in xyxy format.
+/// * `boxes2` - A 2D array of shape (M, 4) representing M bounding boxes in xyxy format.
+///
+/// # Returns
+///
+/// A 2D array of shape (N, M) representing the IoU distance between each pair of bounding boxes.
+///
+/// # Examples
+///
+/// ```
+/// use ndarray::array;
+/// use powerboxes::iou::iou_distance;
+///
+/// let boxes1 = array![[0.0, 0.0, 1.0, 1.0], [2.0, 2.0, 3.0, 3.0]];
+/// let boxes2 = array![[0.5, 0.5, 1.5, 1.5], [2.5, 2.5, 3.5, 3.5]];
+/// let iou = iou_distance(&boxes1, &boxes2);
+/// assert_eq!(iou, array![[0.25, 0.0], [0.0, 0.25]]);
+/// ```
 pub fn iou_distance(boxes1: &Array2<f64>, boxes2: &Array2<f64>) -> Array2<f64> {
     let num_boxes1 = boxes1.nrows();
     let num_boxes2 = boxes2.nrows();
@@ -36,7 +58,30 @@ pub fn iou_distance(boxes1: &Array2<f64>, boxes2: &Array2<f64>) -> Array2<f64> {
 
     return iou_matrix;
 }
-
+/// Calculates the intersection over union (IoU) distance between two sets of bounding boxes.
+/// This function uses rayon to parallelize the computation, which can be faster than the
+/// non-parallelized version for large numbers of boxes.
+///
+/// # Arguments
+///
+/// * `boxes1` - A 2D array of shape (N, 4) representing N bounding boxes in xyxy format.
+/// * `boxes2` - A 2D array of shape (M, 4) representing M bounding boxes in xyxy format.
+///
+/// # Returns
+///
+/// A 2D array of shape (N, M) representing the IoU distance between each pair of bounding boxes.
+///
+/// # Examples
+///
+/// ```
+/// use ndarray::array;
+/// use powerboxes::iou::iou_distance;
+///
+/// let boxes1 = array![[0.0, 0.0, 1.0, 1.0], [2.0, 2.0, 3.0, 3.0]];
+/// let boxes2 = array![[0.5, 0.5, 1.5, 1.5], [2.5, 2.5, 3.5, 3.5]];
+/// let iou = iou_distance(&boxes1, &boxes2);
+/// assert_eq!(iou, array![[0.25, 0.0], [0.0, 0.25]]);
+/// ```
 pub fn parallel_iou_distance(boxes1: &Array2<f64>, boxes2: &Array2<f64>) -> Array2<f64> {
     let num_boxes1 = boxes1.nrows();
     let num_boxes2 = boxes2.nrows();
