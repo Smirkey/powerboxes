@@ -7,6 +7,28 @@ pub enum BoxFormat {
     CXCYWH,
 }
 
+/// Calculates the areas of a 2D array of boxes.
+///
+/// # Arguments
+///
+/// * `boxes` - A 2D array of boxes represented as an `Array2<f64>` in xyxy format.
+///
+/// # Returns
+///
+/// An `Array1<f64>` containing the areas of each box in the same order as the input array.
+///
+/// # Examples
+///
+/// ```
+/// use ndarray::array;
+/// use powerboxes::boxes::box_areas;
+///
+/// let boxes = array![[1., 2., 3., 4.], [0., 0., 10., 10.]];
+///
+/// let areas = box_areas(&boxes);
+///
+/// assert_eq!(areas, array![9., 121.]);
+/// ```
 pub fn box_areas(boxes: &Array2<f64>) -> Array1<f64> {
     let num_boxes = boxes.nrows();
     let mut areas = Array1::<f64>::zeros(num_boxes);
@@ -23,6 +45,29 @@ pub fn box_areas(boxes: &Array2<f64>) -> Array1<f64> {
     return areas;
 }
 
+/// Calculates the areas of a 2D array of boxes in parallel.
+/// This function is only faster than `box_areas` for large arrays
+///
+/// # Arguments
+///
+/// * `boxes` - A 2D array of boxes represented as an `Array2<f64>` in xyxy format.
+///
+/// # Returns
+///
+/// An `Array1<f64>` containing the areas of each box in the same order as the input array.
+///
+/// # Examples
+///
+/// ```
+/// use ndarray::array;
+/// use powerboxes::boxes::parallel_box_areas;
+///
+/// let boxes = array![[1., 2., 3., 4.], [0., 0., 10., 10.]];
+///
+/// let areas = parallel_box_areas(&boxes);
+///
+/// assert_eq!(areas, array![9., 121.]);
+/// ```
 pub fn parallel_box_areas(boxes: &Array2<f64>) -> Array1<f64> {
     let num_boxes = boxes.nrows();
     let mut areas = Array1::<f64>::zeros(num_boxes);
@@ -39,6 +84,29 @@ pub fn parallel_box_areas(boxes: &Array2<f64>) -> Array1<f64> {
     return areas;
 }
 
+/// Removes all boxes from the input array that have a size smaller than `min_size`.
+///
+/// # Arguments
+///
+/// * `boxes` - A 2D array of boxes represented as an `Array2<f64>` in xyxy format.
+/// * `min_size` - The minimum size of boxes to keep.
+///
+/// # Returns
+///
+/// A new 2D array with all boxes smaller than `min_size` removed.
+///
+/// # Examples
+///
+/// ```
+/// use ndarray::array;
+/// use powerboxes::boxes::remove_small_boxes;
+///
+/// let boxes = array![[1., 2., 3., 4.], [0., 0., 10., 10.]];
+/// let min_size = 10;
+/// let result = remove_small_boxes(&boxes, min_size);
+///
+/// assert_eq!(result, array![[0., 0., 10., 10.]]));
+/// ```
 pub fn remove_small_boxes(boxes: &Array2<f64>, min_size: f64) -> Array2<f64> {
     let areas = box_areas(boxes);
     let keep: Vec<usize> = areas
@@ -49,6 +117,39 @@ pub fn remove_small_boxes(boxes: &Array2<f64>, min_size: f64) -> Array2<f64> {
     return boxes.select(Axis(0), &keep);
 }
 
+/// Converts a 2D array of boxes from one format to another.
+///
+/// # Arguments
+///
+/// * `boxes` - A 2D array of boxes in the input format.
+/// * `in_fmt` - The input format of the boxes.
+/// * `out_fmt` - The desired output format of the boxes.
+///
+/// # Returns
+///
+/// A 2D array of boxes in the output format.
+///
+/// # Example
+///
+/// ```
+/// use ndarray::arr2;
+/// use powerboxes::{BoxFormat, box_convert};
+///
+/// let boxes = arr2(&[
+///     [10.0, 20.0, 30.0, 40.0],
+///     [75.0, 25.0, 100.0, 200.0],
+///     [100.0, 100.0, 101.0, 101.0],
+/// ]);
+/// let in_fmt = BoxFormat::XYXY;
+/// let out_fmt = BoxFormat::CXCYWH;
+/// let expected_output = arr2(&[
+///     [20.0, 30.0, 20.0, 20.0],
+///     [87.5, 112.5, 25.0, 175.0],
+///     [100.5, 100.5, 1.0, 1.0],
+/// ]);
+/// let output = box_convert(&boxes, &in_fmt, &out_fmt);
+/// assert_eq!(output, expected_output);
+/// ```
 pub fn box_convert(boxes: &Array2<f64>, in_fmt: &BoxFormat, out_fmt: &BoxFormat) -> Array2<f64> {
     let num_boxes: usize = boxes.nrows();
     let mut converted_boxes = Array2::<f64>::zeros((num_boxes, 4));
@@ -123,7 +224,40 @@ pub fn box_convert(boxes: &Array2<f64>, in_fmt: &BoxFormat, out_fmt: &BoxFormat)
     });
     return converted_boxes;
 }
-
+/// Converts a 2D array of boxes from one format to another, in parallel.
+/// This function is only faster than `box_convert` for large arrays
+///
+/// # Arguments
+///
+/// * `boxes` - A 2D array of boxes in the input format.
+/// * `in_fmt` - The input format of the boxes.
+/// * `out_fmt` - The desired output format of the boxes.
+///
+/// # Returns
+///
+/// A 2D array of boxes in the output format.
+///
+/// # Example
+///
+/// ```
+/// use ndarray::arr2;
+/// use powerboxes::{BoxFormat, parallel_box_convert};
+///
+/// let boxes = arr2(&[
+///     [10.0, 20.0, 30.0, 40.0],
+///     [75.0, 25.0, 100.0, 200.0],
+///     [100.0, 100.0, 101.0, 101.0],
+/// ]);
+/// let in_fmt = BoxFormat::XYXY;
+/// let out_fmt = BoxFormat::CXCYWH;
+/// let expected_output = arr2(&[
+///     [20.0, 30.0, 20.0, 20.0],
+///     [87.5, 112.5, 25.0, 175.0],
+///     [100.5, 100.5, 1.0, 1.0],
+/// ]);
+/// let output = parallel_box_convert(&boxes, &in_fmt, &out_fmt);
+/// assert_eq!(expected_output, output);
+/// ```
 pub fn parallel_box_convert(
     boxes: &Array2<f64>,
     in_fmt: &BoxFormat,

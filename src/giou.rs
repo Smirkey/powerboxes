@@ -1,5 +1,34 @@
 use ndarray::{Array2, Zip};
 
+/// Computes the Generalized Intersection over Union (GIOU) distance between two sets of bounding boxes.
+/// # Arguments
+///
+/// * `boxes1` - A 2D array of shape `(num_boxes1, 4)` representing the coordinates in xyxy format of the first set of bounding boxes.
+/// * `boxes2` - A 2D array of shape `(num_boxes2, 4)` representing the coordinates in xyxy format of the second set of bounding boxes.
+///
+/// # Returns
+///
+/// A 2D array of shape `(num_boxes1, num_boxes2)` representing the GIOU distance between each pair of bounding boxes.
+///
+/// # Examples
+///
+/// ```
+/// use ndarray::array;
+/// use powerboxes::giou::giou_distance;
+///
+/// let boxes1 = array![[0., 0., 10., 10.], [20., 20., 30., 30.]];
+/// let boxes2 = array![[0., 0., 10., 10.], [15., 15., 25., 25.], [20., 20., 30., 30.]];
+///
+/// let giou = giou_distance(&boxes1, &boxes2);
+///
+/// assert_eq!(giou.shape(), &[2, 3]);
+/// assert_eq!(giou[[0, 0]], 0.);
+/// assert_eq!(giou[[0, 1]], 0.25);
+/// assert_eq!(giou[[0, 2]], 0.);
+/// assert_eq!(giou[[1, 0]], 0.25);
+/// assert_eq!(giou[[1, 1]], 0.);
+/// assert_eq!(giou[[1, 2]], 0.);
+/// ```
 pub fn giou_distance(boxes1: &Array2<f64>, boxes2: &Array2<f64>) -> Array2<f64> {
     let num_boxes1 = boxes1.nrows();
     let num_boxes2 = boxes2.nrows();
@@ -49,7 +78,37 @@ pub fn giou_distance(boxes1: &Array2<f64>, boxes2: &Array2<f64>) -> Array2<f64> 
 
     giou_matrix
 }
-
+/// Computes the parallelized version of the Generalized Intersection over Union (GIOU) distance between two sets of bounding boxes.
+/// Usually better when a high number of bounding boxes is used.
+///
+/// # Arguments
+///
+/// * `boxes1` - A 2D array of shape `(num_boxes1, 4)` representing the coordinates of the first set of bounding boxes.
+/// * `boxes2` - A 2D array of shape `(num_boxes2, 4)` representing the coordinates of the second set of bounding boxes.
+///
+/// # Returns
+///
+/// A 2D array of shape `(num_boxes1, num_boxes2)` representing the GIOU distance between each pair of bounding boxes.
+///
+/// # Examples
+///
+/// ```
+/// use ndarray::array;
+/// use powerboxes::giou::parallel_giou_distance;
+///
+/// let boxes1 = array![[0., 0., 10., 10.], [20., 20., 30., 30.]];
+/// let boxes2 = array![[0., 0., 10., 10.], [15., 15., 25., 25.], [20., 20., 30., 30.]];
+///
+/// let giou = parallel_giou_distance(&boxes1, &boxes2);
+///
+/// assert_eq!(giou.shape(), &[2, 3]);
+/// assert_eq!(giou[[0, 0]], 0.);
+/// assert_eq!(giou[[0, 1]], 0.25);
+/// assert_eq!(giou[[0, 2]], 0.);
+/// assert_eq!(giou[[1, 0]], 0.25);
+/// assert_eq!(giou[[1, 1]], 0.);
+/// assert_eq!(giou[[1, 2]], 0.);
+/// ```
 pub fn parallel_giou_distance(boxes1: &Array2<f64>, boxes2: &Array2<f64>) -> Array2<f64> {
     let num_boxes1 = boxes1.nrows();
     let num_boxes2 = boxes2.nrows();
