@@ -505,4 +505,12 @@ mod tests {
         assert_eq!(areas, array![9.]);
         assert_eq!(parallel_areas, areas);
     }
+
+    #[test]
+    fn test_remove_small_boxes() {
+        let boxes = array![[1., 2., 3., 4.], [0., 0., 10., 10.]];
+        let min_size = 10.;
+        let filtered_boxes = remove_small_boxes(&boxes, min_size);
+        assert_eq!(filtered_boxes, array![[0., 0., 10., 10.]]);
+    }
 }
