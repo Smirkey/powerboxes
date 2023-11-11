@@ -10,7 +10,7 @@ use utils::preprocess_array;
 
 /// A Python module implemented in Rust.
 #[pymodule]
-fn _powerboxes(_py: Python, m: &PyModule) -> PyResult<()> {
+fn powerboxesrs(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(iou_distance, m)?)?;
     m.add_function(wrap_pyfunction!(parallel_iou_distance, m)?)?;
     m.add_function(wrap_pyfunction!(remove_small_boxes, m)?)?;

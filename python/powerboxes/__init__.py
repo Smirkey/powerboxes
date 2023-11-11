@@ -1,4 +1,4 @@
-from ._powerboxes import (
+from .powerboxesrs import (
     box_convert,
     boxes_areas,
     giou_distance,

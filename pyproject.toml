@@ -10,10 +10,11 @@ classifiers = [
     "Programming Language :: Python :: Implementation :: CPython",
     "Programming Language :: Python :: Implementation :: PyPy",
 ]
+license = "MIT"
 
 
 [tool.maturin]
 python-source = "python"
-module-name = "powerboxes._powerboxes"
+module-name = "powerboxes.powerboxesrs"
 bindings = "pyo3"
 features = ["pyo3/extension-module"]
