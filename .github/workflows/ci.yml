@@ -26,8 +26,19 @@ jobs:
       with:
         toolchain: nightly
         override: true
+    - name: Check
+      run: cargo check --no-default-features
     - name: Build
       run: cargo build --verbose
     - name: Run tests
       run: cargo test --verbose
-    
+    - name: Check formatting
+      run: cargo fmt -- --check
+    - name: code-coverage
+        env:
+          TOKEN: ${{secrets.CODECOV_TOKEN}}
+      run: |
+        cargo install cargo-tarpaulin --force --git https://github.com/xd009642/tarpaulin --branch develop
+        cargo tarpaulin --out xml
+        bash <(curl -s https://codecov.io/bash)
+
