@@ -429,7 +429,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "powerboxes"
+name = "powerboxesrs"
 version = "0.1.0"
 dependencies = [
  "criterion",
