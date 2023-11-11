@@ -14,7 +14,7 @@ use ndarray::{Array2, Zip};
 ///
 /// ```
 /// use ndarray::array;
-/// use powerboxes::giou::giou_distance;
+/// use powerboxesrs::giou::giou_distance;
 ///
 /// let boxes1 = array![[0., 0., 10., 10.], [20., 20., 30., 30.]];
 /// let boxes2 = array![[0., 0., 10., 10.], [15., 15., 25., 25.], [20., 20., 30., 30.]];
@@ -94,7 +94,7 @@ pub fn giou_distance(boxes1: &Array2<f64>, boxes2: &Array2<f64>) -> Array2<f64> 
 ///
 /// ```
 /// use ndarray::array;
-/// use powerboxes::giou::parallel_giou_distance;
+/// use powerboxesrs::giou::parallel_giou_distance;
 ///
 /// let boxes1 = array![[0., 0., 10., 10.], [20., 20., 30., 30.]];
 /// let boxes2 = array![[0., 0., 10., 10.], [15., 15., 25., 25.], [20., 20., 30., 30.]];

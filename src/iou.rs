@@ -15,7 +15,7 @@ use ndarray::{Array2, Zip};
 ///
 /// ```
 /// use ndarray::array;
-/// use powerboxes::iou::iou_distance;
+/// use powerboxesrs::iou::iou_distance;
 ///
 /// let boxes1 = array![[0.0, 0.0, 1.0, 1.0], [2.0, 2.0, 3.0, 3.0]];
 /// let boxes2 = array![[0.5, 0.5, 1.5, 1.5], [2.5, 2.5, 3.5, 3.5]];
@@ -75,7 +75,7 @@ pub fn iou_distance(boxes1: &Array2<f64>, boxes2: &Array2<f64>) -> Array2<f64> {
 ///
 /// ```
 /// use ndarray::array;
-/// use powerboxes::iou::iou_distance;
+/// use powerboxesrs::iou::iou_distance;
 ///
 /// let boxes1 = array![[0.0, 0.0, 1.0, 1.0], [2.0, 2.0, 3.0, 3.0]];
 /// let boxes2 = array![[0.5, 0.5, 1.5, 1.5], [2.5, 2.5, 3.5, 3.5]];
