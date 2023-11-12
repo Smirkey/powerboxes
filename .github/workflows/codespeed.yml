@@ -15,7 +15,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  benchmarks-python:
+  benchmarks:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -26,19 +26,6 @@ jobs:
       - name: Install dependencies
         run: pip install -r tests/requirements.txt
 
-      - name: Install project
-        run: pip install .
-
-      - name: Run benchmarks
-        uses: CodSpeedHQ/action@v1
-        with:
-          token: ${{ secrets.CODSPEED_TOKEN }}
-          run: pytest tests/ --codspeed
-  benchmarks-rust:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-
       - name: Setup rust toolchain, cache and cargo-codspeed binary
         uses: moonrepo/setup-rust@v0
         with:
@@ -46,11 +33,14 @@ jobs:
           cache-target: release
           bins: cargo-codspeed
 
+      - name: Install project
+        run: pip install .
+
       - name: Build the benchmark target(s)
         run: cargo codspeed build
 
-      - name: Run the benchmarks
+      - name: Run benchmarks
         uses: CodSpeedHQ/action@v1
         with:
-          run: cargo codspeed run
           token: ${{ secrets.CODSPEED_TOKEN }}
+          run: pytest tests/ --codspeed && cargo codspeed run
