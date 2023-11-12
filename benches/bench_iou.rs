@@ -1,14 +1,19 @@
 use codspeed_criterion_compat::{black_box, criterion_group, criterion_main, Criterion};
-use ndarray::arr2;
+use ndarray::{arr2, Array2};
 use powerboxesrs::giou::{giou_distance, parallel_giou_distance};
 use powerboxesrs::iou::{iou_distance, parallel_iou_distance};
 
 pub fn iou_distance_benchmark(c: &mut Criterion) {
-    let boxes1 = arr2(&[
-        [10.0, 20.0, 30.0, 40.0],
-        [75.0, 25.0, 100.0, 200.0],
-        [100.0, 100.0, 101.0, 101.0],
-    ]);
+    let mut boxes1 = Array2::<f64>::zeros((100, 4));
+    for i in 0..100 {
+        for j in 0..4 {
+            if j < 2 {
+                boxes1[[i, j]] = 0.0;
+            } else {
+                boxes1[[i, j]] = 10.0;
+            }
+        }
+    }
     let boxes2 = boxes1.clone();
 
     c.bench_function("iou distance benchmark", |b| {
@@ -17,11 +22,16 @@ pub fn iou_distance_benchmark(c: &mut Criterion) {
 }
 
 pub fn parallel_iou_distance_benchmark(c: &mut Criterion) {
-    let boxes1 = arr2(&[
-        [10.0, 20.0, 30.0, 40.0],
-        [75.0, 25.0, 100.0, 200.0],
-        [100.0, 100.0, 101.0, 101.0],
-    ]);
+    let mut boxes1 = Array2::<f64>::zeros((100, 4));
+    for i in 0..100 {
+        for j in 0..4 {
+            if j < 2 {
+                boxes1[[i, j]] = 0.0;
+            } else {
+                boxes1[[i, j]] = 10.0;
+            }
+        }
+    }
     let boxes2 = boxes1.clone();
 
     c.bench_function("parallel iou distance benchmark", |b| {
@@ -30,11 +40,16 @@ pub fn parallel_iou_distance_benchmark(c: &mut Criterion) {
 }
 
 pub fn giou_distance_benchmark(c: &mut Criterion) {
-    let boxes1 = arr2(&[
-        [10.0, 20.0, 30.0, 40.0],
-        [75.0, 25.0, 100.0, 200.0],
-        [100.0, 100.0, 101.0, 101.0],
-    ]);
+    let mut boxes1 = Array2::<f64>::zeros((100, 4));
+    for i in 0..100 {
+        for j in 0..4 {
+            if j < 2 {
+                boxes1[[i, j]] = 0.0;
+            } else {
+                boxes1[[i, j]] = 10.0;
+            }
+        }
+    }
     let boxes2 = boxes1.clone();
 
     c.bench_function("giou distance benchmark", |b| {
@@ -43,11 +58,16 @@ pub fn giou_distance_benchmark(c: &mut Criterion) {
 }
 
 pub fn parallel_giou_distance_benchmark(c: &mut Criterion) {
-    let boxes1 = arr2(&[
-        [10.0, 20.0, 30.0, 40.0],
-        [75.0, 25.0, 100.0, 200.0],
-        [100.0, 100.0, 101.0, 101.0],
-    ]);
+    let mut boxes1 = Array2::<f64>::zeros((100, 4));
+    for i in 0..100 {
+        for j in 0..4 {
+            if j < 2 {
+                boxes1[[i, j]] = 0.0;
+            } else {
+                boxes1[[i, j]] = 10.0;
+            }
+        }
+    }
     let boxes2 = boxes1.clone();
 
     c.bench_function("parallel giou distance benchmark", |b| {
