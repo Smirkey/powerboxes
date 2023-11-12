@@ -21,7 +21,7 @@ pub enum BoxFormat {
 ///
 /// ```
 /// use ndarray::array;
-/// use powerboxes::boxes::box_areas;
+/// use powerboxesrs::boxes::box_areas;
 ///
 /// let boxes = array![[1., 2., 3., 4.], [0., 0., 10., 10.]];
 ///
@@ -60,7 +60,7 @@ pub fn box_areas(boxes: &Array2<f64>) -> Array1<f64> {
 ///
 /// ```
 /// use ndarray::array;
-/// use powerboxes::boxes::parallel_box_areas;
+/// use powerboxesrs::boxes::parallel_box_areas;
 ///
 /// let boxes = array![[1., 2., 3., 4.], [0., 0., 10., 10.]];
 ///
@@ -99,13 +99,13 @@ pub fn parallel_box_areas(boxes: &Array2<f64>) -> Array1<f64> {
 ///
 /// ```
 /// use ndarray::array;
-/// use powerboxes::boxes::remove_small_boxes;
+/// use powerboxesrs::boxes::remove_small_boxes;
 ///
 /// let boxes = array![[1., 2., 3., 4.], [0., 0., 10., 10.]];
-/// let min_size = 10;
+/// let min_size = 10.0;
 /// let result = remove_small_boxes(&boxes, min_size);
 ///
-/// assert_eq!(result, array![[0., 0., 10., 10.]]));
+/// assert_eq!(result, array![[0., 0., 10., 10.]]);
 /// ```
 pub fn remove_small_boxes(boxes: &Array2<f64>, min_size: f64) -> Array2<f64> {
     let areas = box_areas(boxes);
@@ -133,7 +133,7 @@ pub fn remove_small_boxes(boxes: &Array2<f64>, min_size: f64) -> Array2<f64> {
 ///
 /// ```
 /// use ndarray::arr2;
-/// use powerboxes::{BoxFormat, box_convert};
+/// use powerboxesrs::boxes::{BoxFormat, box_convert};
 ///
 /// let boxes = arr2(&[
 ///     [10.0, 20.0, 30.0, 40.0],
@@ -241,7 +241,7 @@ pub fn box_convert(boxes: &Array2<f64>, in_fmt: &BoxFormat, out_fmt: &BoxFormat)
 ///
 /// ```
 /// use ndarray::arr2;
-/// use powerboxes::{BoxFormat, parallel_box_convert};
+/// use powerboxesrs::boxes::{BoxFormat, parallel_box_convert};
 ///
 /// let boxes = arr2(&[
 ///     [10.0, 20.0, 30.0, 40.0],
@@ -504,5 +504,13 @@ mod tests {
         let parallel_areas = box_areas(&boxes);
         assert_eq!(areas, array![9.]);
         assert_eq!(parallel_areas, areas);
+    }
+
+    #[test]
+    fn test_remove_small_boxes() {
+        let boxes = array![[1., 2., 3., 4.], [0., 0., 10., 10.]];
+        let min_size = 10.;
+        let filtered_boxes = remove_small_boxes(&boxes, min_size);
+        assert_eq!(filtered_boxes, array![[0., 0., 10., 10.]]);
     }
 }

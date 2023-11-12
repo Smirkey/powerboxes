@@ -15,12 +15,12 @@ use ndarray::{Array2, Zip};
 ///
 /// ```
 /// use ndarray::array;
-/// use powerboxes::iou::iou_distance;
+/// use powerboxesrs::iou::iou_distance;
 ///
 /// let boxes1 = array![[0.0, 0.0, 1.0, 1.0], [2.0, 2.0, 3.0, 3.0]];
 /// let boxes2 = array![[0.5, 0.5, 1.5, 1.5], [2.5, 2.5, 3.5, 3.5]];
 /// let iou = iou_distance(&boxes1, &boxes2);
-/// assert_eq!(iou, array![[0.25, 0.0], [0.0, 0.25]]);
+/// assert_eq!(iou, array![[0.6086956521739131, 0.967741935483871],[0.967741935483871, 0.6086956521739131]]);
 /// ```
 pub fn iou_distance(boxes1: &Array2<f64>, boxes2: &Array2<f64>) -> Array2<f64> {
     let num_boxes1 = boxes1.nrows();
@@ -75,12 +75,12 @@ pub fn iou_distance(boxes1: &Array2<f64>, boxes2: &Array2<f64>) -> Array2<f64> {
 ///
 /// ```
 /// use ndarray::array;
-/// use powerboxes::iou::iou_distance;
+/// use powerboxesrs::iou::iou_distance;
 ///
 /// let boxes1 = array![[0.0, 0.0, 1.0, 1.0], [2.0, 2.0, 3.0, 3.0]];
 /// let boxes2 = array![[0.5, 0.5, 1.5, 1.5], [2.5, 2.5, 3.5, 3.5]];
 /// let iou = iou_distance(&boxes1, &boxes2);
-/// assert_eq!(iou, array![[0.25, 0.0], [0.0, 0.25]]);
+/// assert_eq!(iou, array![[0.6086956521739131, 0.967741935483871],[0.967741935483871, 0.6086956521739131]]);
 /// ```
 pub fn parallel_iou_distance(boxes1: &Array2<f64>, boxes2: &Array2<f64>) -> Array2<f64> {
     let num_boxes1 = boxes1.nrows();

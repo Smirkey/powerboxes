@@ -14,7 +14,7 @@ use ndarray::{Array2, Zip};
 ///
 /// ```
 /// use ndarray::array;
-/// use powerboxes::giou::giou_distance;
+/// use powerboxesrs::giou::giou_distance;
 ///
 /// let boxes1 = array![[0., 0., 10., 10.], [20., 20., 30., 30.]];
 /// let boxes2 = array![[0., 0., 10., 10.], [15., 15., 25., 25.], [20., 20., 30., 30.]];
@@ -23,10 +23,10 @@ use ndarray::{Array2, Zip};
 ///
 /// assert_eq!(giou.shape(), &[2, 3]);
 /// assert_eq!(giou[[0, 0]], 0.);
-/// assert_eq!(giou[[0, 1]], 0.25);
-/// assert_eq!(giou[[0, 2]], 0.);
-/// assert_eq!(giou[[1, 0]], 0.25);
-/// assert_eq!(giou[[1, 1]], 0.);
+/// assert_eq!(giou[[0, 1]], 1.5948840131957898);
+/// assert_eq!(giou[[0, 2]], 1.3293605909992827);
+/// assert_eq!(giou[[1, 0]], 1.3293605909992827);
+/// assert_eq!(giou[[1, 1]], 1.020555218446602);
 /// assert_eq!(giou[[1, 2]], 0.);
 /// ```
 pub fn giou_distance(boxes1: &Array2<f64>, boxes2: &Array2<f64>) -> Array2<f64> {
@@ -94,7 +94,7 @@ pub fn giou_distance(boxes1: &Array2<f64>, boxes2: &Array2<f64>) -> Array2<f64> 
 ///
 /// ```
 /// use ndarray::array;
-/// use powerboxes::giou::parallel_giou_distance;
+/// use powerboxesrs::giou::parallel_giou_distance;
 ///
 /// let boxes1 = array![[0., 0., 10., 10.], [20., 20., 30., 30.]];
 /// let boxes2 = array![[0., 0., 10., 10.], [15., 15., 25., 25.], [20., 20., 30., 30.]];
@@ -103,10 +103,10 @@ pub fn giou_distance(boxes1: &Array2<f64>, boxes2: &Array2<f64>) -> Array2<f64> 
 ///
 /// assert_eq!(giou.shape(), &[2, 3]);
 /// assert_eq!(giou[[0, 0]], 0.);
-/// assert_eq!(giou[[0, 1]], 0.25);
-/// assert_eq!(giou[[0, 2]], 0.);
-/// assert_eq!(giou[[1, 0]], 0.25);
-/// assert_eq!(giou[[1, 1]], 0.);
+/// assert_eq!(giou[[0, 1]], 1.5948840131957898);
+/// assert_eq!(giou[[0, 2]], 1.3293605909992827);
+/// assert_eq!(giou[[1, 0]], 1.3293605909992827);
+/// assert_eq!(giou[[1, 1]], 1.020555218446602);
 /// assert_eq!(giou[[1, 2]], 0.);
 /// ```
 pub fn parallel_giou_distance(boxes1: &Array2<f64>, boxes2: &Array2<f64>) -> Array2<f64> {
