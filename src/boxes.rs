@@ -31,7 +31,7 @@ pub enum BoxFormat {
 /// ```
 pub fn box_areas(boxes: &Array2<f64>) -> Array1<f64> {
     let num_boxes = boxes.nrows();
-    let mut areas = Array1::<f64>::zeros(num_boxes);
+    let mut areas = Array1::<f64>::uninit(num_boxes);
 
     Zip::indexed(&mut areas).for_each(|i, area| {
         let box1 = boxes.row(i);
@@ -70,7 +70,7 @@ pub fn box_areas(boxes: &Array2<f64>) -> Array1<f64> {
 /// ```
 pub fn parallel_box_areas(boxes: &Array2<f64>) -> Array1<f64> {
     let num_boxes = boxes.nrows();
-    let mut areas = Array1::<f64>::zeros(num_boxes);
+    let mut areas = Array1::<f64>::uninit(num_boxes);
 
     Zip::indexed(&mut areas).par_for_each(|i, area| {
         let box1 = boxes.row(i);
@@ -152,7 +152,7 @@ pub fn remove_small_boxes(boxes: &Array2<f64>, min_size: f64) -> Array2<f64> {
 /// ```
 pub fn box_convert(boxes: &Array2<f64>, in_fmt: &BoxFormat, out_fmt: &BoxFormat) -> Array2<f64> {
     let num_boxes: usize = boxes.nrows();
-    let mut converted_boxes = Array2::<f64>::zeros((num_boxes, 4));
+    let mut converted_boxes = boxes.clone();
 
     Zip::indexed(converted_boxes.rows_mut()).for_each(|i, mut box1| {
         let box2 = boxes.row(i);

@@ -26,7 +26,7 @@ pub fn iou_distance(boxes1: &Array2<f64>, boxes2: &Array2<f64>) -> Array2<f64> {
     let num_boxes1 = boxes1.nrows();
     let num_boxes2 = boxes2.nrows();
 
-    let mut iou_matrix = Array2::<f64>::zeros((num_boxes1, num_boxes2));
+    let mut iou_matrix = Array2::<f64>::uninit((num_boxes1, num_boxes2));
 
     for i in 0..num_boxes1 {
         let a1 = boxes1.row(i);
@@ -86,7 +86,7 @@ pub fn parallel_iou_distance(boxes1: &Array2<f64>, boxes2: &Array2<f64>) -> Arra
     let num_boxes1 = boxes1.nrows();
     let num_boxes2 = boxes2.nrows();
 
-    let mut iou_matrix = Array2::<f64>::zeros((num_boxes1, num_boxes2));
+    let mut iou_matrix = Array2::<f64>::uninit((num_boxes1, num_boxes2));
 
     Zip::indexed(iou_matrix.rows_mut()).par_for_each(|i, mut row| {
         let a1 = boxes1.row(i);
