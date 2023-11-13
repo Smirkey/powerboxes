@@ -33,7 +33,7 @@ pub fn giou_distance(boxes1: &Array2<f64>, boxes2: &Array2<f64>) -> Array2<f64> 
     let num_boxes1 = boxes1.nrows();
     let num_boxes2 = boxes2.nrows();
 
-    let mut giou_matrix = Array2::<f64>::uninit((num_boxes1, num_boxes2));
+    let mut giou_matrix = Array2::<f64>::zeros((num_boxes1, num_boxes2));
 
     for i in 0..num_boxes1 {
         let a1 = boxes1.row(i);
@@ -113,7 +113,7 @@ pub fn parallel_giou_distance(boxes1: &Array2<f64>, boxes2: &Array2<f64>) -> Arr
     let num_boxes1 = boxes1.nrows();
     let num_boxes2 = boxes2.nrows();
 
-    let mut giou_matrix = Array2::<f64>::uninit((num_boxes1, num_boxes2));
+    let mut giou_matrix = Array2::<f64>::zeros((num_boxes1, num_boxes2));
 
     Zip::indexed(giou_matrix.rows_mut()).par_for_each(|i, mut row| {
         let a1 = boxes1.row(i);
