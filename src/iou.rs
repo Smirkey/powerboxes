@@ -61,8 +61,11 @@ pub fn iou_distance(boxes1: &Array2<f64>, boxes2: &Array2<f64>) -> Array2<f64> {
     }
 
     // Convert Vec<Vec<f64>> to Array2<f64>
-    let result_array = Array2::from_shape_vec((num_boxes1, num_boxes2), iou_matrix.into_iter().flatten().collect())
-        .expect("Failed to create Array2 from Vec<Vec<f64>>");
+    let result_array = Array2::from_shape_vec(
+        (num_boxes1, num_boxes2),
+        iou_matrix.into_iter().flatten().collect(),
+    )
+    .expect("Failed to create Array2 from Vec<Vec<f64>>");
 
     result_array
 }
