@@ -26,11 +26,9 @@ pub fn iou_distance(boxes1: &Array2<f64>, boxes2: &Array2<f64>) -> Array2<f64> {
     let num_boxes1 = boxes1.nrows();
     let num_boxes2 = boxes2.nrows();
 
-    let mut iou_matrix: Vec<Vec<f64>> = Vec::with_capacity(num_boxes1);
+    let mut iou_values: Vec<f64> = Vec::with_capacity(num_boxes1 * num_boxes2);
 
     for i in 0..num_boxes1 {
-        let mut row_values: Vec<f64> = Vec::with_capacity(num_boxes2);
-
         let a1 = boxes1.row(i);
         let a1_x1 = a1[0];
         let a1_y1 = a1[1];
@@ -54,18 +52,13 @@ pub fn iou_distance(boxes1: &Array2<f64>, boxes2: &Array2<f64>) -> Array2<f64> {
             let intersection = (x2 - x1 + 1.) * (y2 - y1 + 1.);
             let iou = intersection / (area1 + area2 - intersection);
 
-            row_values.push(1. - iou);
+            iou_values.push(1. - iou);
         }
-
-        iou_matrix.push(row_values);
     }
 
-    // Convert Vec<Vec<f64>> to Array2<f64>
-    let result_array = Array2::from_shape_vec(
-        (num_boxes1, num_boxes2),
-        iou_matrix.into_iter().flatten().collect(),
-    )
-    .expect("Failed to create Array2 from Vec<Vec<f64>>");
+    // Convert Vec<f64> to Array2<f64>
+    let result_array = Array2::from_shape_vec((num_boxes1, num_boxes2), iou_values)
+        .expect("Failed to create Array2 from Vec<f64>");
 
     result_array
 }
