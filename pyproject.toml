@@ -7,11 +7,25 @@ name = "powerboxes"
 requires-python = ">=3.7"
 classifiers = [
     "Programming Language :: Rust",
-    "Programming Language :: Python :: Implementation :: CPython",
     "Programming Language :: Python :: Implementation :: PyPy",
+    "Programming Language :: Python :: Implementation :: CPython",
+    'Programming Language :: Python :: 3.7',
+    'Programming Language :: Python :: 3.8',
+    'Programming Language :: Python :: 3.9',
+    'Programming Language :: Python :: 3.10',
+    'Programming Language :: Python :: 3.11',
+    'Programming Language :: Python :: 3.12',
+    'Programming Language :: Rust',
+    'License :: OSI Approved :: MIT License',
+    'Operating System :: POSIX :: Linux',
+    'Operating System :: Microsoft :: Windows',
+    'Operating System :: MacOS',
 ]
 license = "MIT"
-
+readme = "README.md"
+authors = ["Buillaume"]
+description = "Utility functions to manipulate and compute metrics on boxes"
+repository = "https://github.com/Smirkey/powerboxes"
 
 [tool.maturin]
 python-source = "python"
