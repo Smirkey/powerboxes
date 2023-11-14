@@ -6,10 +6,16 @@ on:
       - main
     tags:
       - '**'
-  pull_request: {}
+  pull_request:
+    types:
+    - opened
+    - synchronize
+    - reopened
+    - closed
 
-env:
-  COLUMNS: 150
+concurrency:
+  group: ${{ github.workflow }}/${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
 
 jobs:
   test-python:
