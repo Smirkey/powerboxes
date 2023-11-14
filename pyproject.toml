@@ -23,7 +23,7 @@ classifiers = [
 ]
 license = "MIT"
 readme = "README.md"
-authors = ["Buillaume"]
+authors = [{name = "Buillaume", email = "guillaume.bertrand@edhec.com"}]
 description = "Utility functions to manipulate and compute metrics on boxes"
 repository = "https://github.com/Smirkey/powerboxes"
 
