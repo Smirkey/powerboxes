@@ -12,36 +12,6 @@ env:
   COLUMNS: 150
 
 jobs:
-  coverage:
-    runs-on: ubuntu-latest
-
-    steps:
-    - uses: actions/checkout@v3
-    - name: install rust nightly
-      uses: dtolnay/rust-toolchain@nightly
-    - id: cache-rust
-      name: cache rust
-      uses: Swatinem/rust-cache@v2
-      with:
-        key: coverage-v2
-    - name: Check
-      run: cargo check --no-default-features
-    - name: Build
-      run: cargo build --verbose
-    - name: Run tests
-      run: cargo test --verbose
-    - name: Check formatting
-      run: cargo fmt -- --check
-    - name: code-coverage
-      env:
-        TOKEN: ${{secrets.CODECOV_TOKEN}}
-      run: |
-        cargo install cargo-tarpaulin --force --git https://github.com/xd009642/tarpaulin --branch develop
-        cargo tarpaulin --out xml
-        bash <(curl -s https://codecov.io/bash)
-
-  # See https://github.com/PyO3/pyo3/discussions/2781
-  # tests intermittently segfault with pypy and cpython 3.7 when using `coverage run ...`, hence separate job
   test-python:
     name: test ${{ matrix.python-version }}
     strategy:
@@ -127,7 +97,7 @@ jobs:
   # https://github.com/marketplace/actions/alls-green#why used for branch protection checks
   check:
     if: always()
-    needs: [coverage, test-python, test-os]
+    needs: [test-python, test-os]
     runs-on: ubuntu-latest
     steps:
       - name: Decide whether the needed jobs succeeded or failed

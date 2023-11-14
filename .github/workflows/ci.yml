@@ -23,10 +23,13 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
-    - uses: actions-rs/toolchain@v1
+    - name: install rust stable
+      uses: dtolnay/rust-toolchain@stable
+    - id: cache-rust
+      name: cache rust
+      uses: Swatinem/rust-cache@v2
       with:
-        toolchain: stable
-        override: true
+        key: coverage-v2
     - name: Check
       run: cargo check --no-default-features
     - name: Build
