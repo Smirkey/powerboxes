@@ -1,5 +1,5 @@
 use ndarray::{ArrayBase, Dim, OwnedRepr};
-use numpy::{IntoPyArray, PyArray, PyArrayDyn};
+use numpy::{IntoPyArray, PyArray, PyArrayDyn, IxDyn};
 use pyo3::prelude::*;
 
 pub fn array_to_numpy<T: numpy::Element, D: ndarray::Dimension>(
