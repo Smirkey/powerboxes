@@ -23,6 +23,12 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
+    - name: set up python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - run: pip install -r tests/requirements.txt
     - name: install rust stable
       uses: dtolnay/rust-toolchain@stable
     - id: cache-rust

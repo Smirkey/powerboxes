@@ -7,6 +7,7 @@ readme = "README.md"
 authors = ["Buillaume <guillaume.bertrand@edhec.com>"]
 description = "Utility functions to manipulate and compute metrics on boxes"
 repository = "https://github.com/Smirkey/powerboxes"
+homepage = "https://github.com/Smirkey/powerboxes"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [lib]
@@ -22,6 +23,8 @@ rayon = "1.8.0"
 [dev-dependencies]
 codspeed-criterion-compat = "2.3.1"
 criterion = "0.5.1"
+pyo3 = { version = "0.20.0", features = ["auto-initialize"] }
+
 
 [[bench]]
 name = "bench_iou"
