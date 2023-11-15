@@ -1,4 +1,5 @@
 #![crate_name = "powerboxesrs"]
+
 //! Powerboxes is a package containing utility functions for transforming bounding boxes and computing metrics from them.
 //! # Powerboxesrs
 //!
@@ -23,6 +24,7 @@
 //! let boxes2 = array![[0.5, 0.5, 1.5, 1.5], [2.5, 2.5, 3.5, 3.5]];
 //! let iou = iou_distance(&boxes1, &boxes2);
 //! assert_eq!(iou, array![[0.6086956521739131, 0.967741935483871],[0.967741935483871, 0.6086956521739131]]);
+//! ```
 //!
 //! ## Features
 //!
