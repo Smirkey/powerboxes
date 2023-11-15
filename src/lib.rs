@@ -1,5 +1,4 @@
 #![crate_name = "powerboxesrs"]
-
 //! Powerboxes is a package containing utility functions for transforming bounding boxes and computing metrics from them.
 //! # Powerboxesrs
 //!
