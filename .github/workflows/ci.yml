@@ -46,7 +46,7 @@ jobs:
       run: cargo fmt -- --check
     - name: code-coverage
       env:
-        TOKEN: ${{secrets.CODECOV_TOKEN}}
+        TOKEN: ${{ secrets.CODECOV_TOKEN }}
       run: |
         cargo install cargo-tarpaulin --force --git https://github.com/xd009642/tarpaulin --branch develop
         cargo tarpaulin --out xml
