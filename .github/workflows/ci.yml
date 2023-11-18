@@ -43,6 +43,7 @@ jobs:
           python -m venv venv
           source venv/bin/activate
           pip install -r tests/requirements.txt
+          pip install maturin
       - name: Run coverage
         run: |
           source venv/bin/activate
