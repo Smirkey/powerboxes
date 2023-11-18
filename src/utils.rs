@@ -83,4 +83,12 @@ mod tests {
             assert_eq!(unwrapped_result.shape(), &[2, 4]);
         });
     }
+    #[test]
+    fn test_preprocess_array_bad_shape() {
+        Python::with_gil(|python| {
+            let array = PyArrayDyn::<f64>::zeros(python, IxDyn(&[2, 3]), false);
+            let result = preprocess_array(&array);
+            assert!(result.is_err());
+        });
+    }
 }
