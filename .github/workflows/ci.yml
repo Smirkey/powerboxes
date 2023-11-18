@@ -20,37 +20,48 @@ concurrency:
 jobs:
   coverage:
     runs-on: ubuntu-latest
-
     steps:
-    - uses: actions/checkout@v3
-    - name: set up python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.11'
-
-    - run: pip install -r tests/requirements.txt
-    - name: install rust stable
-      uses: dtolnay/rust-toolchain@stable
-    - id: cache-rust
-      name: cache rust
-      uses: Swatinem/rust-cache@v2
-      with:
-        key: coverage-v2
-    - name: Check
-      run: cargo check --no-default-features
-    - name: Build
-      run: cargo build --verbose
-    - name: Run tests
-      run: cargo test --verbose
-    - name: Check formatting
-      run: cargo fmt -- --check
-    - name: code-coverage
-      env:
-        TOKEN: ${{secrets.CODECOV_TOKEN}}
-      run: |
-        cargo install cargo-tarpaulin --force --git https://github.com/xd009642/tarpaulin --branch develop
-        cargo tarpaulin --out xml
-        bash <(curl -s https://codecov.io/bash)
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+          cache: "pip"
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+          profile: minimal
+          components: llvm-tools-preview
+      - name: Install cargo-llvm-cov
+        uses: taiki-e/install-action@cargo-llvm-cov
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: coverage-cargo-ubuntu
+        continue-on-error: true
+      - name: Setup virtual environment
+        run: |
+          python -m venv venv
+          source venv/bin/activate
+          pip install -r tests/requirements.txt
+          pip install maturin
+      - name: Run coverage
+        run: |
+          source venv/bin/activate
+          source <(cargo llvm-cov show-env --export-prefix)
+          export CARGO_TARGET_DIR=$CARGO_LLVM_COV_TARGET_DIR
+          export CARGO_INCREMENTAL=1
+          cargo llvm-cov clean --workspace
+          cargo check
+          cargo test
+          maturin develop
+          pytest tests --cov=powerboxes --cov-report xml
+          cargo llvm-cov --no-run --lcov --output-path coverage.lcov
+      - uses: codecov/codecov-action@v3
+        env:
+          TOKEN: ${{ secrets.CODECOV_TOKEN }}
+        with:
+          files: coverage.lcov,coverage.xml
+          name: ubuntu
   test-python:
     name: test ${{ matrix.python-version }}
     strategy:

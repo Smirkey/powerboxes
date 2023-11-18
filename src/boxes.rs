@@ -474,7 +474,7 @@ mod tests {
     fn test_box_areas_single_box() {
         let boxes = array![[1., 2., 3., 4.]];
         let areas = box_areas(&boxes);
-        let parallel_areas = box_areas(&boxes);
+        let parallel_areas = parallel_box_areas(&boxes);
         assert_eq!(areas, array![9.]);
         assert_eq!(parallel_areas, areas);
     }
@@ -483,7 +483,7 @@ mod tests {
     fn test_box_areas_multiple_boxes() {
         let boxes = array![[1., 2., 3., 4.], [0., 0., 10., 10.]];
         let areas = box_areas(&boxes);
-        let parallel_areas = box_areas(&boxes);
+        let parallel_areas = parallel_box_areas(&boxes);
         assert_eq!(areas, array![9., 121.]);
         assert_eq!(parallel_areas, areas);
     }
@@ -492,7 +492,7 @@ mod tests {
     fn test_box_areas_zero_area() {
         let boxes = array![[1., 2., 1., 2.]];
         let areas = box_areas(&boxes);
-        let parallel_areas = box_areas(&boxes);
+        let parallel_areas = parallel_box_areas(&boxes);
         assert_eq!(areas, array![1.]);
         assert_eq!(parallel_areas, areas);
     }
@@ -501,7 +501,7 @@ mod tests {
     fn test_box_areas_negative_coordinates() {
         let boxes = array![[-1., -1., 1., 1.]];
         let areas = box_areas(&boxes);
-        let parallel_areas = box_areas(&boxes);
+        let parallel_areas = parallel_box_areas(&boxes);
         assert_eq!(areas, array![9.]);
         assert_eq!(parallel_areas, areas);
     }
