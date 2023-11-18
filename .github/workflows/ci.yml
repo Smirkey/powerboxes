@@ -53,7 +53,7 @@ jobs:
           cargo check
           cargo test
           maturin develop
-          pytest tests --cov=foobar --cov-report xml
+          pytest tests --cov=powerboxes --cov-report xml
           cargo llvm-cov --no-run --lcov --output-path coverage.lcov
       - uses: codecov/codecov-action@v3
         env:
