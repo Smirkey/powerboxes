@@ -469,7 +469,7 @@ dependencies = [
 
 [[package]]
 name = "powerboxesrs"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "codspeed-criterion-compat",
  "criterion",
