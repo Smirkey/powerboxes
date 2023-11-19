@@ -1,4 +1,4 @@
 pytest==7.4.3
 pytest-codspeed>=2.0.0
-numpy==1.25.2; python_version >= "3.9" and python_version < "3.12" and implementation_name == "cpython" and platform_machine == 'x86_64'
+numpy==1.25.2
 pytest-cov
