@@ -450,7 +450,7 @@ jobs:
             python3 -m venv venv
             source venv/bin/activate
             python3 -m pip install -r tests/requirements.txt
-            python3 -m pip install powermetrics --no-index --no-deps --find-links dist --force-reinstall
+            python3 -m pip install powerboxes --no-index --no-deps --find-links dist --force-reinstall
             python3 -m pytest --ignore=tests/test_docstrings.py
 
   test-builds-os:
