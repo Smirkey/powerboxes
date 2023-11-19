@@ -399,20 +399,6 @@ jobs:
          ls dist/*cp310-manylinux*x86_64.whl | head -n 1
          python -m zipfile --list `ls dist/*cp310-manylinux*x86_64.whl | head -n 1`
 
-  test-builds-arch:
-    name: test build on ${{ matrix.target }}-${{ matrix.distro }}
-    needs: [build]
-    runs-on: ubuntu-latest
-
-    strategy:
-      fail-fast: false
-      matrix:
-        target: [aarch64, armv7, s390x, ppc64le]
-        distro: ['ubuntu22.04']
-        include:
-          - target: aarch64
-            distro: alpine_latest
-
   test-builds-os:
     name: test build on ${{ matrix.os }}
     needs: [build, build-pgo]
