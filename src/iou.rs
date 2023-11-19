@@ -1,4 +1,5 @@
 use ndarray::{Array2, Zip};
+use num_traits::{Float, Num};
 
 /// Calculates the intersection over union (IoU) distance between two sets of bounding boxes.
 ///
@@ -22,7 +23,10 @@ use ndarray::{Array2, Zip};
 /// let iou = iou_distance(&boxes1, &boxes2);
 /// assert_eq!(iou, array![[0.6086956521739131, 0.967741935483871],[0.967741935483871, 0.6086956521739131]]);
 /// ```
-pub fn iou_distance(boxes1: &Array2<f64>, boxes2: &Array2<f64>) -> Array2<f64> {
+pub fn iou_distance<N>(boxes1: &Array2<N>, boxes2: &Array2<N>) -> Array2<f64>
+where
+    N: Num + Float,
+{
     let num_boxes1 = boxes1.nrows();
     let num_boxes2 = boxes2.nrows();
 
@@ -34,7 +38,7 @@ pub fn iou_distance(boxes1: &Array2<f64>, boxes2: &Array2<f64>) -> Array2<f64> {
         let a1_y1 = a1[1];
         let a1_x2 = a1[2];
         let a1_y2 = a1[3];
-        let area1 = (a1_x2 - a1_x1 + 1.) * (a1_y2 - a1_y1 + 1.);
+        let area1 = (a1_x2 - a1_x1 + N::one()) * (a1_y2 - a1_y1 + N::one());
 
         for j in 0..num_boxes2 {
             let a2 = boxes2.row(j);
@@ -42,21 +46,21 @@ pub fn iou_distance(boxes1: &Array2<f64>, boxes2: &Array2<f64>) -> Array2<f64> {
             let a2_y1 = a2[1];
             let a2_x2 = a2[2];
             let a2_y2 = a2[3];
-            let area2 = (a2_x2 - a2_x1 + 1.) * (a2_y2 - a2_y1 + 1.);
+            let area2 = (a2_x2 - a2_x1 + N::one()) * (a2_y2 - a2_y1 + N::one());
 
-            let x1 = f64::max(a1_x1, a2_x1);
-            let y1 = f64::max(a1_y1, a2_y1);
-            let x2 = f64::min(a1_x2, a2_x2);
-            let y2 = f64::min(a1_y2, a2_y2);
+            let x1 = N::max(a1_x1, a2_x1);
+            let y1 = N::max(a1_y1, a2_y1);
+            let x2 = N::min(a1_x2, a2_x2);
+            let y2 = N::min(a1_y2, a2_y2);
 
-            let intersection = (x2 - x1 + 1.) * (y2 - y1 + 1.);
+            let intersection = (x2 - x1 + N::one()) * (y2 - y1 + N::one());
             let iou = intersection / (area1 + area2 - intersection);
 
-            iou_matrix[[i, j]] = 1. - iou;
+            iou_matrix[[i, j]] = 1. - iou.to_f64().unwrap_or(0.0);
         }
     }
 
-    return iou_matrix;
+    iou_matrix
 }
 /// Calculates the intersection over union (IoU) distance between two sets of bounding boxes.
 /// This function uses rayon to parallelize the computation, which can be faster than the
@@ -82,7 +86,10 @@ pub fn iou_distance(boxes1: &Array2<f64>, boxes2: &Array2<f64>) -> Array2<f64> {
 /// let iou = iou_distance(&boxes1, &boxes2);
 /// assert_eq!(iou, array![[0.6086956521739131, 0.967741935483871],[0.967741935483871, 0.6086956521739131]]);
 /// ```
-pub fn parallel_iou_distance(boxes1: &Array2<f64>, boxes2: &Array2<f64>) -> Array2<f64> {
+pub fn parallel_iou_distance<N>(boxes1: &Array2<N>, boxes2: &Array2<N>) -> Array2<f64>
+where
+    N: Num + Float + Sync,
+{
     let num_boxes1 = boxes1.nrows();
     let num_boxes2 = boxes2.nrows();
 
@@ -94,27 +101,27 @@ pub fn parallel_iou_distance(boxes1: &Array2<f64>, boxes2: &Array2<f64>) -> Arra
         let a1_y1 = a1[1];
         let a1_x2 = a1[2];
         let a1_y2 = a1[3];
-        let area1 = (a1_x2 - a1_x1 + 1.) * (a1_y2 - a1_y1 + 1.);
+        let area1 = (a1_x2 - a1_x1 + N::one()) * (a1_y2 - a1_y1 + N::one());
         row.iter_mut().zip(boxes2.rows()).for_each(|(d, box2)| {
             let a2_x1 = box2[0];
             let a2_y1 = box2[1];
             let a2_x2 = box2[2];
             let a2_y2 = box2[3];
-            let area2 = (a2_x2 - a2_x1 + 1.) * (a2_y2 - a2_y1 + 1.);
+            let area2 = (a2_x2 - a2_x1 + N::one()) * (a2_y2 - a2_y1 + N::one());
 
-            let x1 = f64::max(a1_x1, a2_x1);
-            let y1 = f64::max(a1_y1, a2_y1);
-            let x2 = f64::min(a1_x2, a2_x2);
-            let y2 = f64::min(a1_y2, a2_y2);
+            let x1 = N::max(a1_x1, a2_x1);
+            let y1 = N::max(a1_y1, a2_y1);
+            let x2 = N::min(a1_x2, a2_x2);
+            let y2 = N::min(a1_y2, a2_y2);
             if x2 < x1 || y2 < y1 {
                 *d = 0.0;
             }
 
-            let intersection = (x2 - x1 + 1.0) * (y2 - y1 + 1.0);
+            let intersection = (x2 - x1 + N::one()) * (y2 - y1 + N::one());
 
             let iou = intersection / (area1 + area2 - intersection);
 
-            *d = 1.0 - iou;
+            *d = 1.0 - iou.to_f64().unwrap_or(0.0);
         });
     });
 

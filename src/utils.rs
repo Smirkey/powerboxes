@@ -1,4 +1,5 @@
 use ndarray::{ArrayBase, Dim, OwnedRepr};
+use num_traits::{Float, Num};
 use numpy::{IntoPyArray, PyArray, PyArrayDyn};
 use pyo3::prelude::*;
 
@@ -19,9 +20,12 @@ pub fn numpy_to_array<T: numpy::Element, D: ndarray::Dimension>(
     return array;
 }
 
-pub fn preprocess_array(
-    array: &PyArrayDyn<f64>,
-) -> Result<ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>, PyErr> {
+pub fn preprocess_array<N>(
+    array: &PyArrayDyn<N>,
+) -> Result<ArrayBase<OwnedRepr<N>, Dim<[usize; 2]>>, PyErr>
+where
+    N: Num + Float + numpy::Element,
+{
     let array = numpy_to_array(array);
 
     let array_shape = array.shape();
