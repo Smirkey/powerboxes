@@ -1,5 +1,5 @@
 use codspeed_criterion_compat::{black_box, criterion_group, criterion_main, Criterion};
-use ndarray::{arr2, Array2};
+use ndarray::Array2;
 use powerboxesrs::giou::{giou_distance, parallel_giou_distance};
 use powerboxesrs::iou::{iou_distance, parallel_iou_distance};
 

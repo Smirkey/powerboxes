@@ -1,5 +1,5 @@
 use ndarray::{Array1, Array2, Axis, Zip};
-use num_traits::{Float, Num};
+use num_traits::{Float, Num, ToPrimitive};
 pub enum BoxFormat {
     XYXY,
     XYWH,
@@ -30,7 +30,7 @@ pub enum BoxFormat {
 /// ```
 pub fn box_areas<N>(boxes: &Array2<N>) -> Array1<N>
 where
-    N: Num + Float,
+    N: Num + PartialEq + ToPrimitive + Copy,
 {
     let num_boxes = boxes.nrows();
     let mut areas = Array1::<N>::zeros(num_boxes);
@@ -41,7 +41,8 @@ where
         let y1 = box1[1];
         let x2 = box1[2];
         let y2 = box1[3];
-        *area = (x2 - x1 + N::one()) * (y2 - y1 + N::one());
+        let area_ = (x2 - x1 + N::one()) * (y2 - y1 + N::one());
+        *area = area_;
     });
 
     return areas;
@@ -72,7 +73,7 @@ where
 /// ```
 pub fn parallel_box_areas<N>(boxes: &Array2<N>) -> Array1<N>
 where
-    N: Num + Float + Send + Sync,
+    N: Num + PartialEq + ToPrimitive + Clone + Send + Sync + Copy,
 {
     let num_boxes = boxes.nrows();
     let mut areas = Array1::<N>::zeros(num_boxes);
@@ -114,7 +115,7 @@ where
 /// ```
 pub fn remove_small_boxes<N>(boxes: &Array2<N>, min_size: f64) -> Array2<N>
 where
-    N: Num + Float,
+    N: Num + PartialEq + ToPrimitive + Clone + Copy,
 {
     let areas = box_areas(boxes);
     let keep: Vec<usize> = areas
@@ -160,7 +161,7 @@ where
 /// ```
 pub fn box_convert<N>(boxes: &Array2<N>, in_fmt: &BoxFormat, out_fmt: &BoxFormat) -> Array2<N>
 where
-    N: Num + Float,
+    N: Num + PartialEq + ToPrimitive + Clone + Copy,
 {
     let num_boxes: usize = boxes.nrows();
     let mut converted_boxes = Array2::<N>::zeros((num_boxes, 4));
@@ -183,8 +184,8 @@ where
                 let y1 = box2[1];
                 let x2 = box2[2];
                 let y2 = box2[3];
-                box1[0] = (x1 + x2) / N::from(2).unwrap();
-                box1[1] = (y1 + y2) / N::from(2).unwrap();
+                box1[0] = (x1 + x2) / (N::one() + N::one());
+                box1[1] = (y1 + y2) / (N::one() + N::one());
                 box1[2] = x2 - x1;
                 box1[3] = y2 - y1;
             }
@@ -203,8 +204,8 @@ where
                 let y1 = box2[1];
                 let w = box2[2];
                 let h = box2[3];
-                box1[0] = x1 + w / N::from(2).unwrap();
-                box1[1] = y1 + h / N::from(2).unwrap();
+                box1[0] = x1 + w / (N::one() + N::one());
+                box1[1] = y1 + h / (N::one() + N::one());
                 box1[2] = w;
                 box1[3] = h;
             }
@@ -213,18 +214,18 @@ where
                 let cy = box2[1];
                 let w = box2[2];
                 let h = box2[3];
-                box1[0] = cx - w / N::from(2).unwrap();
-                box1[1] = cy - h / N::from(2).unwrap();
-                box1[2] = cx + w / N::from(2).unwrap();
-                box1[3] = cy + h / N::from(2).unwrap();
+                box1[0] = cx - w / (N::one() + N::one());
+                box1[1] = cy - h / (N::one() + N::one());
+                box1[2] = cx + w / (N::one() + N::one());
+                box1[3] = cy + h / (N::one() + N::one());
             }
             (BoxFormat::CXCYWH, BoxFormat::XYWH) => {
                 let cx = box2[0];
                 let cy = box2[1];
                 let w = box2[2];
                 let h = box2[3];
-                box1[0] = cx - w / N::from(2).unwrap();
-                box1[1] = cy - h / N::from(2).unwrap();
+                box1[0] = cx - w / (N::one() + N::one());
+                box1[1] = cy - h / (N::one() + N::one());
                 box1[2] = w;
                 box1[3] = h;
             }
@@ -275,7 +276,7 @@ pub fn parallel_box_convert<N>(
     out_fmt: &BoxFormat,
 ) -> Array2<N>
 where
-    N: Num + Float + Sync + Send,
+    N: Num + PartialEq + ToPrimitive + Clone + Sync + Send + Copy,
 {
     let mut converted_boxes = boxes.clone();
 
@@ -295,8 +296,8 @@ where
                 let y1 = box2[1];
                 let x2 = box2[2];
                 let y2 = box2[3];
-                box1[0] = (x1 + x2) / N::from(2).unwrap();
-                box1[1] = (y1 + y2) / N::from(2).unwrap();
+                box1[0] = (x1 + x2) / (N::one() + N::one());
+                box1[1] = (y1 + y2) / (N::one() + N::one());
                 box1[2] = x2 - x1;
                 box1[3] = y2 - y1;
             }
@@ -313,26 +314,26 @@ where
                 let y1 = box2[1];
                 let w = box2[2];
                 let h = box2[3];
-                box1[0] = x1 + w / N::from(2).unwrap();
-                box1[1] = y1 + h / N::from(2).unwrap();
+                box1[0] = x1 + w / (N::one() + N::one());
+                box1[1] = y1 + h / (N::one() + N::one());
             }
             (BoxFormat::CXCYWH, BoxFormat::XYXY) => {
                 let cx = box2[0];
                 let cy = box2[1];
                 let w = box2[2];
                 let h = box2[3];
-                box1[0] = cx - w / N::from(2).unwrap();
-                box1[1] = cy - h / N::from(2).unwrap();
-                box1[2] = cx + w / N::from(2).unwrap();
-                box1[3] = cy + h / N::from(2).unwrap();
+                box1[0] = cx - w / (N::one() + N::one());
+                box1[1] = cy - h / (N::one() + N::one());
+                box1[2] = cx + w / (N::one() + N::one());
+                box1[3] = cy + h / (N::one() + N::one());
             }
             (BoxFormat::CXCYWH, BoxFormat::XYWH) => {
                 let cx = box2[0];
                 let cy = box2[1];
                 let w = box2[2];
                 let h = box2[3];
-                box1[0] = cx - w / N::from(2).unwrap();
-                box1[1] = cy - h / N::from(2).unwrap();
+                box1[0] = cx - w / (N::one() + N::one());
+                box1[1] = cy - h / (N::one() + N::one());
             }
             (BoxFormat::XYXY, BoxFormat::XYXY) => (),
             (BoxFormat::XYWH, BoxFormat::XYWH) => (),
