@@ -40,15 +40,15 @@ def iou_distance(boxes1: np.ndarray, boxes2: np.ndarray) -> np.ndarray:
     if not isinstance(boxes1, np.ndarray) or not isinstance(boxes2, np.ndarray):
         raise TypeError("boxes1 and boxes2 must be numpy arrays")
     dtype_to_func = {
-        np.float64: iou_distance_f64,
-        np.float32: iou_distance_f32,
-        np.int64: iou_distance_i64,
-        np.int32: iou_distance_i32,
-        np.int16: iou_distance_i16,
-        np.uint64: iou_distance_u64,
-        np.uint32: iou_distance_u32,
-        np.uint16: iou_distance_u16,
-        np.uint8: iou_distance_u8,
+        np.dtype("float64"): iou_distance_f64,
+        np.dtype("float32"): iou_distance_f32,
+        np.dtype("int64"): iou_distance_i64,
+        np.dtype("int32"): iou_distance_i32,
+        np.dtype("int16"): iou_distance_i16,
+        np.dtype("uint64"): iou_distance_u64,
+        np.dtype("uint32"): iou_distance_u32,
+        np.dtype("uint16"): iou_distance_u16,
+        np.dtype("uint8"): iou_distance_u8,
     }
     if boxes1.dtype == boxes2.dtype:
         return dtype_to_func[boxes1.dtype](boxes1, boxes2)
@@ -71,15 +71,15 @@ def giou_distance(boxes1: np.ndarray, boxes2: np.ndarray) -> np.ndarray:
     if not isinstance(boxes1, np.ndarray) or not isinstance(boxes2, np.ndarray):
         raise TypeError("boxes1 and boxes2 must be numpy arrays")
     dtype_to_func = {
-        np.float64: giou_distance_f64,
-        np.float32: giou_distance_f32,
-        np.int64: giou_distance_i64,
-        np.int32: giou_distance_i32,
-        np.int16: giou_distance_i16,
-        np.uint64: giou_distance_u64,
-        np.uint32: giou_distance_u32,
-        np.uint16: giou_distance_u16,
-        np.uint8: giou_distance_u8,
+        np.dtype("float64"): giou_distance_f64,
+        np.dtype("float32"): giou_distance_f32,
+        np.dtype("int64"): giou_distance_i64,
+        np.dtype("int32"): giou_distance_i32,
+        np.dtype("int16"): giou_distance_i16,
+        np.dtype("uint64"): giou_distance_u64,
+        np.dtype("uint32"): giou_distance_u32,
+        np.dtype("uint16"): giou_distance_u16,
+        np.dtype("uint8"): giou_distance_u8,
     }
     if boxes1.dtype == boxes2.dtype:
         return dtype_to_func[boxes1.dtype](boxes1, boxes2)
