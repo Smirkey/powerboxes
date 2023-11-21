@@ -53,14 +53,10 @@ where
             let y1 = utils::max(a1_y1, a2_y1);
             let x2 = utils::min(a1_x2, a2_x2);
             let y2 = utils::min(a1_y2, a2_y2);
-            if x2 < x1 || y2 < y1 {
-                iou_matrix[[i, j]] = N::zero();
-            } else {
-                let intersection = (x2 - x1 + N::one()) * (y2 - y1 + N::one());
-                let iou = intersection / (area1 + area2 - intersection);
+            let intersection = (x2 - x1 + N::one()) * (y2 - y1 + N::one());
+            let iou = intersection / (area1 + area2 - intersection);
 
-                iou_matrix[[i, j]] = N::one() - iou;
-            }
+            iou_matrix[[i, j]] = N::one() - iou;
         }
     }
 
@@ -119,13 +115,12 @@ where
             let y2 = utils::min(a1_y2, a2_y2);
             if x2 < x1 || y2 < y1 {
                 *d = N::zero();
-            } else {
-                let intersection = (x2 - x1 + N::one()) * (y2 - y1 + N::one());
-
-                let iou = intersection / (area1 + area2 - intersection);
-
-                *d = N::one() - iou;
             }
+            let intersection = (x2 - x1 + N::one()) * (y2 - y1 + N::one());
+
+            let iou = intersection / (area1 + area2 - intersection);
+
+            *d = N::one() - iou;
         });
     });
 

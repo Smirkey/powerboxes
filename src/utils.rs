@@ -31,15 +31,6 @@ pub fn preprocess_array<N>(
 where
     N: Num + numpy::Element + Send,
 {
-    impl<'py> GenericArray2<'py> {
-        fn as_array<N>(&self) -> ArrayBase<OwnedRepr<N>, Dim<[usize; 2]>>
-        where
-            N: Num + numpy::Element + Send,
-        {
-            self.as_array().to_owned()
-        }
-    }
-
     // Usage:
     let array: ArrayBase<OwnedRepr<N>, Dim<[usize; 2]>> = unsafe { array.as_array().to_owned() };
     let array_shape = array.shape();

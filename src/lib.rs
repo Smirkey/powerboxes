@@ -53,6 +53,15 @@ fn powerboxesrs(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(iou_distance_u32, m)?)?;
     m.add_function(wrap_pyfunction!(iou_distance_u16, m)?)?;
     m.add_function(wrap_pyfunction!(iou_distance_u8, m)?)?;
+    m.add_function(wrap_pyfunction!(giou_distance_f64, m)?)?;
+    m.add_function(wrap_pyfunction!(giou_distance_f32, m)?)?;
+    m.add_function(wrap_pyfunction!(giou_distance_i64, m)?)?;
+    m.add_function(wrap_pyfunction!(giou_distance_i32, m)?)?;
+    m.add_function(wrap_pyfunction!(giou_distance_i16, m)?)?;
+    m.add_function(wrap_pyfunction!(giou_distance_u64, m)?)?;
+    m.add_function(wrap_pyfunction!(giou_distance_u32, m)?)?;
+    m.add_function(wrap_pyfunction!(giou_distance_u16, m)?)?;
+    m.add_function(wrap_pyfunction!(giou_distance_u8, m)?)?;
     m.add_function(wrap_pyfunction!(parallel_iou_distance, m)?)?;
     m.add_function(wrap_pyfunction!(remove_small_boxes, m)?)?;
     m.add_function(wrap_pyfunction!(boxes_areas, m)?)?;
@@ -168,6 +177,115 @@ fn iou_distance_u8(
     let boxes1 = preprocess_array(boxes1).unwrap();
     let boxes2 = preprocess_array(boxes2).unwrap();
     let iou = iou::iou_distance(&boxes1, &boxes2);
+    let iou_as_numpy = utils::array_to_numpy(_py, iou).unwrap();
+    return Ok(iou_as_numpy.to_owned());
+}
+
+#[pyfunction]
+fn giou_distance_f64(
+    _py: Python,
+    boxes1: &PyArray2<f64>,
+    boxes2: &PyArray2<f64>,
+) -> PyResult<Py<PyArray2<f64>>> {
+    let boxes1 = preprocess_array(boxes1).unwrap();
+    let boxes2 = preprocess_array(boxes2).unwrap();
+    let iou = iou::iou_distance(&boxes1, &boxes2);
+    let iou_as_numpy = utils::array_to_numpy(_py, iou).unwrap();
+    return Ok(iou_as_numpy.to_owned());
+}
+#[pyfunction]
+fn giou_distance_f32(
+    _py: Python,
+    boxes1: &PyArray2<f32>,
+    boxes2: &PyArray2<f32>,
+) -> PyResult<Py<PyArray2<f32>>> {
+    let boxes1 = preprocess_array(boxes1).unwrap();
+    let boxes2 = preprocess_array(boxes2).unwrap();
+    let iou = giou::giou_distance(&boxes1, &boxes2);
+    let iou_as_numpy = utils::array_to_numpy(_py, iou).unwrap();
+    return Ok(iou_as_numpy.to_owned());
+}
+#[pyfunction]
+fn giou_distance_i64(
+    _py: Python,
+    boxes1: &PyArray2<i64>,
+    boxes2: &PyArray2<i64>,
+) -> PyResult<Py<PyArray2<i64>>> {
+    let boxes1 = preprocess_array(boxes1).unwrap();
+    let boxes2 = preprocess_array(boxes2).unwrap();
+    let iou = giou::giou_distance(&boxes1, &boxes2);
+    let iou_as_numpy = utils::array_to_numpy(_py, iou).unwrap();
+    return Ok(iou_as_numpy.to_owned());
+}
+#[pyfunction]
+fn giou_distance_i32(
+    _py: Python,
+    boxes1: &PyArray2<i32>,
+    boxes2: &PyArray2<i32>,
+) -> PyResult<Py<PyArray2<i32>>> {
+    let boxes1 = preprocess_array(boxes1).unwrap();
+    let boxes2 = preprocess_array(boxes2).unwrap();
+    let iou = giou::giou_distance(&boxes1, &boxes2);
+    let iou_as_numpy = utils::array_to_numpy(_py, iou).unwrap();
+    return Ok(iou_as_numpy.to_owned());
+}
+#[pyfunction]
+fn giou_distance_i16(
+    _py: Python,
+    boxes1: &PyArray2<i16>,
+    boxes2: &PyArray2<i16>,
+) -> PyResult<Py<PyArray2<i16>>> {
+    let boxes1 = preprocess_array(boxes1).unwrap();
+    let boxes2 = preprocess_array(boxes2).unwrap();
+    let iou = giou::giou_distance(&boxes1, &boxes2);
+    let iou_as_numpy = utils::array_to_numpy(_py, iou).unwrap();
+    return Ok(iou_as_numpy.to_owned());
+}
+#[pyfunction]
+fn giou_distance_u64(
+    _py: Python,
+    boxes1: &PyArray2<u64>,
+    boxes2: &PyArray2<u64>,
+) -> PyResult<Py<PyArray2<u64>>> {
+    let boxes1 = preprocess_array(boxes1).unwrap();
+    let boxes2 = preprocess_array(boxes2).unwrap();
+    let iou = giou::giou_distance(&boxes1, &boxes2);
+    let iou_as_numpy = utils::array_to_numpy(_py, iou).unwrap();
+    return Ok(iou_as_numpy.to_owned());
+}
+#[pyfunction]
+fn giou_distance_u32(
+    _py: Python,
+    boxes1: &PyArray2<u32>,
+    boxes2: &PyArray2<u32>,
+) -> PyResult<Py<PyArray2<u32>>> {
+    let boxes1 = preprocess_array(boxes1).unwrap();
+    let boxes2 = preprocess_array(boxes2).unwrap();
+    let iou = giou::giou_distance(&boxes1, &boxes2);
+    let iou_as_numpy = utils::array_to_numpy(_py, iou).unwrap();
+    return Ok(iou_as_numpy.to_owned());
+}
+#[pyfunction]
+fn giou_distance_u16(
+    _py: Python,
+    boxes1: &PyArray2<u16>,
+    boxes2: &PyArray2<u16>,
+) -> PyResult<Py<PyArray2<u16>>> {
+    let boxes1 = preprocess_array(boxes1).unwrap();
+    let boxes2 = preprocess_array(boxes2).unwrap();
+    let iou = giou::giou_distance(&boxes1, &boxes2);
+    let iou_as_numpy = utils::array_to_numpy(_py, iou).unwrap();
+    return Ok(iou_as_numpy.to_owned());
+}
+#[pyfunction]
+fn giou_distance_u8(
+    _py: Python,
+    boxes1: &PyArray2<u8>,
+    boxes2: &PyArray2<u8>,
+) -> PyResult<Py<PyArray2<u8>>> {
+    let boxes1 = preprocess_array(boxes1).unwrap();
+    let boxes2 = preprocess_array(boxes2).unwrap();
+    let iou = giou::giou_distance(&boxes1, &boxes2);
     let iou_as_numpy = utils::array_to_numpy(_py, iou).unwrap();
     return Ok(iou_as_numpy.to_owned());
 }
