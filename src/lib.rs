@@ -37,22 +37,139 @@ pub mod giou;
 pub mod iou;
 mod utils;
 
-use ndarray::Dim;
 use num_traits::{Num, ToPrimitive};
-use numpy::{PyArray, PyArray2};
+use numpy::PyArray2;
 use pyo3::prelude::*;
 use utils::{preprocess_array, GenericArray2};
 
 #[pymodule]
 fn powerboxesrs(_py: Python, m: &PyModule) -> PyResult<()> {
-    m.add_function(wrap_pyfunction!(iou_distance, m)?)?;
+    m.add_function(wrap_pyfunction!(iou_distance_f64, m)?)?;
+    m.add_function(wrap_pyfunction!(iou_distance_f32, m)?)?;
+    m.add_function(wrap_pyfunction!(iou_distance_i64, m)?)?;
+    m.add_function(wrap_pyfunction!(iou_distance_i32, m)?)?;
+    m.add_function(wrap_pyfunction!(iou_distance_i16, m)?)?;
+    m.add_function(wrap_pyfunction!(iou_distance_u64, m)?)?;
+    m.add_function(wrap_pyfunction!(iou_distance_u32, m)?)?;
+    m.add_function(wrap_pyfunction!(iou_distance_u16, m)?)?;
+    m.add_function(wrap_pyfunction!(iou_distance_u8, m)?)?;
     m.add_function(wrap_pyfunction!(parallel_iou_distance, m)?)?;
     m.add_function(wrap_pyfunction!(remove_small_boxes, m)?)?;
     m.add_function(wrap_pyfunction!(boxes_areas, m)?)?;
     m.add_function(wrap_pyfunction!(box_convert, m)?)?;
     m.add_function(wrap_pyfunction!(giou_distance, m)?)?;
     m.add_function(wrap_pyfunction!(parallel_giou_distance, m)?)?;
+    m.add_function(wrap_pyfunction!(iou_distance_f64, m)?)?;
     Ok(())
+}
+
+#[pyfunction]
+fn iou_distance_f64(
+    _py: Python,
+    boxes1: &PyArray2<f64>,
+    boxes2: &PyArray2<f64>,
+) -> PyResult<Py<PyArray2<f64>>> {
+    let boxes1 = preprocess_array(boxes1).unwrap();
+    let boxes2 = preprocess_array(boxes2).unwrap();
+    let iou = iou::iou_distance(&boxes1, &boxes2);
+    let iou_as_numpy = utils::array_to_numpy(_py, iou).unwrap();
+    return Ok(iou_as_numpy.to_owned());
+}
+#[pyfunction]
+fn iou_distance_f32(
+    _py: Python,
+    boxes1: &PyArray2<f32>,
+    boxes2: &PyArray2<f32>,
+) -> PyResult<Py<PyArray2<f32>>> {
+    let boxes1 = preprocess_array(boxes1).unwrap();
+    let boxes2 = preprocess_array(boxes2).unwrap();
+    let iou = iou::iou_distance(&boxes1, &boxes2);
+    let iou_as_numpy = utils::array_to_numpy(_py, iou).unwrap();
+    return Ok(iou_as_numpy.to_owned());
+}
+#[pyfunction]
+fn iou_distance_i64(
+    _py: Python,
+    boxes1: &PyArray2<i64>,
+    boxes2: &PyArray2<i64>,
+) -> PyResult<Py<PyArray2<i64>>> {
+    let boxes1 = preprocess_array(boxes1).unwrap();
+    let boxes2 = preprocess_array(boxes2).unwrap();
+    let iou = iou::iou_distance(&boxes1, &boxes2);
+    let iou_as_numpy = utils::array_to_numpy(_py, iou).unwrap();
+    return Ok(iou_as_numpy.to_owned());
+}
+#[pyfunction]
+fn iou_distance_i32(
+    _py: Python,
+    boxes1: &PyArray2<i32>,
+    boxes2: &PyArray2<i32>,
+) -> PyResult<Py<PyArray2<i32>>> {
+    let boxes1 = preprocess_array(boxes1).unwrap();
+    let boxes2 = preprocess_array(boxes2).unwrap();
+    let iou = iou::iou_distance(&boxes1, &boxes2);
+    let iou_as_numpy = utils::array_to_numpy(_py, iou).unwrap();
+    return Ok(iou_as_numpy.to_owned());
+}
+#[pyfunction]
+fn iou_distance_i16(
+    _py: Python,
+    boxes1: &PyArray2<i16>,
+    boxes2: &PyArray2<i16>,
+) -> PyResult<Py<PyArray2<i16>>> {
+    let boxes1 = preprocess_array(boxes1).unwrap();
+    let boxes2 = preprocess_array(boxes2).unwrap();
+    let iou = iou::iou_distance(&boxes1, &boxes2);
+    let iou_as_numpy = utils::array_to_numpy(_py, iou).unwrap();
+    return Ok(iou_as_numpy.to_owned());
+}
+#[pyfunction]
+fn iou_distance_u64(
+    _py: Python,
+    boxes1: &PyArray2<u64>,
+    boxes2: &PyArray2<u64>,
+) -> PyResult<Py<PyArray2<u64>>> {
+    let boxes1 = preprocess_array(boxes1).unwrap();
+    let boxes2 = preprocess_array(boxes2).unwrap();
+    let iou = iou::iou_distance(&boxes1, &boxes2);
+    let iou_as_numpy = utils::array_to_numpy(_py, iou).unwrap();
+    return Ok(iou_as_numpy.to_owned());
+}
+#[pyfunction]
+fn iou_distance_u32(
+    _py: Python,
+    boxes1: &PyArray2<u32>,
+    boxes2: &PyArray2<u32>,
+) -> PyResult<Py<PyArray2<u32>>> {
+    let boxes1 = preprocess_array(boxes1).unwrap();
+    let boxes2 = preprocess_array(boxes2).unwrap();
+    let iou = iou::iou_distance(&boxes1, &boxes2);
+    let iou_as_numpy = utils::array_to_numpy(_py, iou).unwrap();
+    return Ok(iou_as_numpy.to_owned());
+}
+#[pyfunction]
+fn iou_distance_u16(
+    _py: Python,
+    boxes1: &PyArray2<u16>,
+    boxes2: &PyArray2<u16>,
+) -> PyResult<Py<PyArray2<u16>>> {
+    let boxes1 = preprocess_array(boxes1).unwrap();
+    let boxes2 = preprocess_array(boxes2).unwrap();
+    let iou = iou::iou_distance(&boxes1, &boxes2);
+    let iou_as_numpy = utils::array_to_numpy(_py, iou).unwrap();
+    return Ok(iou_as_numpy.to_owned());
+}
+#[pyfunction]
+fn iou_distance_u8(
+    _py: Python,
+    boxes1: &PyArray2<u8>,
+    boxes2: &PyArray2<u8>,
+) -> PyResult<Py<PyArray2<u8>>> {
+    let boxes1 = preprocess_array(boxes1).unwrap();
+    let boxes2 = preprocess_array(boxes2).unwrap();
+    let iou = iou::iou_distance(&boxes1, &boxes2);
+    let iou_as_numpy = utils::array_to_numpy(_py, iou).unwrap();
+    return Ok(iou_as_numpy.to_owned());
 }
 
 #[pyfunction]
@@ -170,68 +287,6 @@ fn parallel_giou_distance(
         }
         (GenericArray2::U8(boxes1), GenericArray2::U8(boxes2)) => {
             return Ok(compute_giou_distance(_py, &boxes1, &boxes2).unwrap());
-        }
-        _ => {
-            return Err(pyo3::exceptions::PyValueError::new_err(
-                "Invalid input format, check that the input arrays are of the same type",
-            ))
-        }
-    }
-}
-
-#[pyfunction]
-fn iou_distance(
-    _py: Python,
-    boxes1: GenericArray2,
-    boxes2: GenericArray2,
-) -> PyResult<Py<pyo3::PyAny>> {
-    fn compute_iou_distance<T>(
-        _py: Python,
-        boxes1: &PyArray2<T>,
-        boxes2: &PyArray2<T>,
-    ) -> PyResult<Py<pyo3::PyAny>>
-    where
-        T: Num + numpy::Element + PartialOrd + ToPrimitive + Sync + Send + Copy,
-    {
-        let boxes1 = preprocess_array(boxes1).unwrap();
-        let boxes2 = preprocess_array(boxes2).unwrap();
-
-        let iou = iou::iou_distance(&boxes1, &boxes2);
-
-        let iou_as_numpy = utils::array_to_numpy(_py, iou).unwrap().to_object(_py);
-
-        return Ok(iou_as_numpy);
-    }
-    match (boxes1, boxes2) {
-        (GenericArray2::F64(boxes1), GenericArray2::F64(boxes2)) => {
-            return Ok(compute_iou_distance(_py, &boxes1, &boxes2).unwrap());
-        }
-        (GenericArray2::F32(boxes1), GenericArray2::F32(boxes2)) => {
-            return Ok(compute_iou_distance(_py, &boxes1, &boxes2).unwrap());
-        }
-        (GenericArray2::I64(boxes1), GenericArray2::I64(boxes2)) => {
-            return Ok(compute_iou_distance(_py, &boxes1, &boxes2).unwrap());
-        }
-        (GenericArray2::I32(boxes1), GenericArray2::I32(boxes2)) => {
-            return Ok(compute_iou_distance(_py, &boxes1, &boxes2).unwrap());
-        }
-        (GenericArray2::I16(boxes1), GenericArray2::I16(boxes2)) => {
-            return Ok(compute_iou_distance(_py, &boxes1, &boxes2).unwrap());
-        }
-        (GenericArray2::I8(boxes1), GenericArray2::I8(boxes2)) => {
-            return Ok(compute_iou_distance(_py, &boxes1, &boxes2).unwrap());
-        }
-        (GenericArray2::U64(boxes1), GenericArray2::U64(boxes2)) => {
-            return Ok(compute_iou_distance(_py, &boxes1, &boxes2).unwrap());
-        }
-        (GenericArray2::U32(boxes1), GenericArray2::U32(boxes2)) => {
-            return Ok(compute_iou_distance(_py, &boxes1, &boxes2).unwrap());
-        }
-        (GenericArray2::U16(boxes1), GenericArray2::U16(boxes2)) => {
-            return Ok(compute_iou_distance(_py, &boxes1, &boxes2).unwrap());
-        }
-        (GenericArray2::U8(boxes1), GenericArray2::U8(boxes2)) => {
-            return Ok(compute_iou_distance(_py, &boxes1, &boxes2).unwrap());
         }
         _ => {
             return Err(pyo3::exceptions::PyValueError::new_err(

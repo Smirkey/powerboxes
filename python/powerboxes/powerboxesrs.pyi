@@ -27,17 +27,6 @@ def boxes_areas(boxes: np.ndarray) -> np.ndarray:
         np.ndarray: 1d array of areas
     """
 
-def iou_distance(boxes1: np.ndarray, boxes2: np.ndarray) -> np.ndarray:
-    """Computes pairwise box iou distances.
-
-    Args:
-        boxes1: 2d array of boxes in xyxy format
-        boxes2: 2d array of boxes in xyxy format
-
-    Returns:
-        np.ndarray: 2d matrix of pairwise distances
-    """
-
 def parallel_iou_distance(boxes1: np.ndarray, boxes2: np.ndarray) -> np.ndarray:
     """Computes pairwise box iou distances, in parallel.
 
