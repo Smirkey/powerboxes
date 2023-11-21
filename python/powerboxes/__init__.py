@@ -33,7 +33,11 @@ def iou_distance(boxes1: np.ndarray, boxes2: np.ndarray) -> np.ndarray:
     Args:
         boxes1: 2d array of boxes in xyxy format
         boxes2: 2d array of boxes in xyxy format
-
+    
+    Raises:
+        TypeError: If the provided inputs are not numpy arrays
+        ValueError: if both inputs don't share the same dtype
+    
     Returns:
         np.ndarray: 2d matrix of pairwise distances
     """
@@ -64,7 +68,11 @@ def giou_distance(boxes1: np.ndarray, boxes2: np.ndarray) -> np.ndarray:
     Args:
         boxes1: 2d array of boxes in xyxy format
         boxes2: 2d array of boxes in xyxy format
-
+    
+    Raises:
+        TypeError: If the provided inputs are not numpy arrays
+        ValueError: if both inputs don't share the same dtype
+    
     Returns:
         np.ndarray: 2d matrix of pairwise distances
     """
