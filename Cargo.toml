@@ -16,6 +16,7 @@ crate-type = ["lib"]
 
 [dependencies]
 ndarray = { version = "0.15.6", features = ["rayon"] }
+num-traits = "0.2.17"
 numpy = "0.20.0"
 pyo3 = "0.20.0"
 rayon = "1.8.0"

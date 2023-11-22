@@ -1,29 +1,24 @@
 use ndarray::{ArrayBase, Dim, OwnedRepr};
-use numpy::{IntoPyArray, PyArray, PyArrayDyn};
+use num_traits::Num;
+use numpy::{IntoPyArray, PyArray, PyArray2};
 use pyo3::prelude::*;
 
 pub fn array_to_numpy<T: numpy::Element, D: ndarray::Dimension>(
     py: Python,
     array: ArrayBase<OwnedRepr<T>, D>,
 ) -> PyResult<&PyArray<T, D>> {
-    let numpy_array = array.into_pyarray(py);
-
+    let numpy_array: &PyArray<T, D> = array.into_pyarray(py);
     return Ok(numpy_array);
 }
 
-pub fn numpy_to_array<T: numpy::Element, D: ndarray::Dimension>(
-    numpy_array: &PyArray<T, D>,
-) -> ArrayBase<OwnedRepr<T>, D> {
-    let array = unsafe { numpy_array.as_array().to_owned() };
-
-    return array;
-}
-
-pub fn preprocess_array(
-    array: &PyArrayDyn<f64>,
-) -> Result<ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>, PyErr> {
-    let array = numpy_to_array(array);
-
+pub fn preprocess_array<N>(
+    array: &PyArray2<N>,
+) -> Result<ArrayBase<OwnedRepr<N>, Dim<[usize; 2]>>, PyErr>
+where
+    N: Num + numpy::Element + Send,
+{
+    // Usage:
+    let array: ArrayBase<OwnedRepr<N>, Dim<[usize; 2]>> = unsafe { array.as_array().to_owned() };
     let array_shape = array.shape();
 
     if array_shape[1] != 4 {
@@ -47,11 +42,32 @@ pub fn preprocess_array(
     return Ok(array);
 }
 
+pub fn min<N>(a: N, b: N) -> N
+where
+    N: Num + PartialOrd,
+{
+    if a < b {
+        return a;
+    } else {
+        return b;
+    }
+}
+
+pub fn max<N>(a: N, b: N) -> N
+where
+    N: Num + PartialOrd,
+{
+    if a > b {
+        return a;
+    } else {
+        return b;
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
-    use ndarray::{ArrayBase, IxDyn};
-    use numpy::{PyArray, PyArrayDyn};
+    use ndarray::ArrayBase;
 
     #[test]
     fn test_array_to_numpy() {
@@ -65,19 +81,10 @@ mod tests {
     }
 
     #[test]
-    fn test_numpy_to_array() {
-        Python::with_gil(|python| {
-            let array = PyArray::<f64, _>::zeros(python, [2, 3], false);
-            let result = numpy_to_array(&array);
-            assert_eq!(result.shape(), &[2, 3]);
-        });
-    }
-
-    #[test]
     fn test_preprocess_array() {
         Python::with_gil(|python| {
-            let array = PyArrayDyn::<f64>::zeros(python, IxDyn(&[2, 4]), false);
-            let result = preprocess_array(&array);
+            let array = PyArray2::<f32>::zeros(python, [2, 4], false);
+            let result = preprocess_array::<f32>(array);
             assert!(result.is_ok());
             let unwrapped_result = result.unwrap();
             assert_eq!(unwrapped_result.shape(), &[2, 4]);
@@ -86,9 +93,27 @@ mod tests {
     #[test]
     fn test_preprocess_array_bad_shape() {
         Python::with_gil(|python| {
-            let array = PyArrayDyn::<f64>::zeros(python, IxDyn(&[2, 3]), false);
-            let result = preprocess_array(&array);
+            let array = PyArray2::<f32>::zeros(python, [2, 16], false);
+            let result = preprocess_array::<f32>(array);
             assert!(result.is_err());
         });
+    }
+    #[test]
+    fn test_min() {
+        assert_eq!(min(1, 2), 1);
+        assert_eq!(min(2, 1), 1);
+        assert_eq!(min(2, 2), 2);
+        assert_eq!(min(1., 2.), 1.);
+        assert_eq!(min(2., 1.), 1.);
+        assert_eq!(min(2., 2.), 2.);
+    }
+    #[test]
+    fn test_max() {
+        assert_eq!(max(1, 2), 2);
+        assert_eq!(max(2, 1), 2);
+        assert_eq!(max(2, 2), 2);
+        assert_eq!(max(1., 2.), 2.);
+        assert_eq!(max(2., 1.), 2.);
+        assert_eq!(max(2., 2.), 2.);
     }
 }
