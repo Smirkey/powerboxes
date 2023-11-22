@@ -474,6 +474,7 @@ dependencies = [
  "codspeed-criterion-compat",
  "criterion",
  "ndarray",
+ "num-traits",
  "numpy",
  "pyo3",
  "rayon",

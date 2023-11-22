@@ -1,6 +1,5 @@
-use ndarray::Array2;
-use ndarray::{Array1, Axis, Zip};
-
+use ndarray::{Array1, Array2, Axis, Zip};
+use num_traits::{Num, ToPrimitive};
 pub enum BoxFormat {
     XYXY,
     XYWH,
@@ -29,9 +28,12 @@ pub enum BoxFormat {
 ///
 /// assert_eq!(areas, array![9., 121.]);
 /// ```
-pub fn box_areas(boxes: &Array2<f64>) -> Array1<f64> {
+pub fn box_areas<N>(boxes: &Array2<N>) -> Array1<N>
+where
+    N: Num + PartialEq + ToPrimitive + Copy,
+{
     let num_boxes = boxes.nrows();
-    let mut areas = Array1::<f64>::zeros(num_boxes);
+    let mut areas = Array1::<N>::zeros(num_boxes);
 
     Zip::indexed(&mut areas).for_each(|i, area| {
         let box1 = boxes.row(i);
@@ -39,7 +41,8 @@ pub fn box_areas(boxes: &Array2<f64>) -> Array1<f64> {
         let y1 = box1[1];
         let x2 = box1[2];
         let y2 = box1[3];
-        *area = (x2 - x1 + 1.) * (y2 - y1 + 1.);
+        let area_ = (x2 - x1 + N::one()) * (y2 - y1 + N::one());
+        *area = area_;
     });
 
     return areas;
@@ -68,9 +71,12 @@ pub fn box_areas(boxes: &Array2<f64>) -> Array1<f64> {
 ///
 /// assert_eq!(areas, array![9., 121.]);
 /// ```
-pub fn parallel_box_areas(boxes: &Array2<f64>) -> Array1<f64> {
+pub fn parallel_box_areas<N>(boxes: &Array2<N>) -> Array1<N>
+where
+    N: Num + PartialEq + ToPrimitive + Clone + Send + Sync + Copy,
+{
     let num_boxes = boxes.nrows();
-    let mut areas = Array1::<f64>::zeros(num_boxes);
+    let mut areas = Array1::<N>::zeros(num_boxes);
 
     Zip::indexed(&mut areas).par_for_each(|i, area| {
         let box1 = boxes.row(i);
@@ -78,7 +84,7 @@ pub fn parallel_box_areas(boxes: &Array2<f64>) -> Array1<f64> {
         let y1 = box1[1];
         let x2 = box1[2];
         let y2 = box1[3];
-        *area = (x2 - x1 + 1.) * (y2 - y1 + 1.);
+        *area = (x2 - x1 + N::one()) * (y2 - y1 + N::one());
     });
 
     return areas;
@@ -107,11 +113,14 @@ pub fn parallel_box_areas(boxes: &Array2<f64>) -> Array1<f64> {
 ///
 /// assert_eq!(result, array![[0., 0., 10., 10.]]);
 /// ```
-pub fn remove_small_boxes(boxes: &Array2<f64>, min_size: f64) -> Array2<f64> {
+pub fn remove_small_boxes<N>(boxes: &Array2<N>, min_size: f64) -> Array2<N>
+where
+    N: Num + PartialEq + ToPrimitive + Clone + Copy,
+{
     let areas = box_areas(boxes);
     let keep: Vec<usize> = areas
         .indexed_iter()
-        .filter(|(_, &area)| area >= min_size)
+        .filter(|(_, &area)| area.to_f64().unwrap() >= min_size)
         .map(|(index, _)| index)
         .collect();
     return boxes.select(Axis(0), &keep);
@@ -150,9 +159,12 @@ pub fn remove_small_boxes(boxes: &Array2<f64>, min_size: f64) -> Array2<f64> {
 /// let output = box_convert(&boxes, &in_fmt, &out_fmt);
 /// assert_eq!(output, expected_output);
 /// ```
-pub fn box_convert(boxes: &Array2<f64>, in_fmt: &BoxFormat, out_fmt: &BoxFormat) -> Array2<f64> {
+pub fn box_convert<N>(boxes: &Array2<N>, in_fmt: &BoxFormat, out_fmt: &BoxFormat) -> Array2<N>
+where
+    N: Num + PartialEq + ToPrimitive + Clone + Copy,
+{
     let num_boxes: usize = boxes.nrows();
-    let mut converted_boxes = Array2::<f64>::zeros((num_boxes, 4));
+    let mut converted_boxes = Array2::<N>::zeros((num_boxes, 4));
 
     Zip::indexed(converted_boxes.rows_mut()).for_each(|i, mut box1| {
         let box2 = boxes.row(i);
@@ -172,8 +184,8 @@ pub fn box_convert(boxes: &Array2<f64>, in_fmt: &BoxFormat, out_fmt: &BoxFormat)
                 let y1 = box2[1];
                 let x2 = box2[2];
                 let y2 = box2[3];
-                box1[0] = (x1 + x2) / 2.;
-                box1[1] = (y1 + y2) / 2.;
+                box1[0] = (x1 + x2) / (N::one() + N::one());
+                box1[1] = (y1 + y2) / (N::one() + N::one());
                 box1[2] = x2 - x1;
                 box1[3] = y2 - y1;
             }
@@ -192,8 +204,8 @@ pub fn box_convert(boxes: &Array2<f64>, in_fmt: &BoxFormat, out_fmt: &BoxFormat)
                 let y1 = box2[1];
                 let w = box2[2];
                 let h = box2[3];
-                box1[0] = x1 + w / 2.;
-                box1[1] = y1 + h / 2.;
+                box1[0] = x1 + w / (N::one() + N::one());
+                box1[1] = y1 + h / (N::one() + N::one());
                 box1[2] = w;
                 box1[3] = h;
             }
@@ -202,18 +214,18 @@ pub fn box_convert(boxes: &Array2<f64>, in_fmt: &BoxFormat, out_fmt: &BoxFormat)
                 let cy = box2[1];
                 let w = box2[2];
                 let h = box2[3];
-                box1[0] = cx - w / 2.;
-                box1[1] = cy - h / 2.;
-                box1[2] = cx + w / 2.;
-                box1[3] = cy + h / 2.;
+                box1[0] = cx - w / (N::one() + N::one());
+                box1[1] = cy - h / (N::one() + N::one());
+                box1[2] = cx + w / (N::one() + N::one());
+                box1[3] = cy + h / (N::one() + N::one());
             }
             (BoxFormat::CXCYWH, BoxFormat::XYWH) => {
                 let cx = box2[0];
                 let cy = box2[1];
                 let w = box2[2];
                 let h = box2[3];
-                box1[0] = cx - w / 2.;
-                box1[1] = cy - h / 2.;
+                box1[0] = cx - w / (N::one() + N::one());
+                box1[1] = cy - h / (N::one() + N::one());
                 box1[2] = w;
                 box1[3] = h;
             }
@@ -258,11 +270,14 @@ pub fn box_convert(boxes: &Array2<f64>, in_fmt: &BoxFormat, out_fmt: &BoxFormat)
 /// let output = parallel_box_convert(&boxes, &in_fmt, &out_fmt);
 /// assert_eq!(expected_output, output);
 /// ```
-pub fn parallel_box_convert(
-    boxes: &Array2<f64>,
+pub fn parallel_box_convert<N>(
+    boxes: &Array2<N>,
     in_fmt: &BoxFormat,
     out_fmt: &BoxFormat,
-) -> Array2<f64> {
+) -> Array2<N>
+where
+    N: Num + PartialEq + ToPrimitive + Clone + Sync + Send + Copy,
+{
     let mut converted_boxes = boxes.clone();
 
     Zip::indexed(converted_boxes.rows_mut()).par_for_each(|i, mut box1| {
@@ -281,8 +296,8 @@ pub fn parallel_box_convert(
                 let y1 = box2[1];
                 let x2 = box2[2];
                 let y2 = box2[3];
-                box1[0] = (x1 + x2) / 2.;
-                box1[1] = (y1 + y2) / 2.;
+                box1[0] = (x1 + x2) / (N::one() + N::one());
+                box1[1] = (y1 + y2) / (N::one() + N::one());
                 box1[2] = x2 - x1;
                 box1[3] = y2 - y1;
             }
@@ -299,26 +314,26 @@ pub fn parallel_box_convert(
                 let y1 = box2[1];
                 let w = box2[2];
                 let h = box2[3];
-                box1[0] = x1 + w / 2.;
-                box1[1] = y1 + h / 2.;
+                box1[0] = x1 + w / (N::one() + N::one());
+                box1[1] = y1 + h / (N::one() + N::one());
             }
             (BoxFormat::CXCYWH, BoxFormat::XYXY) => {
                 let cx = box2[0];
                 let cy = box2[1];
                 let w = box2[2];
                 let h = box2[3];
-                box1[0] = cx - w / 2.;
-                box1[1] = cy - h / 2.;
-                box1[2] = cx + w / 2.;
-                box1[3] = cy + h / 2.;
+                box1[0] = cx - w / (N::one() + N::one());
+                box1[1] = cy - h / (N::one() + N::one());
+                box1[2] = cx + w / (N::one() + N::one());
+                box1[3] = cy + h / (N::one() + N::one());
             }
             (BoxFormat::CXCYWH, BoxFormat::XYWH) => {
                 let cx = box2[0];
                 let cy = box2[1];
                 let w = box2[2];
                 let h = box2[3];
-                box1[0] = cx - w / 2.;
-                box1[1] = cy - h / 2.;
+                box1[0] = cx - w / (N::one() + N::one());
+                box1[1] = cy - h / (N::one() + N::one());
             }
             (BoxFormat::XYXY, BoxFormat::XYXY) => (),
             (BoxFormat::XYWH, BoxFormat::XYWH) => (),

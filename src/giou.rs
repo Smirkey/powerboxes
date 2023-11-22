@@ -1,5 +1,7 @@
 use ndarray::{Array2, Zip};
+use num_traits::{Num, ToPrimitive};
 
+use crate::{boxes, utils};
 /// Computes the Generalized Intersection over Union (GIOU) distance between two sets of bounding boxes.
 /// # Arguments
 ///
@@ -29,11 +31,16 @@ use ndarray::{Array2, Zip};
 /// assert_eq!(giou[[1, 1]], 1.020555218446602);
 /// assert_eq!(giou[[1, 2]], 0.);
 /// ```
-pub fn giou_distance(boxes1: &Array2<f64>, boxes2: &Array2<f64>) -> Array2<f64> {
+pub fn giou_distance<N>(boxes1: &Array2<N>, boxes2: &Array2<N>) -> Array2<N>
+where
+    N: Num + PartialOrd + ToPrimitive + Copy,
+{
     let num_boxes1 = boxes1.nrows();
     let num_boxes2 = boxes2.nrows();
 
-    let mut giou_matrix = Array2::<f64>::zeros((num_boxes1, num_boxes2));
+    let mut giou_matrix = Array2::<N>::zeros((num_boxes1, num_boxes2));
+    let areas_boxes1 = boxes::box_areas(&boxes1);
+    let areas_boxes2 = boxes::box_areas(&boxes2);
 
     for i in 0..num_boxes1 {
         let a1 = boxes1.row(i);
@@ -42,7 +49,7 @@ pub fn giou_distance(boxes1: &Array2<f64>, boxes2: &Array2<f64>) -> Array2<f64> 
         let a1_x2 = a1[2];
         let a1_y2 = a1[3];
 
-        let area1 = (a1_x2 - a1_x1 + 1.) * (a1_y2 - a1_y1 + 1.);
+        let area1 = areas_boxes1[i];
 
         for j in 0..num_boxes2 {
             let a2 = boxes2.row(j);
@@ -50,29 +57,29 @@ pub fn giou_distance(boxes1: &Array2<f64>, boxes2: &Array2<f64>) -> Array2<f64> 
             let a2_y1 = a2[1];
             let a2_x2 = a2[2];
             let a2_y2 = a2[3];
-            let area2 = (a2_x2 - a2_x1 + 1.) * (a2_y2 - a2_y1 + 1.);
+            let area2 = areas_boxes2[j];
 
-            let x1 = f64::max(a1_x1, a2_x1);
-            let y1 = f64::max(a1_y1, a2_y1);
-            let x2 = f64::min(a1_x2, a2_x2);
-            let y2 = f64::min(a1_y2, a2_y2);
+            let x1 = utils::max(a1_x1, a2_x1);
+            let y1 = utils::max(a1_y1, a2_y1);
+            let x2 = utils::min(a1_x2, a2_x2);
+            let y2 = utils::min(a1_y2, a2_y2);
 
-            let intersection = (x2 - x1 + 1.) * (y2 - y1 + 1.);
+            let intersection = (x2 - x1 + N::one()) * (y2 - y1 + N::one());
             let union = area1 + area2 - intersection;
             let iou = intersection / union;
 
             // Calculate the enclosing box (C) coordinates
-            let c_x1 = f64::min(a1_x1, a2_x1);
-            let c_y1 = f64::min(a1_y1, a2_y1);
-            let c_x2 = f64::max(a1_x2, a2_x2);
-            let c_y2 = f64::max(a1_y2, a2_y2);
+            let c_x1 = utils::min(a1_x1, a2_x1);
+            let c_y1 = utils::min(a1_y1, a2_y1);
+            let c_x2 = utils::max(a1_x2, a2_x2);
+            let c_y2 = utils::max(a1_y2, a2_y2);
 
             // Calculate the area of the enclosing box (C)
-            let c_area = (c_x2 - c_x1 + 1.) * (c_y2 - c_y1 + 1.);
+            let c_area = (c_x2 - c_x1 + N::one()) * (c_y2 - c_y1 + N::one());
 
             let giou = iou - ((c_area - union) / c_area);
 
-            giou_matrix[[i, j]] = 1. - giou;
+            giou_matrix[[i, j]] = N::one() - giou;
         }
     }
 
@@ -109,48 +116,54 @@ pub fn giou_distance(boxes1: &Array2<f64>, boxes2: &Array2<f64>) -> Array2<f64> 
 /// assert_eq!(giou[[1, 1]], 1.020555218446602);
 /// assert_eq!(giou[[1, 2]], 0.);
 /// ```
-pub fn parallel_giou_distance(boxes1: &Array2<f64>, boxes2: &Array2<f64>) -> Array2<f64> {
+pub fn parallel_giou_distance<N>(boxes1: &Array2<N>, boxes2: &Array2<N>) -> Array2<N>
+where
+    N: Num + PartialOrd + ToPrimitive + Copy + Sync + Send,
+{
     let num_boxes1 = boxes1.nrows();
     let num_boxes2 = boxes2.nrows();
 
-    let mut giou_matrix = Array2::<f64>::zeros((num_boxes1, num_boxes2));
-
+    let mut giou_matrix = Array2::<N>::zeros((num_boxes1, num_boxes2));
+    let areas_boxes1 = boxes::parallel_box_areas(&boxes1);
+    let areas_boxes2 = boxes::parallel_box_areas(&boxes2);
     Zip::indexed(giou_matrix.rows_mut()).par_for_each(|i, mut row| {
         let a1 = boxes1.row(i);
         let a1_x1 = a1[0];
         let a1_y1 = a1[1];
         let a1_x2 = a1[2];
         let a1_y2 = a1[3];
-        let area1 = (a1_x2 - a1_x1 + 1.) * (a1_y2 - a1_y1 + 1.);
-        row.iter_mut().zip(boxes2.rows()).for_each(|(d, box2)| {
-            let a2_x1 = box2[0];
-            let a2_y1 = box2[1];
-            let a2_x2 = box2[2];
-            let a2_y2 = box2[3];
-            let area2 = (a2_x2 - a2_x1 + 1.) * (a2_y2 - a2_y1 + 1.);
+        let area1 = areas_boxes1[i];
+        row.indexed_iter_mut()
+            .zip(boxes2.rows())
+            .for_each(|((j, d), box2)| {
+                let a2_x1 = box2[0];
+                let a2_y1 = box2[1];
+                let a2_x2 = box2[2];
+                let a2_y2 = box2[3];
+                let area2 = areas_boxes2[j];
 
-            let x1 = f64::max(a1_x1, a2_x1);
-            let y1 = f64::max(a1_y1, a2_y1);
-            let x2 = f64::min(a1_x2, a2_x2);
-            let y2 = f64::min(a1_y2, a2_y2);
+                let x1 = utils::max(a1_x1, a2_x1);
+                let y1 = utils::max(a1_y1, a2_y1);
+                let x2 = utils::min(a1_x2, a2_x2);
+                let y2 = utils::min(a1_y2, a2_y2);
 
-            let intersection = (x2 - x1 + 1.) * (y2 - y1 + 1.);
-            let union = area1 + area2 - intersection;
-            let iou = intersection / union;
+                let intersection = (x2 - x1 + N::one()) * (y2 - y1 + N::one());
+                let union = area1 + area2 - intersection;
+                let iou = intersection / union;
 
-            // Calculate the enclosing box (C) coordinates
-            let c_x1 = f64::min(a1_x1, a2_x1);
-            let c_y1 = f64::min(a1_y1, a2_y1);
-            let c_x2 = f64::max(a1_x2, a2_x2);
-            let c_y2 = f64::max(a1_y2, a2_y2);
+                // Calculate the enclosing box (C) coordinates
+                let c_x1 = utils::min(a1_x1, a2_x1);
+                let c_y1 = utils::min(a1_y1, a2_y1);
+                let c_x2 = utils::max(a1_x2, a2_x2);
+                let c_y2 = utils::max(a1_y2, a2_y2);
 
-            // Calculate the area of the enclosing box (C)
-            let c_area = (c_x2 - c_x1 + 1.) * (c_y2 - c_y1 + 1.);
+                // Calculate the area of the enclosing box (C)
+                let c_area = (c_x2 - c_x1 + N::one()) * (c_y2 - c_y1 + N::one());
 
-            let giou = iou - ((c_area - union) / c_area);
+                let giou = iou - ((c_area - union) / c_area);
 
-            *d = 1.0 - giou;
-        });
+                *d = N::one() - giou;
+            });
     });
 
     giou_matrix
