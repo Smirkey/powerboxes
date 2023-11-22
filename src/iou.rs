@@ -1,4 +1,4 @@
-use crate::utils;
+use crate::{boxes, utils};
 use ndarray::{Array2, Zip};
 use num_traits::{Num, ToPrimitive};
 
@@ -32,14 +32,15 @@ where
     let num_boxes2 = boxes2.nrows();
 
     let mut iou_matrix = Array2::<N>::zeros((num_boxes1, num_boxes2));
-
+    let areas_boxes1 = boxes::box_areas(&boxes1);
+    let areas_boxes2 = boxes::box_areas(&boxes2);
     for i in 0..num_boxes1 {
         let a1 = boxes1.row(i);
         let a1_x1 = a1[0];
         let a1_y1 = a1[1];
         let a1_x2 = a1[2];
         let a1_y2 = a1[3];
-        let area1 = (a1_x2 - a1_x1 + N::one()) * (a1_y2 - a1_y1 + N::one());
+        let area1 = areas_boxes1[i];
 
         for j in 0..num_boxes2 {
             let a2 = boxes2.row(j);
@@ -47,7 +48,7 @@ where
             let a2_y1 = a2[1];
             let a2_x2 = a2[2];
             let a2_y2 = a2[3];
-            let area2 = (a2_x2 - a2_x1 + N::one()) * (a2_y2 - a2_y1 + N::one());
+            let area2 = areas_boxes2[j];
 
             let x1 = utils::max(a1_x1, a2_x1);
             let y1 = utils::max(a1_y1, a2_y1);
@@ -94,34 +95,37 @@ where
     let num_boxes2 = boxes2.nrows();
 
     let mut iou_matrix = Array2::<N>::zeros((num_boxes1, num_boxes2));
-
+    let areas_boxes1 = boxes::parallel_box_areas(&boxes1);
+    let areas_boxes2 = boxes::parallel_box_areas(&boxes2);
     Zip::indexed(iou_matrix.rows_mut()).par_for_each(|i, mut row| {
         let a1 = boxes1.row(i);
         let a1_x1 = a1[0];
         let a1_y1 = a1[1];
         let a1_x2 = a1[2];
         let a1_y2 = a1[3];
-        let area1 = (a1_x2 - a1_x1 + N::one()) * (a1_y2 - a1_y1 + N::one());
-        row.iter_mut().zip(boxes2.rows()).for_each(|(d, box2)| {
-            let a2_x1 = box2[0];
-            let a2_y1 = box2[1];
-            let a2_x2 = box2[2];
-            let a2_y2 = box2[3];
-            let area2 = (a2_x2 - a2_x1 + N::one()) * (a2_y2 - a2_y1 + N::one());
+        let area1 = areas_boxes1[i];
+        row.indexed_iter_mut()
+            .zip(boxes2.rows())
+            .for_each(|((j, d), box2)| {
+                let a2_x1 = box2[0];
+                let a2_y1 = box2[1];
+                let a2_x2 = box2[2];
+                let a2_y2 = box2[3];
+                let area2 = areas_boxes2[j];
 
-            let x1 = utils::max(a1_x1, a2_x1);
-            let y1 = utils::max(a1_y1, a2_y1);
-            let x2 = utils::min(a1_x2, a2_x2);
-            let y2 = utils::min(a1_y2, a2_y2);
-            if x2 < x1 || y2 < y1 {
-                *d = N::zero();
-            }
-            let intersection = (x2 - x1 + N::one()) * (y2 - y1 + N::one());
+                let x1 = utils::max(a1_x1, a2_x1);
+                let y1 = utils::max(a1_y1, a2_y1);
+                let x2 = utils::min(a1_x2, a2_x2);
+                let y2 = utils::min(a1_y2, a2_y2);
+                if x2 < x1 || y2 < y1 {
+                    *d = N::zero();
+                }
+                let intersection = (x2 - x1 + N::one()) * (y2 - y1 + N::one());
 
-            let iou = intersection / (area1 + area2 - intersection);
+                let iou = intersection / (area1 + area2 - intersection);
 
-            *d = N::one() - iou;
-        });
+                *d = N::one() - iou;
+            });
     });
 
     return iou_matrix;
