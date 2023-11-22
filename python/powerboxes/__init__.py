@@ -6,6 +6,7 @@ from .powerboxesrs import (
     box_areas_i16,
     box_areas_i32,
     box_areas_i64,
+    box_areas_u8,
     box_areas_u16,
     box_areas_u32,
     box_areas_u64,
@@ -85,6 +86,7 @@ _dtype_to_func_box_areas = {
     np.dtype("uint64"): box_areas_u64,
     np.dtype("uint32"): box_areas_u32,
     np.dtype("uint16"): box_areas_u16,
+    np.dtype("uint8"): box_areas_u8,
 }
 _dtype_to_func_remove_small_boxes = {
     np.dtype("float64"): remove_small_boxes_f64,
@@ -142,7 +144,7 @@ _dtype_to_func_iou_distance = {
     np.dtype("uint8"): iou_distance_u8,
 }
 BOXES_NOT_SAME_TYPE = "boxes1 and boxes2 must have the same dtype"
-BOXES_NOT_NP_ARRAY = "boxes1 and boxes2 must be numpy arrays"
+BOXES_NOT_NP_ARRAY = "boxes must be numpy array"
 __version__ = "0.1.2"
 
 
@@ -252,7 +254,7 @@ def remove_small_boxes(boxes: np.ndarray, min_size) -> np.ndarray:
         np.ndarray: 2d array of boxes in xyxy format
     """
     if not isinstance(boxes, np.ndarray):
-        raise TypeError("boxes must be numpy array")
+        raise TypeError(BOXES_NOT_NP_ARRAY)
     return _dtype_to_func_remove_small_boxes[boxes.dtype](boxes, min_size)
 
 
@@ -266,7 +268,7 @@ def boxes_areas(boxes: np.ndarray) -> np.ndarray:
         np.ndarray: 1d array of areas
     """
     if not isinstance(boxes, np.ndarray):
-        raise TypeError("boxes must be numpy array")
+        raise TypeError(BOXES_NOT_NP_ARRAY)
     return _dtype_to_func_box_areas[boxes.dtype](boxes)
 
 
@@ -287,7 +289,7 @@ def box_convert(boxes: np.ndarray, in_fmt: str, out_fmt: str) -> np.ndarray:
         np.ndarray: boxes in out_fmt
     """
     if not isinstance(boxes, np.ndarray):
-        raise TypeError("boxes must be numpy array")
+        raise TypeError(BOXES_NOT_NP_ARRAY)
     return _dtype_to_func_box_convert[boxes.dtype](boxes, in_fmt, out_fmt)
 
 
