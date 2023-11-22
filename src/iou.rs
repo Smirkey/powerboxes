@@ -95,8 +95,8 @@ where
     let num_boxes2 = boxes2.nrows();
 
     let mut iou_matrix = Array2::<N>::zeros((num_boxes1, num_boxes2));
-    let areas_boxes1 = boxes::parallel_box_areas(&boxes1);
-    let areas_boxes2 = boxes::parallel_box_areas(&boxes2);
+    let areas_boxes1 = boxes::box_areas(&boxes1);
+    let areas_boxes2 = boxes::box_areas(&boxes2);
     Zip::indexed(iou_matrix.rows_mut()).par_for_each(|i, mut row| {
         let a1 = boxes1.row(i);
         let a1_x1 = a1[0];
