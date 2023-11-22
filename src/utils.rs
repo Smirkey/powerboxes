@@ -3,20 +3,6 @@ use num_traits::Num;
 use numpy::{IntoPyArray, PyArray, PyArray2};
 use pyo3::prelude::*;
 
-#[derive(FromPyObject)]
-pub enum GenericArray2<'py> {
-    U8(&'py PyArray2<u8>),
-    U16(&'py PyArray2<u16>),
-    U32(&'py PyArray2<u32>),
-    U64(&'py PyArray2<u64>),
-    I8(&'py PyArray2<i8>),
-    I16(&'py PyArray2<i16>),
-    I32(&'py PyArray2<i32>),
-    I64(&'py PyArray2<i64>),
-    F32(&'py PyArray2<f32>),
-    F64(&'py PyArray2<f64>),
-}
-
 pub fn array_to_numpy<T: numpy::Element, D: ndarray::Dimension>(
     py: Python,
     array: ArrayBase<OwnedRepr<T>, D>,

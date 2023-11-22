@@ -1,8 +1,24 @@
 import numpy as np
 
 from .powerboxesrs import (
-    box_convert,
-    boxes_areas,
+    box_areas_f32,
+    box_areas_f64,
+    box_areas_i16,
+    box_areas_i32,
+    box_areas_i64,
+    box_areas_u8,
+    box_areas_u16,
+    box_areas_u32,
+    box_areas_u64,
+    box_convert_f32,
+    box_convert_f64,
+    box_convert_i16,
+    box_convert_i32,
+    box_convert_i64,
+    box_convert_u8,
+    box_convert_u16,
+    box_convert_u32,
+    box_convert_u64,
     giou_distance_f32,
     giou_distance_f64,
     giou_distance_i16,
@@ -214,6 +230,63 @@ def remove_small_boxes(boxes: np.ndarray, min_size) -> np.ndarray:
         np.dtype("uint8"): remove_small_boxes_u8,
     }
     return dtype_to_func[boxes.dtype](boxes, min_size)
+
+
+def boxes_areas(boxes: np.ndarray) -> np.ndarray:
+    """Computes areas of boxes.
+
+    Args:
+        boxes: 2d array of boxes in xyxy format
+
+    Returns:
+        np.ndarray: 1d array of areas
+    """
+    if not isinstance(boxes, np.ndarray):
+        raise TypeError("boxes must be numpy array")
+    dtype_to_func = {
+        np.dtype("float64"): box_areas_f64,
+        np.dtype("float32"): box_areas_f32,
+        np.dtype("int64"): box_areas_i64,
+        np.dtype("int32"): box_areas_i32,
+        np.dtype("int16"): box_areas_i16,
+        np.dtype("uint64"): box_areas_u64,
+        np.dtype("uint32"): box_areas_u32,
+        np.dtype("uint16"): box_areas_u16,
+        np.dtype("uint8"): box_areas_u8,
+    }
+    return dtype_to_func[boxes.dtype](boxes)
+
+
+def box_convert(boxes: np.ndarray, in_fmt: str, out_fmt: str) -> np.ndarray:
+    """Converts boxes from one format to another.
+
+    Available formats are:
+        - 'xyxy': (xmin, ymin, xmax, ymax)
+        - 'xywh': (xmin, ymin, width, height)
+        - 'cxcywh': (center_x, center_y, width, height)
+
+    Args:
+        boxes: 2d array of boxes in in_fmt
+        in_fmt: format of input boxes
+        out_fmt: format of output boxes
+
+    Returns:
+        np.ndarray: boxes in out_fmt
+    """
+    if not isinstance(boxes, np.ndarray):
+        raise TypeError("boxes must be numpy array")
+    dtype_to_func = {
+        np.dtype("float64"): box_convert_f64,
+        np.dtype("float32"): box_convert_f32,
+        np.dtype("int64"): box_convert_i64,
+        np.dtype("int32"): box_convert_i32,
+        np.dtype("int16"): box_convert_i16,
+        np.dtype("uint64"): box_convert_u64,
+        np.dtype("uint32"): box_convert_u32,
+        np.dtype("uint16"): box_convert_u16,
+        np.dtype("uint8"): box_convert_u8,
+    }
+    return dtype_to_func[boxes.dtype](boxes, in_fmt, out_fmt)
 
 
 __all__ = [

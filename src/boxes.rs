@@ -1,5 +1,5 @@
 use ndarray::{Array1, Array2, Axis, Zip};
-use num_traits::{Float, Num, ToPrimitive};
+use num_traits::{Num, ToPrimitive};
 pub enum BoxFormat {
     XYXY,
     XYWH,
