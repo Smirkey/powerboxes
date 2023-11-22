@@ -145,7 +145,7 @@ _dtype_to_func_iou_distance = {
 }
 BOXES_NOT_SAME_TYPE = "boxes1 and boxes2 must have the same dtype"
 BOXES_NOT_NP_ARRAY = "boxes must be numpy array"
-__version__ = "0.1.2"
+__version__ = "0.1.3"
 
 
 def iou_distance(boxes1: np.ndarray, boxes2: np.ndarray) -> np.ndarray:
