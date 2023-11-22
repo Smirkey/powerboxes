@@ -6,7 +6,6 @@ from .powerboxesrs import (
     box_areas_i16,
     box_areas_i32,
     box_areas_i64,
-    box_areas_u8,
     box_areas_u16,
     box_areas_u32,
     box_areas_u64,
@@ -66,6 +65,86 @@ from .powerboxesrs import (
     remove_small_boxes_u64,
 )
 
+_dtype_to_func_box_convert = {
+    np.dtype("float64"): box_convert_f64,
+    np.dtype("float32"): box_convert_f32,
+    np.dtype("int64"): box_convert_i64,
+    np.dtype("int32"): box_convert_i32,
+    np.dtype("int16"): box_convert_i16,
+    np.dtype("uint64"): box_convert_u64,
+    np.dtype("uint32"): box_convert_u32,
+    np.dtype("uint16"): box_convert_u16,
+    np.dtype("uint8"): box_convert_u8,
+}
+_dtype_to_func_box_areas = {
+    np.dtype("float64"): box_areas_f64,
+    np.dtype("float32"): box_areas_f32,
+    np.dtype("int64"): box_areas_i64,
+    np.dtype("int32"): box_areas_i32,
+    np.dtype("int16"): box_areas_i16,
+    np.dtype("uint64"): box_areas_u64,
+    np.dtype("uint32"): box_areas_u32,
+    np.dtype("uint16"): box_areas_u16,
+}
+_dtype_to_func_remove_small_boxes = {
+    np.dtype("float64"): remove_small_boxes_f64,
+    np.dtype("float32"): remove_small_boxes_f32,
+    np.dtype("int64"): remove_small_boxes_i64,
+    np.dtype("int32"): remove_small_boxes_i32,
+    np.dtype("int16"): remove_small_boxes_i16,
+    np.dtype("uint64"): remove_small_boxes_u64,
+    np.dtype("uint32"): remove_small_boxes_u32,
+    np.dtype("uint16"): remove_small_boxes_u16,
+    np.dtype("uint8"): remove_small_boxes_u8,
+}
+_dtype_to_func_giou_distance = {
+    np.dtype("float64"): giou_distance_f64,
+    np.dtype("float32"): giou_distance_f32,
+    np.dtype("int64"): giou_distance_i64,
+    np.dtype("int32"): giou_distance_i32,
+    np.dtype("int16"): giou_distance_i16,
+    np.dtype("uint64"): giou_distance_u64,
+    np.dtype("uint32"): giou_distance_u32,
+    np.dtype("uint16"): giou_distance_u16,
+    np.dtype("uint8"): giou_distance_u8,
+}
+_dtype_to_func_parallel_giou_distance = {
+    np.dtype("float64"): parallel_giou_distance_f64,
+    np.dtype("float32"): parallel_giou_distance_f32,
+    np.dtype("int64"): parallel_giou_distance_i64,
+    np.dtype("int32"): parallel_giou_distance_i32,
+    np.dtype("int16"): parallel_giou_distance_i16,
+    np.dtype("uint64"): parallel_giou_distance_u64,
+    np.dtype("uint32"): parallel_giou_distance_u32,
+    np.dtype("uint16"): parallel_giou_distance_u16,
+    np.dtype("uint8"): parallel_giou_distance_u8,
+}
+_dtype_to_func_parallel_iou_distance = {
+    np.dtype("float64"): parallel_iou_distance_f64,
+    np.dtype("float32"): parallel_iou_distance_f32,
+    np.dtype("int64"): parallel_iou_distance_i64,
+    np.dtype("int32"): parallel_iou_distance_i32,
+    np.dtype("int16"): parallel_iou_distance_i16,
+    np.dtype("uint64"): parallel_iou_distance_u64,
+    np.dtype("uint32"): parallel_iou_distance_u32,
+    np.dtype("uint16"): parallel_iou_distance_u16,
+    np.dtype("uint8"): parallel_iou_distance_u8,
+}
+_dtype_to_func_iou_distance = {
+    np.dtype("float64"): iou_distance_f64,
+    np.dtype("float32"): iou_distance_f32,
+    np.dtype("int64"): iou_distance_i64,
+    np.dtype("int32"): iou_distance_i32,
+    np.dtype("int16"): iou_distance_i16,
+    np.dtype("uint64"): iou_distance_u64,
+    np.dtype("uint32"): iou_distance_u32,
+    np.dtype("uint16"): iou_distance_u16,
+    np.dtype("uint8"): iou_distance_u8,
+}
+BOXES_NOT_SAME_TYPE = "boxes1 and boxes2 must have the same dtype"
+BOXES_NOT_NP_ARRAY = "boxes1 and boxes2 must be numpy arrays"
+__version__ = "0.1.2"
+
 
 def iou_distance(boxes1: np.ndarray, boxes2: np.ndarray) -> np.ndarray:
     """Computes pairwise box iou distances.
@@ -82,22 +161,11 @@ def iou_distance(boxes1: np.ndarray, boxes2: np.ndarray) -> np.ndarray:
         np.ndarray: 2d matrix of pairwise distances
     """
     if not isinstance(boxes1, np.ndarray) or not isinstance(boxes2, np.ndarray):
-        raise TypeError("boxes1 and boxes2 must be numpy arrays")
-    dtype_to_func = {
-        np.dtype("float64"): iou_distance_f64,
-        np.dtype("float32"): iou_distance_f32,
-        np.dtype("int64"): iou_distance_i64,
-        np.dtype("int32"): iou_distance_i32,
-        np.dtype("int16"): iou_distance_i16,
-        np.dtype("uint64"): iou_distance_u64,
-        np.dtype("uint32"): iou_distance_u32,
-        np.dtype("uint16"): iou_distance_u16,
-        np.dtype("uint8"): iou_distance_u8,
-    }
+        raise TypeError(BOXES_NOT_NP_ARRAY)
     if boxes1.dtype == boxes2.dtype:
-        return dtype_to_func[boxes1.dtype](boxes1, boxes2)
+        return _dtype_to_func_iou_distance[boxes1.dtype](boxes1, boxes2)
     else:
-        raise ValueError("boxes1 and boxes2 must have the same dtype")
+        raise ValueError(BOXES_NOT_SAME_TYPE)
 
 
 def parallel_iou_distance(boxes1: np.ndarray, boxes2: np.ndarray) -> np.ndarray:
@@ -115,22 +183,11 @@ def parallel_iou_distance(boxes1: np.ndarray, boxes2: np.ndarray) -> np.ndarray:
         np.ndarray: 2d matrix of pairwise distances
     """
     if not isinstance(boxes1, np.ndarray) or not isinstance(boxes2, np.ndarray):
-        raise TypeError("boxes1 and boxes2 must be numpy arrays")
-    dtype_to_func = {
-        np.dtype("float64"): parallel_iou_distance_f64,
-        np.dtype("float32"): parallel_iou_distance_f32,
-        np.dtype("int64"): parallel_iou_distance_i64,
-        np.dtype("int32"): parallel_iou_distance_i32,
-        np.dtype("int16"): parallel_iou_distance_i16,
-        np.dtype("uint64"): parallel_iou_distance_u64,
-        np.dtype("uint32"): parallel_iou_distance_u32,
-        np.dtype("uint16"): parallel_iou_distance_u16,
-        np.dtype("uint8"): parallel_iou_distance_u8,
-    }
+        raise TypeError(BOXES_NOT_NP_ARRAY)
     if boxes1.dtype == boxes2.dtype:
-        return dtype_to_func[boxes1.dtype](boxes1, boxes2)
+        return _dtype_to_func_parallel_iou_distance[boxes1.dtype](boxes1, boxes2)
     else:
-        raise ValueError("boxes1 and boxes2 must have the same dtype")
+        raise ValueError(BOXES_NOT_SAME_TYPE)
 
 
 def parallel_giou_distance(boxes1: np.ndarray, boxes2: np.ndarray) -> np.ndarray:
@@ -150,22 +207,11 @@ def parallel_giou_distance(boxes1: np.ndarray, boxes2: np.ndarray) -> np.ndarray
         np.ndarray: 2d matrix of pairwise distances
     """
     if not isinstance(boxes1, np.ndarray) or not isinstance(boxes2, np.ndarray):
-        raise TypeError("boxes1 and boxes2 must be numpy arrays")
-    dtype_to_func = {
-        np.dtype("float64"): parallel_giou_distance_f64,
-        np.dtype("float32"): parallel_giou_distance_f32,
-        np.dtype("int64"): parallel_giou_distance_i64,
-        np.dtype("int32"): parallel_giou_distance_i32,
-        np.dtype("int16"): parallel_giou_distance_i16,
-        np.dtype("uint64"): parallel_giou_distance_u64,
-        np.dtype("uint32"): parallel_giou_distance_u32,
-        np.dtype("uint16"): parallel_giou_distance_u16,
-        np.dtype("uint8"): parallel_giou_distance_u8,
-    }
+        raise TypeError(BOXES_NOT_NP_ARRAY)
     if boxes1.dtype == boxes2.dtype:
-        return dtype_to_func[boxes1.dtype](boxes1, boxes2)
+        return _dtype_to_func_parallel_giou_distance[boxes1.dtype](boxes1, boxes2)
     else:
-        raise ValueError("boxes1 and boxes2 must have the same dtype")
+        raise ValueError(BOXES_NOT_SAME_TYPE)
 
 
 def giou_distance(boxes1: np.ndarray, boxes2: np.ndarray) -> np.ndarray:
@@ -185,22 +231,11 @@ def giou_distance(boxes1: np.ndarray, boxes2: np.ndarray) -> np.ndarray:
         np.ndarray: 2d matrix of pairwise distances
     """
     if not isinstance(boxes1, np.ndarray) or not isinstance(boxes2, np.ndarray):
-        raise TypeError("boxes1 and boxes2 must be numpy arrays")
-    dtype_to_func = {
-        np.dtype("float64"): giou_distance_f64,
-        np.dtype("float32"): giou_distance_f32,
-        np.dtype("int64"): giou_distance_i64,
-        np.dtype("int32"): giou_distance_i32,
-        np.dtype("int16"): giou_distance_i16,
-        np.dtype("uint64"): giou_distance_u64,
-        np.dtype("uint32"): giou_distance_u32,
-        np.dtype("uint16"): giou_distance_u16,
-        np.dtype("uint8"): giou_distance_u8,
-    }
+        raise TypeError(BOXES_NOT_NP_ARRAY)
     if boxes1.dtype == boxes2.dtype:
-        return dtype_to_func[boxes1.dtype](boxes1, boxes2)
+        return _dtype_to_func_giou_distance[boxes1.dtype](boxes1, boxes2)
     else:
-        raise ValueError("boxes1 and boxes2 must have the same dtype")
+        raise ValueError(BOXES_NOT_SAME_TYPE)
 
 
 def remove_small_boxes(boxes: np.ndarray, min_size) -> np.ndarray:
@@ -218,18 +253,7 @@ def remove_small_boxes(boxes: np.ndarray, min_size) -> np.ndarray:
     """
     if not isinstance(boxes, np.ndarray):
         raise TypeError("boxes must be numpy array")
-    dtype_to_func = {
-        np.dtype("float64"): remove_small_boxes_f64,
-        np.dtype("float32"): remove_small_boxes_f32,
-        np.dtype("int64"): remove_small_boxes_i64,
-        np.dtype("int32"): remove_small_boxes_i32,
-        np.dtype("int16"): remove_small_boxes_i16,
-        np.dtype("uint64"): remove_small_boxes_u64,
-        np.dtype("uint32"): remove_small_boxes_u32,
-        np.dtype("uint16"): remove_small_boxes_u16,
-        np.dtype("uint8"): remove_small_boxes_u8,
-    }
-    return dtype_to_func[boxes.dtype](boxes, min_size)
+    return _dtype_to_func_remove_small_boxes[boxes.dtype](boxes, min_size)
 
 
 def boxes_areas(boxes: np.ndarray) -> np.ndarray:
@@ -243,18 +267,7 @@ def boxes_areas(boxes: np.ndarray) -> np.ndarray:
     """
     if not isinstance(boxes, np.ndarray):
         raise TypeError("boxes must be numpy array")
-    dtype_to_func = {
-        np.dtype("float64"): box_areas_f64,
-        np.dtype("float32"): box_areas_f32,
-        np.dtype("int64"): box_areas_i64,
-        np.dtype("int32"): box_areas_i32,
-        np.dtype("int16"): box_areas_i16,
-        np.dtype("uint64"): box_areas_u64,
-        np.dtype("uint32"): box_areas_u32,
-        np.dtype("uint16"): box_areas_u16,
-        np.dtype("uint8"): box_areas_u8,
-    }
-    return dtype_to_func[boxes.dtype](boxes)
+    return _dtype_to_func_box_areas[boxes.dtype](boxes)
 
 
 def box_convert(boxes: np.ndarray, in_fmt: str, out_fmt: str) -> np.ndarray:
@@ -275,18 +288,7 @@ def box_convert(boxes: np.ndarray, in_fmt: str, out_fmt: str) -> np.ndarray:
     """
     if not isinstance(boxes, np.ndarray):
         raise TypeError("boxes must be numpy array")
-    dtype_to_func = {
-        np.dtype("float64"): box_convert_f64,
-        np.dtype("float32"): box_convert_f32,
-        np.dtype("int64"): box_convert_i64,
-        np.dtype("int32"): box_convert_i32,
-        np.dtype("int16"): box_convert_i16,
-        np.dtype("uint64"): box_convert_u64,
-        np.dtype("uint32"): box_convert_u32,
-        np.dtype("uint16"): box_convert_u16,
-        np.dtype("uint8"): box_convert_u8,
-    }
-    return dtype_to_func[boxes.dtype](boxes, in_fmt, out_fmt)
+    return _dtype_to_func_box_convert[boxes.dtype](boxes, in_fmt, out_fmt)
 
 
 __all__ = [
