@@ -39,6 +39,15 @@ from .powerboxesrs import (
     parallel_iou_distance_u16,
     parallel_iou_distance_u32,
     parallel_iou_distance_u64,
+    remove_small_boxes_f32,
+    remove_small_boxes_f64,
+    remove_small_boxes_i16,
+    remove_small_boxes_i32,
+    remove_small_boxes_i64,
+    remove_small_boxes_u8,
+    remove_small_boxes_u16,
+    remove_small_boxes_u32,
+    remove_small_boxes_u64,
 )
 
 
@@ -194,15 +203,15 @@ def remove_small_boxes(boxes: np.ndarray, min_size) -> np.ndarray:
     if not isinstance(boxes, np.ndarray):
         raise TypeError("boxes must be numpy array")
     dtype_to_func = {
-        np.dtype("float64"): giou_distance_f64,
-        np.dtype("float32"): giou_distance_f32,
-        np.dtype("int64"): giou_distance_i64,
-        np.dtype("int32"): giou_distance_i32,
-        np.dtype("int16"): giou_distance_i16,
-        np.dtype("uint64"): giou_distance_u64,
-        np.dtype("uint32"): giou_distance_u32,
-        np.dtype("uint16"): giou_distance_u16,
-        np.dtype("uint8"): giou_distance_u8,
+        np.dtype("float64"): remove_small_boxes_f64,
+        np.dtype("float32"): remove_small_boxes_f32,
+        np.dtype("int64"): remove_small_boxes_i64,
+        np.dtype("int32"): remove_small_boxes_i32,
+        np.dtype("int16"): remove_small_boxes_i16,
+        np.dtype("uint64"): remove_small_boxes_u64,
+        np.dtype("uint32"): remove_small_boxes_u32,
+        np.dtype("uint16"): remove_small_boxes_u16,
+        np.dtype("uint8"): remove_small_boxes_u8,
     }
     return dtype_to_func[boxes.dtype](boxes, min_size)
 

@@ -592,17 +592,6 @@ fn remove_small_boxes_i16(
     return Ok(filtered_boxes_as_numpy.to_owned());
 }
 #[pyfunction]
-fn remove_small_boxes_i8(
-    _py: Python,
-    boxes: &PyArray2<i8>,
-    min_size: f64,
-) -> PyResult<Py<PyArray2<i8>>> {
-    let boxes = preprocess_array(boxes).unwrap();
-    let filtered_boxes = boxes::remove_small_boxes(&boxes, min_size);
-    let filtered_boxes_as_numpy = utils::array_to_numpy(_py, filtered_boxes).unwrap();
-    return Ok(filtered_boxes_as_numpy.to_owned());
-}
-#[pyfunction]
 fn remove_small_boxes_u64(
     _py: Python,
     boxes: &PyArray2<u64>,
