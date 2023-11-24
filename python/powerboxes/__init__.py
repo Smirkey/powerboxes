@@ -172,5 +172,4 @@ __all__ = [
     "box_convert",
     "giou_distance",
     "parallel_giou_distance",
-    "iou_distance_f64",
 ]
