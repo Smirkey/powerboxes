@@ -28,12 +28,12 @@ pub enum BoxFormat {
 ///
 /// assert_eq!(areas, array![9., 121.]);
 /// ```
-pub fn box_areas<N>(boxes: &Array2<N>) -> Array1<N>
+pub fn box_areas<N>(boxes: &Array2<N>) -> Array1<f64>
 where
     N: Num + PartialEq + ToPrimitive + Copy,
 {
     let num_boxes = boxes.nrows();
-    let mut areas = Array1::<N>::zeros(num_boxes);
+    let mut areas = Array1::<f64>::zeros(num_boxes);
 
     Zip::indexed(&mut areas).for_each(|i, area| {
         let box1 = boxes.row(i);
@@ -41,8 +41,8 @@ where
         let y1 = box1[1];
         let x2 = box1[2];
         let y2 = box1[3];
-        let area_ = (x2 - x1 + N::one()) * (y2 - y1 + N::one());
-        *area = area_;
+        let area_ = (x2 - x1) * (y2 - y1);
+        *area = area_.to_f64().unwrap();
     });
 
     return areas;
@@ -69,14 +69,14 @@ where
 ///
 /// let areas = parallel_box_areas(&boxes);
 ///
-/// assert_eq!(areas, array![9., 121.]);
+/// assert_eq!(areas, array![4., 100.]);
 /// ```
-pub fn parallel_box_areas<N>(boxes: &Array2<N>) -> Array1<N>
+pub fn parallel_box_areas<N>(boxes: &Array2<N>) -> Array1<f64>
 where
     N: Num + PartialEq + ToPrimitive + Clone + Send + Sync + Copy,
 {
     let num_boxes = boxes.nrows();
-    let mut areas = Array1::<N>::zeros(num_boxes);
+    let mut areas = Array1::<f64>::zeros(num_boxes);
 
     Zip::indexed(&mut areas).par_for_each(|i, area| {
         let box1 = boxes.row(i);
@@ -84,7 +84,8 @@ where
         let y1 = box1[1];
         let x2 = box1[2];
         let y2 = box1[3];
-        *area = (x2 - x1 + N::one()) * (y2 - y1 + N::one());
+        let _area = (x2 - x1) * (y2 - y1);
+        *area = _area.to_f64().unwrap();
     });
 
     return areas;
@@ -490,7 +491,7 @@ mod tests {
         let boxes = array![[1., 2., 3., 4.]];
         let areas = box_areas(&boxes);
         let parallel_areas = parallel_box_areas(&boxes);
-        assert_eq!(areas, array![9.]);
+        assert_eq!(areas, array![4.]);
         assert_eq!(parallel_areas, areas);
     }
 
@@ -499,7 +500,7 @@ mod tests {
         let boxes = array![[1., 2., 3., 4.], [0., 0., 10., 10.]];
         let areas = box_areas(&boxes);
         let parallel_areas = parallel_box_areas(&boxes);
-        assert_eq!(areas, array![9., 121.]);
+        assert_eq!(areas, array![4., 100.]);
         assert_eq!(parallel_areas, areas);
     }
 
@@ -508,7 +509,7 @@ mod tests {
         let boxes = array![[1., 2., 1., 2.]];
         let areas = box_areas(&boxes);
         let parallel_areas = parallel_box_areas(&boxes);
-        assert_eq!(areas, array![1.]);
+        assert_eq!(areas, array![0.]);
         assert_eq!(parallel_areas, areas);
     }
 
@@ -517,7 +518,7 @@ mod tests {
         let boxes = array![[-1., -1., 1., 1.]];
         let areas = box_areas(&boxes);
         let parallel_areas = parallel_box_areas(&boxes);
-        assert_eq!(areas, array![9.]);
+        assert_eq!(areas, array![0.]);
         assert_eq!(parallel_areas, areas);
     }
 

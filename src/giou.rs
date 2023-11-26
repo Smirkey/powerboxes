@@ -25,20 +25,20 @@ use crate::{boxes, utils};
 ///
 /// assert_eq!(giou.shape(), &[2, 3]);
 /// assert_eq!(giou[[0, 0]], 0.);
-/// assert_eq!(giou[[0, 1]], 1.5948840131957898);
-/// assert_eq!(giou[[0, 2]], 1.3293605909992827);
-/// assert_eq!(giou[[1, 0]], 1.3293605909992827);
-/// assert_eq!(giou[[1, 1]], 1.020555218446602);
+/// assert_eq!(giou[[0, 1]], 1.68);
+/// assert_eq!(giou[[0, 2]], 1.778);
+/// assert_eq!(giou[[1, 0]], 1.778);
+/// assert_eq!(giou[[1, 1]], 1.0794);
 /// assert_eq!(giou[[1, 2]], 0.);
 /// ```
-pub fn giou_distance<N>(boxes1: &Array2<N>, boxes2: &Array2<N>) -> Array2<N>
+pub fn giou_distance<N>(boxes1: &Array2<N>, boxes2: &Array2<N>) -> Array2<f64>
 where
     N: Num + PartialOrd + ToPrimitive + Copy,
 {
     let num_boxes1 = boxes1.nrows();
     let num_boxes2 = boxes2.nrows();
 
-    let mut giou_matrix = Array2::<N>::zeros((num_boxes1, num_boxes2));
+    let mut giou_matrix = Array2::<f64>::zeros((num_boxes1, num_boxes2));
     let areas_boxes1 = boxes::box_areas(&boxes1);
     let areas_boxes2 = boxes::box_areas(&boxes2);
 
@@ -64,7 +64,8 @@ where
             let x2 = utils::min(a1_x2, a2_x2);
             let y2 = utils::min(a1_y2, a2_y2);
 
-            let intersection = (x2 - x1 + N::one()) * (y2 - y1 + N::one());
+            let intersection = (x2 - x1) * (y2 - y1);
+            let intersection = intersection.to_f64().unwrap();
             let union = area1 + area2 - intersection;
             let iou = intersection / union;
 
@@ -75,11 +76,11 @@ where
             let c_y2 = utils::max(a1_y2, a2_y2);
 
             // Calculate the area of the enclosing box (C)
-            let c_area = (c_x2 - c_x1 + N::one()) * (c_y2 - c_y1 + N::one());
-
+            let c_area = (c_x2 - c_x1) * (c_y2 - c_y1);
+            let c_area = c_area.to_f64().unwrap();
             let giou = iou - ((c_area - union) / c_area);
 
-            giou_matrix[[i, j]] = N::one() - giou;
+            giou_matrix[[i, j]] = 1.0 - giou;
         }
     }
 
@@ -116,14 +117,14 @@ where
 /// assert_eq!(giou[[1, 1]], 1.020555218446602);
 /// assert_eq!(giou[[1, 2]], 0.);
 /// ```
-pub fn parallel_giou_distance<N>(boxes1: &Array2<N>, boxes2: &Array2<N>) -> Array2<N>
+pub fn parallel_giou_distance<N>(boxes1: &Array2<N>, boxes2: &Array2<N>) -> Array2<f64>
 where
     N: Num + PartialOrd + ToPrimitive + Copy + Sync + Send,
 {
     let num_boxes1 = boxes1.nrows();
     let num_boxes2 = boxes2.nrows();
 
-    let mut giou_matrix = Array2::<N>::zeros((num_boxes1, num_boxes2));
+    let mut giou_matrix = Array2::<f64>::zeros((num_boxes1, num_boxes2));
     let areas_boxes1 = boxes::parallel_box_areas(&boxes1);
     let areas_boxes2 = boxes::parallel_box_areas(&boxes2);
     Zip::indexed(giou_matrix.rows_mut()).par_for_each(|i, mut row| {
@@ -147,7 +148,8 @@ where
                 let x2 = utils::min(a1_x2, a2_x2);
                 let y2 = utils::min(a1_y2, a2_y2);
 
-                let intersection = (x2 - x1 + N::one()) * (y2 - y1 + N::one());
+                let intersection = (x2 - x1) * (y2 - y1);
+                let intersection = intersection.to_f64().unwrap();
                 let union = area1 + area2 - intersection;
                 let iou = intersection / union;
 
@@ -158,11 +160,12 @@ where
                 let c_y2 = utils::max(a1_y2, a2_y2);
 
                 // Calculate the area of the enclosing box (C)
-                let c_area = (c_x2 - c_x1 + N::one()) * (c_y2 - c_y1 + N::one());
+                let c_area = (c_x2 - c_x1) * (c_y2 - c_y1);
+                let c_area = c_area.to_f64().unwrap();
 
                 let giou = iou - ((c_area - union) / c_area);
 
-                *d = N::one() - giou;
+                *d = 1.0 - giou;
             });
     });
 
