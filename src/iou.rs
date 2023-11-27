@@ -66,7 +66,11 @@ where
         iou_matrix.push(row);
     }
 
-    return Array2::from_shape_fn((num_boxes1, num_boxes2), |(i, j)| iou_matrix[i][j]);
+    return Array2::from_shape_vec(
+        (num_boxes1, num_boxes2),
+        iou_matrix.into_iter().flatten().collect(),
+    )
+    .unwrap();
 }
 /// Calculates the intersection over union (IoU) distance between two sets of bounding boxes.
 /// This function uses rayon to parallelize the computation, which can be faster than the
