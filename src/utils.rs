@@ -3,6 +3,10 @@ use num_traits::Num;
 use numpy::{IntoPyArray, PyArray, PyArray2};
 use pyo3::prelude::*;
 
+pub const EPS: f64 = 1e-16;
+pub const ONE: f64 = 1.0;
+pub const ZERO: f64 = 0.0;
+
 pub fn array_to_numpy<T: numpy::Element, D: ndarray::Dimension>(
     py: Python,
     array: ArrayBase<OwnedRepr<T>, D>,

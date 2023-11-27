@@ -36,7 +36,6 @@ where
     let mut giou_matrix = Array2::<f64>::zeros((num_boxes1, num_boxes2));
     let areas_boxes1 = boxes::box_areas(&boxes1);
     let areas_boxes2 = boxes::box_areas(&boxes2);
-
     for i in 0..num_boxes1 {
         let a1 = boxes1.row(i);
         let a1_x1 = a1[0];
@@ -59,12 +58,12 @@ where
             let x2 = utils::min(a1_x2, a2_x2);
             let y2 = utils::min(a1_y2, a2_y2);
             let (iou, union) = if x2 < x1 || y2 < y1 {
-                (0.0, area1 + area2)
+                (utils::ZERO, area1 + area2)
             } else {
                 let intersection = (x2 - x1) * (y2 - y1);
                 let intersection = intersection.to_f64().unwrap();
                 let intersection = utils::min(intersection, utils::min(area1, area2));
-                let union = area1 + area2 - intersection + 1e-16;
+                let union = area1 + area2 - intersection + utils::EPS;
                 (intersection / union, union)
             };
             // Calculate the enclosing box (C) coordinates
@@ -76,7 +75,7 @@ where
             let c_area = (c_x2 - c_x1) * (c_y2 - c_y1);
             let c_area = c_area.to_f64().unwrap();
             let giou = iou - ((c_area - union) / c_area);
-            giou_matrix[[i, j]] = 1.0 - giou;
+            giou_matrix[[i, j]] = utils::ONE - giou;
         }
     }
 
@@ -139,12 +138,12 @@ where
                 let x2 = utils::min(a1_x2, a2_x2);
                 let y2 = utils::min(a1_y2, a2_y2);
                 let (iou, union) = if x2 < x1 || y2 < y1 {
-                    (0.0, area1 + area2)
+                    (utils::ZERO, area1 + area2)
                 } else {
                     let intersection = (x2 - x1) * (y2 - y1);
                     let intersection = intersection.to_f64().unwrap();
                     let intersection = utils::min(intersection, utils::min(area1, area2));
-                    let union = area1 + area2 - intersection + 1e-16;
+                    let union = area1 + area2 - intersection + utils::EPS;
                     (intersection / union, union)
                 };
                 // Calculate the enclosing box (C) coordinates
@@ -157,7 +156,7 @@ where
                 let c_area = c_area.to_f64().unwrap();
                 let giou = iou - ((c_area - union) / c_area);
 
-                *d = 1.0 - giou;
+                *d = utils::ONE - giou;
             });
     });
 
