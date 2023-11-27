@@ -53,13 +53,13 @@ where
             let y2 = utils::min(a1_y2, a2_y2);
             if x2 < x1 || y2 < y1 {
                 iou_matrix[[i, j]] = utils::ONE;
-            } else {
-                let intersection = (x2 - x1) * (y2 - y1);
-                let intersection = intersection.to_f64().unwrap();
-                let intersection = utils::min(intersection, utils::min(area1, area2));
-                iou_matrix[[i, j]] =
-                    utils::ONE - (intersection / (area1 + area2 - intersection + utils::EPS));
+                continue;
             }
+            let intersection = (x2 - x1) * (y2 - y1);
+            let intersection = intersection.to_f64().unwrap();
+            let intersection = utils::min(intersection, utils::min(area1, area2));
+            iou_matrix[[i, j]] =
+                utils::ONE - (intersection / (area1 + area2 - intersection + utils::EPS));
         }
     }
 
