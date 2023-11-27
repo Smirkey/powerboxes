@@ -26,7 +26,7 @@ pub enum BoxFormat {
 ///
 /// let areas = box_areas(&boxes);
 ///
-/// assert_eq!(areas, array![9., 121.]);
+/// assert_eq!(areas, array![4., 100.]);
 /// ```
 pub fn box_areas<N>(boxes: &Array2<N>) -> Array1<f64>
 where
