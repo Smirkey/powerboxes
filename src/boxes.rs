@@ -121,7 +121,7 @@ where
     let areas = box_areas(boxes);
     let keep: Vec<usize> = areas
         .indexed_iter()
-        .filter(|(_, &area)| area.to_f64().unwrap() >= min_size)
+        .filter(|(_, &area)| area >= min_size)
         .map(|(index, _)| index)
         .collect();
     return boxes.select(Axis(0), &keep);
@@ -518,7 +518,7 @@ mod tests {
         let boxes = array![[-1., -1., 1., 1.]];
         let areas = box_areas(&boxes);
         let parallel_areas = parallel_box_areas(&boxes);
-        assert_eq!(areas, array![0.]);
+        assert_eq!(areas, array![4.]);
         assert_eq!(parallel_areas, areas);
     }
 

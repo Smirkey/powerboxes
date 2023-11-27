@@ -24,12 +24,7 @@ use crate::{boxes, utils};
 /// let giou = giou_distance(&boxes1, &boxes2);
 ///
 /// assert_eq!(giou.shape(), &[2, 3]);
-/// assert_eq!(giou[[0, 0]], 0.);
-/// assert_eq!(giou[[0, 1]], 1.68);
-/// assert_eq!(giou[[0, 2]], 1.778);
-/// assert_eq!(giou[[1, 0]], 1.778);
-/// assert_eq!(giou[[1, 1]], 1.0794);
-/// assert_eq!(giou[[1, 2]], 0.);
+/// assert_eq!(giou, array![[0., 1.6800000000000002, 1.7777777777777777], [1.7777777777777777, 1.0793650793650793, 0.]]);
 /// ```
 pub fn giou_distance<N>(boxes1: &Array2<N>, boxes2: &Array2<N>) -> Array2<f64>
 where
@@ -63,23 +58,24 @@ where
             let y1 = utils::max(a1_y1, a2_y1);
             let x2 = utils::min(a1_x2, a2_x2);
             let y2 = utils::min(a1_y2, a2_y2);
-
-            let intersection = (x2 - x1) * (y2 - y1);
-            let intersection = intersection.to_f64().unwrap();
-            let union = area1 + area2 - intersection;
-            let iou = intersection / union;
-
+            let (iou, union) = if x2 < x1 || y2 < y1 {
+                (0.0, area1 + area2)
+            } else {
+                let intersection = (x2 - x1) * (y2 - y1);
+                let intersection = intersection.to_f64().unwrap();
+                let intersection = utils::min(intersection, utils::min(area1, area2));
+                let union = area1 + area2 - intersection + 1e-16;
+                (intersection / union, union)
+            };
             // Calculate the enclosing box (C) coordinates
             let c_x1 = utils::min(a1_x1, a2_x1);
             let c_y1 = utils::min(a1_y1, a2_y1);
             let c_x2 = utils::max(a1_x2, a2_x2);
             let c_y2 = utils::max(a1_y2, a2_y2);
-
             // Calculate the area of the enclosing box (C)
             let c_area = (c_x2 - c_x1) * (c_y2 - c_y1);
             let c_area = c_area.to_f64().unwrap();
             let giou = iou - ((c_area - union) / c_area);
-
             giou_matrix[[i, j]] = 1.0 - giou;
         }
     }
@@ -110,12 +106,7 @@ where
 /// let giou = parallel_giou_distance(&boxes1, &boxes2);
 ///
 /// assert_eq!(giou.shape(), &[2, 3]);
-/// assert_eq!(giou[[0, 0]], 0.);
-/// assert_eq!(giou[[0, 1]], 1.5948840131957898);
-/// assert_eq!(giou[[0, 2]], 1.3293605909992827);
-/// assert_eq!(giou[[1, 0]], 1.3293605909992827);
-/// assert_eq!(giou[[1, 1]], 1.020555218446602);
-/// assert_eq!(giou[[1, 2]], 0.);
+/// assert_eq!(giou, array![[0., 1.6800000000000002, 1.7777777777777777], [1.7777777777777777, 1.0793650793650793, 0.]]);
 /// ```
 pub fn parallel_giou_distance<N>(boxes1: &Array2<N>, boxes2: &Array2<N>) -> Array2<f64>
 where
@@ -147,22 +138,23 @@ where
                 let y1 = utils::max(a1_y1, a2_y1);
                 let x2 = utils::min(a1_x2, a2_x2);
                 let y2 = utils::min(a1_y2, a2_y2);
-
-                let intersection = (x2 - x1) * (y2 - y1);
-                let intersection = intersection.to_f64().unwrap();
-                let union = area1 + area2 - intersection;
-                let iou = intersection / union;
-
+                let (iou, union) = if x2 < x1 || y2 < y1 {
+                    (0.0, area1 + area2)
+                } else {
+                    let intersection = (x2 - x1) * (y2 - y1);
+                    let intersection = intersection.to_f64().unwrap();
+                    let intersection = utils::min(intersection, utils::min(area1, area2));
+                    let union = area1 + area2 - intersection + 1e-16;
+                    (intersection / union, union)
+                };
                 // Calculate the enclosing box (C) coordinates
                 let c_x1 = utils::min(a1_x1, a2_x1);
                 let c_y1 = utils::min(a1_y1, a2_y1);
                 let c_x2 = utils::max(a1_x2, a2_x2);
                 let c_y2 = utils::max(a1_y2, a2_y2);
-
                 // Calculate the area of the enclosing box (C)
                 let c_area = (c_x2 - c_x1) * (c_y2 - c_y1);
                 let c_area = c_area.to_f64().unwrap();
-
                 let giou = iou - ((c_area - union) / c_area);
 
                 *d = 1.0 - giou;
@@ -185,10 +177,10 @@ mod tests {
 
         let giou_matrix = giou_distance(&boxes1, &boxes2);
         let parallel_giou_matrix = parallel_giou_distance(&boxes1, &boxes2);
-        assert_eq!(giou_matrix[[0, 0]], 1.0793650793650793);
-        assert_eq!(giou_matrix[[0, 1]], 1.3350888742593812);
-        assert_eq!(giou_matrix[[1, 0]], 0.688695652173913);
-        assert_eq!(giou_matrix[[1, 1]], 1.0793650793650793);
+        assert_eq!(giou_matrix[[0, 0]], 1.2611764705882353);
+        assert_eq!(giou_matrix[[0, 1]], 1.5);
+        assert_eq!(giou_matrix[[1, 0]], 0.8392857142857143);
+        assert_eq!(giou_matrix[[1, 1]], 1.2611764705882353);
         assert_eq!(giou_matrix, parallel_giou_matrix);
     }
 }

@@ -142,8 +142,8 @@ fn test_iou_distance() {
     let boxes2 = arr2(&[[1.0, 1.0, 3.0, 3.0]]);
     let iou_result = iou_distance(&boxes1, &boxes2);
     let parallel_iou_result = parallel_iou_distance(&boxes1, &boxes2);
-    assert_eq!(iou_result, arr2(&[[0.7142857142857143]]));
-    assert_eq!(parallel_iou_result, arr2(&[[0.7142857142857143]]));
+    assert_eq!(iou_result, arr2(&[[0.8571428571428572]]));
+    assert_eq!(parallel_iou_result, arr2(&[[0.8571428571428572]]));
 
     // Test case 2
     let boxes1 = arr2(&[[0.0, 0.0, 2.0, 2.0]]);
@@ -158,8 +158,8 @@ fn test_iou_distance() {
     let boxes2 = arr2(&[[1.0, 1.0, 3.0, 3.0]]);
     let iou_result = iou_distance(&boxes1, &boxes2);
     let parallel_iou_result = parallel_iou_distance(&boxes1, &boxes2);
-    assert_eq!(iou_result, arr2(&[[0.75]]));
-    assert_eq!(parallel_iou_result, arr2(&[[0.75]]));
+    assert_eq!(iou_result, arr2(&[[0.9375]]));
+    assert_eq!(parallel_iou_result, arr2(&[[0.9375]]));
 
     // Test case 4
     let boxes1 = arr2(&[[0.0, 0.0, 2.0, 2.0]]);
