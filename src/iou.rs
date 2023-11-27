@@ -31,19 +31,16 @@ where
     let num_boxes1 = boxes1.nrows();
     let num_boxes2 = boxes2.nrows();
 
-    // let mut iou_matrix = Array2::<f64>::zeros((num_boxes1, num_boxes2));
+    let mut iou_matrix = Array2::<f64>::zeros((num_boxes1, num_boxes2));
     let areas_boxes1 = boxes::box_areas(&boxes1);
     let areas_boxes2 = boxes::box_areas(&boxes2);
-    // Delay matrix initialization until needed
-    let mut iou_matrix: Vec<Vec<f64>> = Vec::with_capacity(num_boxes1);
-
     for (i, a1) in boxes1.outer_iter().enumerate() {
         let a1_x1 = a1[0];
         let a1_y1 = a1[1];
         let a1_x2 = a1[2];
         let a1_y2 = a1[3];
         let area1 = areas_boxes1[i];
-        let mut row: Vec<f64> = Vec::with_capacity(num_boxes2);
+
         for (j, a2) in boxes2.outer_iter().enumerate() {
             let a2_x1 = a2[0];
             let a2_y1 = a2[1];
@@ -55,22 +52,18 @@ where
             let x2 = utils::min(a1_x2, a2_x2);
             let y2 = utils::min(a1_y2, a2_y2);
             if x2 < x1 || y2 < y1 {
-                row.push(utils::ONE);
+                iou_matrix[[i, j]] = utils::ONE;
             } else {
                 let intersection = (x2 - x1) * (y2 - y1);
                 let intersection = intersection.to_f64().unwrap();
                 let intersection = utils::min(intersection, utils::min(area1, area2));
-                row.push(utils::ONE - (intersection / (area1 + area2 - intersection + utils::EPS)));
+                iou_matrix[[i, j]] =
+                    utils::ONE - (intersection / (area1 + area2 - intersection + utils::EPS));
             }
         }
-        iou_matrix.push(row);
     }
 
-    return Array2::from_shape_vec(
-        (num_boxes1, num_boxes2),
-        iou_matrix.into_iter().flatten().collect(),
-    )
-    .unwrap();
+    iou_matrix
 }
 /// Calculates the intersection over union (IoU) distance between two sets of bounding boxes.
 /// This function uses rayon to parallelize the computation, which can be faster than the
