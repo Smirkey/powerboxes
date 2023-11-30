@@ -46,8 +46,8 @@ jobs:
           pip install maturin
       - name: Run coverage
         run: |
-          cd bindings
           source venv/bin/activate
+          cd bindings
           source <(cargo llvm-cov show-env --export-prefix)
           export CARGO_TARGET_DIR=$CARGO_LLVM_COV_TARGET_DIR
           export CARGO_INCREMENTAL=1
