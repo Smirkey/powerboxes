@@ -22,7 +22,7 @@ classifiers = [
     'Operating System :: MacOS',
 ]
 license = "MIT"
-readme = "README.md"
+readme = "../README.md"
 authors = [{name = "Buillaume", email = "guillaume.bertrand@edhec.com"}]
 description = "Utility functions to manipulate and compute metrics on boxes"
 repository = "https://github.com/Smirkey/powerboxes"
@@ -30,6 +30,6 @@ version = "0.1.3"
 
 [tool.maturin]
 python-source = "python"
-module-name = "powerboxes.powerboxesrs"
+module-name = "powerboxes._powerboxes"
 bindings = "pyo3"
 features = ["pyo3/extension-module"]

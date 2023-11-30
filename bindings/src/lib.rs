@@ -1,49 +1,13 @@
-#![crate_name = "powerboxesrs"]
-
-//! Powerboxes is a package containing utility functions for transforming bounding boxes and computing metrics from them.
-//! # Powerboxesrs
-//!
-//! `powerboxesrs` is a Rust package containing utility functions for transforming bounding boxes and computing metrics from them.
-//!
-//! ## Installation
-//!
-//! Add the following to your `Cargo.toml` file:
-//!
-//! ```toml
-//! [dependencies]
-//! powerboxesrs = "0.1.3"
-//! ```
-//!
-//! ## Usage
-//!
-//! ```rust
-//! use ndarray::array;
-//! use powerboxesrs::iou::iou_distance;
-//!
-//! let boxes1 = array![[0.0, 0.0, 1.0, 1.0], [2.0, 2.0, 3.0, 3.0]];
-//! let boxes2 = array![[0.5, 0.5, 1.5, 1.5], [2.5, 2.5, 3.5, 3.5]];
-//! let iou = iou_distance(&boxes1, &boxes2);
-//! assert_eq!(iou, array![[0.8571428571428572, 1.],[1., 0.8571428571428572]]);
-//! ```
-//!
-//! ## Features
-//!
-//! - Bounding box transformations
-//! - Intersection over union (IoU) and generalized IoU (GIoU) metrics
-//!
-
-pub mod boxes;
-pub mod giou;
-pub mod iou;
 mod utils;
 
 use num_traits::{Num, ToPrimitive};
 use numpy::{PyArray1, PyArray2};
+use powerboxesrs::{boxes, giou, iou};
 use pyo3::prelude::*;
 use utils::preprocess_array;
 
 #[pymodule]
-fn powerboxesrs(_py: Python, m: &PyModule) -> PyResult<()> {
+fn _powerboxes(_py: Python, m: &PyModule) -> PyResult<()> {
     // IoU
     m.add_function(wrap_pyfunction!(iou_distance_f64, m)?)?;
     m.add_function(wrap_pyfunction!(iou_distance_f32, m)?)?;

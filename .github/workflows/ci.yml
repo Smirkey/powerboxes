@@ -42,7 +42,7 @@ jobs:
         run: |
           python -m venv venv
           source venv/bin/activate
-          pip install -r tests/requirements.txt
+          pip install -r bindings/tests/requirements.txt
           pip install maturin
       - name: Run coverage
         run: |
@@ -50,17 +50,23 @@ jobs:
           source <(cargo llvm-cov show-env --export-prefix)
           export CARGO_TARGET_DIR=$CARGO_LLVM_COV_TARGET_DIR
           export CARGO_INCREMENTAL=1
+          cd bindings
           cargo llvm-cov clean --workspace
           cargo check
           cargo test
           maturin develop
           pytest tests --cov=powerboxes --cov-report xml
+          cargo llvm-cov --no-run --lcov --output-path coverage-bindings.lcov
+          cd ../powerboxesrs
+          cargo llvm-cov clean --workspace
+          cargo check
+          cargo test
           cargo llvm-cov --no-run --lcov --output-path coverage.lcov
       - uses: codecov/codecov-action@v3
         env:
           TOKEN: ${{ secrets.CODECOV_TOKEN }}
         with:
-          files: coverage.lcov,coverage.xml
+          files: coverage.lcov, coverage-bindings.lcov,coverage.xml
           name: ubuntu
   test-python:
     name: test ${{ matrix.python-version }}
@@ -97,15 +103,15 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - run: pip install -r tests/requirements.txt
+      - run: pip install -r bindings/tests/requirements.txt
 
-      - run: pip install -e .
+      - run: pip install -e bindings/.
         env:
           RUST_BACKTRACE: 1
 
       - run: pip freeze
 
-      - run: pytest
+      - run: pytest bindings/tests
 
   test-os:
     name: test on ${{ matrix.os }}
@@ -132,9 +138,9 @@ jobs:
         with:
           python-version: '3.11'
 
-      - run: pip install -r tests/requirements.txt
+      - run: pip install -r bindings/tests/requirements.txt
 
-      - run: pip install -e .
+      - run: pip install -e bindings/.
         env:
           RUST_BACKTRACE: 1
 
@@ -142,7 +148,7 @@ jobs:
 
       - run: pytest
 
-      - run: cargo test
+      - run: cd powerboxesrs && cargo test && cd ../bindings && cargo test
 
   # https://github.com/marketplace/actions/alls-green#why used for branch protection checks
   check:
@@ -329,7 +335,7 @@ jobs:
       - name: generate pgo data
         run: |
           pip install -U pip
-          pip install -r tests/requirements.txt
+          pip install -r bindings/tests/requirements.txt
           pip install powerboxes --no-index --no-deps --find-links pgo-wheel --force-reinstall
           pytest tests/test_speed.py
           rustup run stable bash -c 'echo LLVM_PROFDATA=$RUSTUP_HOME/toolchains/$RUSTUP_TOOLCHAIN/lib/rustlib/${{ env.RUST_HOST }}/bin/llvm-profdata >> "$GITHUB_ENV"'

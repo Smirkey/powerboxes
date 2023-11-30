@@ -1,6 +1,6 @@
 import numpy as np
 
-from .powerboxesrs import (
+from ._powerboxes import (
     iou_distance_f32,
     iou_distance_f64,
     iou_distance_i16,
