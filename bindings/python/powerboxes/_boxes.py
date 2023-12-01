@@ -1,6 +1,6 @@
 import numpy as np
 
-from .powerboxesrs import (
+from ._powerboxes import (
     box_areas_f32,
     box_areas_f64,
     box_areas_i16,

@@ -42,11 +42,12 @@ jobs:
         run: |
           python -m venv venv
           source venv/bin/activate
-          pip install -r tests/requirements.txt
+          pip install -r bindings/tests/requirements.txt
           pip install maturin
       - name: Run coverage
         run: |
           source venv/bin/activate
+          cd bindings
           source <(cargo llvm-cov show-env --export-prefix)
           export CARGO_TARGET_DIR=$CARGO_LLVM_COV_TARGET_DIR
           export CARGO_INCREMENTAL=1
@@ -55,12 +56,19 @@ jobs:
           cargo test
           maturin develop
           pytest tests --cov=powerboxes --cov-report xml
+          cargo llvm-cov --no-run --lcov --output-path coverage-bindings.lcov
+          cd ../powerboxesrs
+          source <(cargo llvm-cov show-env --export-prefix)
+          export CARGO_TARGET_DIR=$CARGO_LLVM_COV_TARGET_DIR
+          cargo llvm-cov clean --workspace
+          cargo check
+          cargo test
           cargo llvm-cov --no-run --lcov --output-path coverage.lcov
       - uses: codecov/codecov-action@v3
         env:
           TOKEN: ${{ secrets.CODECOV_TOKEN }}
         with:
-          files: coverage.lcov,coverage.xml
+          files: coverage.lcov, coverage-bindings.lcov,coverage.xml
           name: ubuntu
   test-python:
     name: test ${{ matrix.python-version }}
@@ -97,15 +105,15 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - run: pip install -r tests/requirements.txt
+      - run: pip install -r bindings/tests/requirements.txt
 
-      - run: pip install -e .
+      - run: pip install -e bindings/.
         env:
           RUST_BACKTRACE: 1
 
       - run: pip freeze
 
-      - run: pytest
+      - run: pytest bindings/tests
 
   test-os:
     name: test on ${{ matrix.os }}
@@ -132,9 +140,9 @@ jobs:
         with:
           python-version: '3.11'
 
-      - run: pip install -r tests/requirements.txt
+      - run: pip install -r bindings/tests/requirements.txt
 
-      - run: pip install -e .
+      - run: pip install -e bindings/.
         env:
           RUST_BACKTRACE: 1
 
@@ -142,7 +150,7 @@ jobs:
 
       - run: pytest
 
-      - run: cargo test
+      - run: cd powerboxesrs && cargo test && cd ../bindings && cargo test
 
   # https://github.com/marketplace/actions/alls-green#why used for branch protection checks
   check:
@@ -166,6 +174,7 @@ jobs:
           command: sdist
           args: --out dist
           rust-toolchain: stable
+          working-directory: bindings
       - uses: actions/upload-artifact@v3
         with:
           name: pypi_files
@@ -255,6 +264,7 @@ jobs:
           args: --release --out dist --interpreter ${{ matrix.interpreter || '3.7 3.8 3.9 3.10 3.11 3.12 pypy3.7 pypy3.8 pypy3.9 pypy3.10' }}
           rust-toolchain: stable
           docker-options: -e CI
+          working-directory: bindings
 
       - run: ${{ (matrix.os == 'windows' && 'dir') || 'ls -lh' }} dist/
 
@@ -319,6 +329,7 @@ jobs:
             --interpreter ${{ matrix.interpreter }}
           rust-toolchain: stable
           docker-options: -e CI
+          working-directory: bindings
         env:
           RUSTFLAGS: "-Cprofile-generate=${{ github.workspace }}/profdata"
 
@@ -329,9 +340,9 @@ jobs:
       - name: generate pgo data
         run: |
           pip install -U pip
-          pip install -r tests/requirements.txt
+          pip install -r bindings/tests/requirements.txt
           pip install powerboxes --no-index --no-deps --find-links pgo-wheel --force-reinstall
-          pytest tests/test_speed.py
+          pytest bindings/tests/test_speed.py
           rustup run stable bash -c 'echo LLVM_PROFDATA=$RUSTUP_HOME/toolchains/$RUSTUP_TOOLCHAIN/lib/rustlib/${{ env.RUST_HOST }}/bin/llvm-profdata >> "$GITHUB_ENV"'
 
       - name: merge pgo data
@@ -347,6 +358,7 @@ jobs:
             --interpreter ${{ matrix.interpreter }}
           rust-toolchain: stable
           docker-options: -e CI
+          working-directory: bindings
         env:
           RUSTFLAGS: "-Cprofile-use=${{ github.workspace }}/merged.profdata"
 
@@ -430,9 +442,9 @@ jobs:
           path: dist
 
       - run: pip install typing-extensions
-      - run: pip install -r tests/requirements.txt
+      - run: pip install -r bindings/tests/requirements.txt
       - run: pip install powerboxes --no-index --no-deps --find-links dist --force-reinstall
-      - run: pytest
+      - run: pytest bindings/tests
 
   release:
     needs: [test-builds-os, build-sdist, check]

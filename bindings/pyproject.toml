@@ -30,6 +30,6 @@ version = "0.1.3"
 
 [tool.maturin]
 python-source = "python"
-module-name = "powerboxes.powerboxesrs"
+module-name = "powerboxes._powerboxes"
 bindings = "pyo3"
 features = ["pyo3/extension-module"]
