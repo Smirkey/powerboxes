@@ -266,9 +266,9 @@ jobs:
           docker-options: -e CI
           working-directory: bindings
 
-      - run: ${{ (matrix.os == 'windows' && 'dir') || 'ls -lh' }} dist/
+      - run: ${{ (matrix.os == 'windows' && 'dir') || 'ls -lh' }} bindings/dist/
 
-      - run: twine check --strict dist/*
+      - run: twine check --strict bindings/dist/*
 
       - uses: actions/upload-artifact@v3
         with:
@@ -362,7 +362,7 @@ jobs:
         env:
           RUSTFLAGS: "-Cprofile-use=${{ github.workspace }}/merged.profdata"
 
-      - run: ${{ matrix.ls || 'ls -lh' }} dist/
+      - run: ${{ matrix.ls || 'ls -lh' }} bindings/dist/
 
       - uses: actions/upload-artifact@v3
         with:
@@ -384,8 +384,8 @@ jobs:
 
       - name: list dist files before PGO builds
         run: |
-         ls -lh dist/
-         ls -l dist/
+         ls -lh bindings/dist/
+         ls -l bindings/dist/
          echo "`ls dist | wc -l` files"
 
       - name: get PGO dist artifacts (comes after "get dist artifacts" to so these files override the non-PGO builds)
@@ -396,20 +396,20 @@ jobs:
 
       - name: list dist files with PGO builds
         run: |
-         ls -lh dist/
-         ls -l dist/
+         ls -lh bindings/dist/
+         ls -l bindings/dist/
          echo "`ls dist | wc -l` files"
 
       - name: extract and list sdist file
         run: |
          mkdir sdist-files
-         tar -xvf dist/*.tar.gz -C sdist-files
+         tar -xvf bindings/dist/*.tar.gz -C sdist-files
          tree -a sdist-files
 
       - name: extract and list wheel file
         run: |
-         ls dist/*cp310-manylinux*x86_64.whl | head -n 1
-         python -m zipfile --list `ls dist/*cp310-manylinux*x86_64.whl | head -n 1`
+         ls bindings/dist/*cp310-manylinux*x86_64.whl | head -n 1
+         python -m zipfile --list `ls bindings/dist/*cp310-manylinux*x86_64.whl | head -n 1`
 
   test-builds-os:
     name: test build on ${{ matrix.os }}
@@ -473,10 +473,10 @@ jobs:
           name: pypi_files_pgo
           path: dist
 
-      - run: twine check --strict dist/*
+      - run: twine check --strict bindings/dist/*
 
       - name: upload to pypi
-        run: twine upload dist/*
+        run: twine upload bindings/dist/*
         env:
           TWINE_USERNAME: __token__
           TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}
