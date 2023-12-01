@@ -178,7 +178,7 @@ jobs:
       - uses: actions/upload-artifact@v3
         with:
           name: pypi_files
-          path: dist
+          path: bindings/dist
 
   build:
     name: build on ${{ matrix.os }} (${{ matrix.target }} - ${{ matrix.interpreter || 'all' }}${{ matrix.os == 'linux' && format(' - {0}', matrix.manylinux == 'auto' && 'manylinux' || matrix.manylinux) || '' }})
@@ -273,7 +273,7 @@ jobs:
       - uses: actions/upload-artifact@v3
         with:
           name: pypi_files
-          path: dist
+          path: bindings/dist
 
   build-pgo:
     name: build pgo-optimized on ${{ matrix.os }} / ${{ matrix.interpreter }}
@@ -341,7 +341,7 @@ jobs:
         run: |
           pip install -U pip
           pip install -r bindings/tests/requirements.txt
-          pip install powerboxes --no-index --no-deps --find-links pgo-wheel --force-reinstall
+          pip install powerboxes --no-index --no-deps --find-links bindings/pgo-wheel --force-reinstall
           pytest bindings/tests/test_speed.py
           rustup run stable bash -c 'echo LLVM_PROFDATA=$RUSTUP_HOME/toolchains/$RUSTUP_TOOLCHAIN/lib/rustlib/${{ env.RUST_HOST }}/bin/llvm-profdata >> "$GITHUB_ENV"'
 
@@ -367,7 +367,7 @@ jobs:
       - uses: actions/upload-artifact@v3
         with:
           name: pypi_files_pgo
-          path: dist
+          path: bindings/dist
 
   inspect-pypi-assets:
     needs: [build, build-sdist, build-pgo]
@@ -380,7 +380,7 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: pypi_files
-          path: dist
+          path: bindings/dist
 
       - name: list dist files before PGO builds
         run: |
@@ -392,7 +392,7 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: pypi_files_pgo
-          path: dist
+          path: bindings/dist
 
       - name: list dist files with PGO builds
         run: |
@@ -433,13 +433,13 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: pypi_files
-          path: dist
+          path: bindings/dist
 
       - name: get PGO dist artifacts (comes after "get dist artifacts" to so these files override the non-PGO builds)
         uses: actions/download-artifact@v3
         with:
           name: pypi_files_pgo
-          path: dist
+          path: bindings/dist
 
       - run: pip install typing-extensions
       - run: pip install -r bindings/tests/requirements.txt
@@ -465,13 +465,13 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: pypi_files
-          path: dist
+          path: bindings/dist
 
       - name: get PGO dist artifacts (comes after "get dist artifacts" to so these files override the non-PGO builds)
         uses: actions/download-artifact@v3
         with:
           name: pypi_files_pgo
-          path: dist
+          path: bindings/dist
 
       - run: twine check --strict bindings/dist/*
 
