@@ -14,7 +14,7 @@ from powerboxes import (
 np.random.seed(42)
 
 @pytest.mark.benchmark(group="giou_distance")
-@pytest.mark.parametrize("dtype", [np.dtype(dtype) for dtype in supported_dtypes])
+@pytest.mark.parametrize("dtype", supported_dtypes)
 def test_giou_distance(benchmark, dtype):
     boxes1 = np.random.random((100, 4)).astype(dtype)
     boxes2 = np.random.random((100, 4)).astype(dtype)
@@ -22,7 +22,7 @@ def test_giou_distance(benchmark, dtype):
 
 
 @pytest.mark.benchmark(group="parallel_giou_distance")
-@pytest.mark.parametrize("dtype", [np.dtype(dtype) for dtype in supported_dtypes])
+@pytest.mark.parametrize("dtype", supported_dtypes)
 def test_parallel_giou_distance(benchmark, dtype):
     boxes1 = np.random.random((100, 4)).astype(dtype)
     boxes2 = np.random.random((100, 4)).astype(dtype)
@@ -30,7 +30,7 @@ def test_parallel_giou_distance(benchmark, dtype):
 
 
 @pytest.mark.benchmark(group="iou_distance")
-@pytest.mark.parametrize("dtype", [np.dtype(dtype) for dtype in supported_dtypes])
+@pytest.mark.parametrize("dtype", supported_dtypes)
 def test_iou_distance(benchmark, dtype):
     boxes1 = np.random.random((100, 4)).astype(dtype)
     boxes2 = np.random.random((100, 4)).astype(dtype)
@@ -38,7 +38,7 @@ def test_iou_distance(benchmark, dtype):
 
 
 @pytest.mark.benchmark(group="parallel_iou_distance")
-@pytest.mark.parametrize("dtype", [np.dtype(dtype) for dtype in supported_dtypes])
+@pytest.mark.parametrize("dtype", supported_dtypes)
 def test_parallel_iou_distance(benchmark, dtype):
     boxes1 = np.random.random((100, 4)).astype(dtype)
     boxes2 = np.random.random((100, 4)).astype(dtype)
@@ -46,56 +46,56 @@ def test_parallel_iou_distance(benchmark, dtype):
 
 
 @pytest.mark.benchmark(group="remove_small_boxes")
-@pytest.mark.parametrize("dtype", [np.dtype(dtype) for dtype in supported_dtypes])
+@pytest.mark.parametrize("dtype", supported_dtypes)
 def test_remove_small_boxes(benchmark, dtype):
     boxes = np.random.random((100, 4)).astype(dtype)
     benchmark(remove_small_boxes, boxes, 0.4)
 
 
 @pytest.mark.benchmark(group="remove_small_boxes")
-@pytest.mark.parametrize("dtype", [np.dtype(dtype) for dtype in supported_dtypes])
+@pytest.mark.parametrize("dtype", supported_dtypes)
 def test_boxes_areas(benchmark, dtype):
     boxes = np.random.random((100, 4)).astype(dtype)
     benchmark(boxes_areas, boxes)
 
 
 @pytest.mark.benchmark(group="box_convert")
-@pytest.mark.parametrize("dtype", [np.dtype(dtype) for dtype in supported_dtypes])
+@pytest.mark.parametrize("dtype", supported_dtypes)
 def test_box_convert_xyxy_xywh(benchmark, dtype):
     boxes = np.random.random((100, 4)).astype(dtype)
     benchmark(box_convert, boxes, "xyxy", "xywh")
 
 
 @pytest.mark.benchmark(group="box_convert")
-@pytest.mark.parametrize("dtype", [np.dtype(dtype) for dtype in supported_dtypes])
+@pytest.mark.parametrize("dtype", supported_dtypes)
 def test_box_convert_xyxy_cxcywh(benchmark, dtype):
     boxes = np.random.random((100, 4)).astype(dtype)
     benchmark(box_convert, boxes, "xyxy", "cxcywh")
 
 
 @pytest.mark.benchmark(group="box_convert")
-@pytest.mark.parametrize("dtype", [np.dtype(dtype) for dtype in supported_dtypes])
+@pytest.mark.parametrize("dtype", supported_dtypes)
 def test_box_convert_cxcywh_xywh(benchmark, dtype):
     boxes = np.random.random((100, 4)).astype(dtype)
     benchmark(box_convert, boxes, "cxcywh", "xywh")
 
 
 @pytest.mark.benchmark(group="box_convert")
-@pytest.mark.parametrize("dtype", [np.dtype(dtype) for dtype in supported_dtypes])
+@pytest.mark.parametrize("dtype", supported_dtypes)
 def test_box_convert_cxcywh_xyxy(benchmark, dtype):
     boxes = np.random.random((100, 4)).astype(dtype)
     benchmark(box_convert, boxes, "cxcywh", "xywh")
 
 
 @pytest.mark.benchmark(group="box_convert")
-@pytest.mark.parametrize("dtype", [np.dtype(dtype) for dtype in supported_dtypes])
+@pytest.mark.parametrize("dtype", supported_dtypes)
 def test_box_convert_xywh_cxcywh(benchmark, dtype):
     boxes = np.random.random((100, 4)).astype(dtype)
     benchmark(box_convert, boxes, "xywh", "cxcywh")
 
 
 @pytest.mark.benchmark(group="box_convert")
-@pytest.mark.parametrize("dtype", [np.dtype(dtype) for dtype in supported_dtypes])
+@pytest.mark.parametrize("dtype", supported_dtypes)
 def test_box_convert_xywh_xyxy(benchmark, dtype):
     boxes = np.random.random((100, 4)).astype(dtype)
     benchmark(box_convert, boxes, "xywh", "xyxy")
