@@ -443,7 +443,7 @@ jobs:
 
       - run: pip install typing-extensions
       - run: pip install -r bindings/tests/requirements.txt
-      - run: pip install powerboxes --no-index --no-deps --find-links dist --force-reinstall
+      - run: pip install powerboxes --no-index --no-deps --find-links bindings/dist --force-reinstall
       - run: pytest bindings/tests
 
   release:
