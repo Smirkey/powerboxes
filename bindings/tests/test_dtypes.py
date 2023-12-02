@@ -13,6 +13,8 @@ from powerboxes import (
     supported_dtypes
 )
 
+np.random.seed(42)
+
 
 @pytest.mark.parametrize("dtype", supported_dtypes)
 def test_giou_distance(dtype):
