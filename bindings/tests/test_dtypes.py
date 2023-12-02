@@ -10,23 +10,12 @@ from powerboxes import (
     parallel_giou_distance,
     parallel_iou_distance,
     remove_small_boxes,
+    supported_dtypes
 )
 
 
 @pytest.mark.parametrize(
-    "dtype",
-    [
-        "float64",
-        "float32",
-        "int16",
-        "int32",
-        "int64",
-        "uint8",
-        "uint16",
-        "uint32",
-        "uint64",
-    ],
-)
+    "dtype", supported_dtypes)
 def test_giou_distance(dtype):
     boxes1 = np.random.random((100, 4))
     boxes2 = np.random.random((100, 4))
@@ -46,19 +35,7 @@ def test_giou_distance_bad_inputs():
 
 
 @pytest.mark.parametrize(
-    "dtype",
-    [
-        "float64",
-        "float32",
-        "int16",
-        "int32",
-        "int64",
-        "uint8",
-        "uint16",
-        "uint32",
-        "uint64",
-    ],
-)
+    "dtype", supported_dtypes)
 def test_parallel_giou_distance(dtype):
     boxes1 = np.random.random((100, 4))
     boxes2 = np.random.random((100, 4))
@@ -78,19 +55,7 @@ def test_parallel_giou_distance_bad_inputs():
 
 
 @pytest.mark.parametrize(
-    "dtype",
-    [
-        "float64",
-        "float32",
-        "int16",
-        "int32",
-        "int64",
-        "uint8",
-        "uint16",
-        "uint32",
-        "uint64",
-    ],
-)
+    "dtype", supported_dtypes)
 def test_parallel_iou_distance(dtype):
     boxes1 = np.random.random((100, 4))
     boxes2 = np.random.random((100, 4))
@@ -110,19 +75,7 @@ def test_parallel_iou_distance_bad_inputs():
 
 
 @pytest.mark.parametrize(
-    "dtype",
-    [
-        "float64",
-        "float32",
-        "int16",
-        "int32",
-        "int64",
-        "uint8",
-        "uint16",
-        "uint32",
-        "uint64",
-    ],
-)
+    "dtype", supported_dtypes)
 def test_iou_distance(dtype):
     boxes1 = np.random.random((100, 4))
     boxes2 = np.random.random((100, 4))
@@ -142,19 +95,7 @@ def test_iou_distance_bad_inputs():
 
 
 @pytest.mark.parametrize(
-    "dtype",
-    [
-        "float64",
-        "float32",
-        "int16",
-        "int32",
-        "int64",
-        "uint8",
-        "uint16",
-        "uint32",
-        "uint64",
-    ],
-)
+    "dtype", supported_dtypes)
 def test_remove_small_boxes(dtype):
     boxes = np.random.random((100, 4))
     remove_small_boxes(boxes.astype(dtype), 0.4)
@@ -166,19 +107,7 @@ def test_remove_small_boxes_bad_inputs():
 
 
 @pytest.mark.parametrize(
-    "dtype",
-    [
-        "float64",
-        "float32",
-        "int16",
-        "int32",
-        "int64",
-        "uint8",
-        "uint16",
-        "uint32",
-        "uint64",
-    ],
-)
+    "dtype", supported_dtypes)
 def test_boxes_areas(dtype):
     boxes = np.random.random((100, 4))
     boxes_areas(boxes.astype(dtype))
@@ -190,19 +119,7 @@ def test_boxes_areas_bad_inpus():
 
 
 @pytest.mark.parametrize(
-    "dtype",
-    [
-        "float64",
-        "float32",
-        "int16",
-        "int32",
-        "int64",
-        "uint8",
-        "uint16",
-        "uint32",
-        "uint64",
-    ],
-)
+    "dtype", supported_dtypes)
 def test_box_convert(dtype):
     boxes = np.random.random((100, 4))
     box_convert(boxes.astype(dtype), "xyxy", "xywh")

@@ -16,6 +16,17 @@ from ._iou import (
 
 BOXES_NOT_SAME_TYPE = "boxes1 and boxes2 must have the same dtype"
 BOXES_NOT_NP_ARRAY = "boxes must be numpy array"
+supported_dtypes = [
+    "float64",
+    "float32",
+    "int16",
+    "int32",
+    "int64",
+    "uint8",
+    "uint16",
+    "uint32",
+    "uint64",
+]
 __version__ = "0.1.3"
 
 
