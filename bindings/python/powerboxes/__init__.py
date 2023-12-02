@@ -1,5 +1,5 @@
 import numpy as np
-
+import numpy.typing as npt
 from ._boxes import (
     _dtype_to_func_box_areas,
     _dtype_to_func_box_convert,
@@ -13,7 +13,7 @@ from ._iou import (
     _dtype_to_func_iou_distance,
     _dtype_to_func_parallel_iou_distance,
 )
-
+from typing import TypeVar, Union
 BOXES_NOT_SAME_TYPE = "boxes1 and boxes2 must have the same dtype"
 BOXES_NOT_NP_ARRAY = "boxes must be numpy array"
 supported_dtypes = [
@@ -29,8 +29,9 @@ supported_dtypes = [
 ]
 __version__ = "0.1.3"
 
+T = TypeVar("T", bound=Union[np.float64, np.float32, np.int16, np.int32, np.int64, np.uint8, np.uint16, np.uint32, np.uint64])
 
-def iou_distance(boxes1: np.ndarray, boxes2: np.ndarray) -> np.ndarray:
+def iou_distance(boxes1: npt.NDArray[T], boxes2: npt.NDArray[T]) -> npt.NDArray[np.float64]:
     """Computes pairwise box iou distances.
 
     Args:
@@ -52,7 +53,7 @@ def iou_distance(boxes1: np.ndarray, boxes2: np.ndarray) -> np.ndarray:
         raise ValueError(BOXES_NOT_SAME_TYPE)
 
 
-def parallel_iou_distance(boxes1: np.ndarray, boxes2: np.ndarray) -> np.ndarray:
+def parallel_iou_distance(boxes1: npt.NDArray[T], boxes2: npt.NDArray[T]) -> npt.NDArray[np.float64]:
     """Computes pairwise box iou distances, in parallel.
 
     Args:
@@ -74,7 +75,7 @@ def parallel_iou_distance(boxes1: np.ndarray, boxes2: np.ndarray) -> np.ndarray:
         raise ValueError(BOXES_NOT_SAME_TYPE)
 
 
-def parallel_giou_distance(boxes1: np.ndarray, boxes2: np.ndarray) -> np.ndarray:
+def parallel_giou_distance(boxes1: npt.NDArray[T], boxes2: npt.NDArray[T]) -> npt.NDArray[np.float64]:
     """Computes pairwise box giou distances, in parallel.
 
     see: https://giou.stanford.edu/
@@ -98,7 +99,7 @@ def parallel_giou_distance(boxes1: np.ndarray, boxes2: np.ndarray) -> np.ndarray
         raise ValueError(BOXES_NOT_SAME_TYPE)
 
 
-def giou_distance(boxes1: np.ndarray, boxes2: np.ndarray) -> np.ndarray:
+def giou_distance(boxes1: npt.NDArray[T], boxes2: npt.NDArray[T]) -> npt.NDArray[np.float64]:
     """Computes pairwise box giou distances.
 
     see: https://giou.stanford.edu/
@@ -122,7 +123,7 @@ def giou_distance(boxes1: np.ndarray, boxes2: np.ndarray) -> np.ndarray:
         raise ValueError(BOXES_NOT_SAME_TYPE)
 
 
-def remove_small_boxes(boxes: np.ndarray, min_size) -> np.ndarray:
+def remove_small_boxes(boxes: npt.NDArray[T], min_size) -> npt.NDArray[T]:
     """Removes boxes with area less than min_area.
 
     Args:
@@ -140,7 +141,7 @@ def remove_small_boxes(boxes: np.ndarray, min_size) -> np.ndarray:
     return _dtype_to_func_remove_small_boxes[boxes.dtype](boxes, min_size)
 
 
-def boxes_areas(boxes: np.ndarray) -> np.ndarray:
+def boxes_areas(boxes: npt.NDArray[T]) -> npt.NDArray[np.float64]:
     """Computes areas of boxes.
 
     Args:
@@ -154,7 +155,7 @@ def boxes_areas(boxes: np.ndarray) -> np.ndarray:
     return _dtype_to_func_box_areas[boxes.dtype](boxes)
 
 
-def box_convert(boxes: np.ndarray, in_fmt: str, out_fmt: str) -> np.ndarray:
+def box_convert(boxes: npt.NDArray[T], in_fmt: str, out_fmt: str) -> npt.NDArray[T]:
     """Converts boxes from one format to another.
 
     Available formats are:
@@ -183,4 +184,5 @@ __all__ = [
     "box_convert",
     "giou_distance",
     "parallel_giou_distance",
+    "supported_dtypes"
 ]
