@@ -1,4 +1,4 @@
-use ndarray::{Array1, Array2, Axis, Zip};
+use ndarray::{Array1, Array2, Array3, Axis, Zip};
 use num_traits::{Num, ToPrimitive};
 pub enum BoxFormat {
     XYXY,
@@ -342,6 +342,48 @@ where
         }
     });
     return converted_boxes;
+}
+
+/// Compute the bounding boxes around the provided masks.
+/// Returns a [N, 4] array containing bounding boxes. The boxes are in xyxy format
+///
+/// # Arguments
+///
+/// * `masks` - A [N, H, W] array of masks to transform where N is the number of masks and (H, W) are the spatial dimensions of the image.
+///
+/// # Returns
+///
+/// A [N, 4] array of boxes in xyxy format.
+pub fn masks_to_boxes(masks: &Array3<bool>) -> Array2<usize> {
+    let num_masks = masks.shape()[0];
+    let height = masks.shape()[1];
+    let width = masks.shape()[2];
+    let mut boxes = Array2::<usize>::zeros((num_masks, 4));
+
+    for (i, mask) in masks.outer_iter().enumerate() {
+        let mut x1 = width;
+        let mut y1 = height;
+        let mut x2 = 0;
+        let mut y2 = 0;
+
+        for (j, row) in mask.outer_iter().enumerate() {
+            for (k, &value) in row.iter().enumerate() {
+                if value {
+                    x1 = usize::min(x1, k);
+                    y1 = usize::min(y1, j);
+                    x2 = usize::max(x2, k);
+                    y2 = usize::max(y2, j);
+                }
+            }
+        }
+
+        boxes[[i, 0]] = x1;
+        boxes[[i, 1]] = y1;
+        boxes[[i, 2]] = x2;
+        boxes[[i, 3]] = y2;
+    }
+
+    return boxes;
 }
 
 #[cfg(test)]
