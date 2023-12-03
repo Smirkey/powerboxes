@@ -22,7 +22,6 @@ def test_masks_box():
     for index in range(image.n_frames):
         image.seek(index)
         masks[index] = np.array(image)
-    breakpoint()
     out = masks_to_boxes(masks.astype(np.bool_))
     assert out.dtype == np.int_
     assert np.testing.assert_allclose(out, expected, atol=1e-4)
