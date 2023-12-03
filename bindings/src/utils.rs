@@ -1,6 +1,6 @@
-use ndarray::{ArrayBase, Dim, OwnedRepr};
+use ndarray::{Array2, Array3, ArrayBase, OwnedRepr};
 use num_traits::Num;
-use numpy::{IntoPyArray, PyArray, PyArray2};
+use numpy::{IntoPyArray, PyArray, PyArray2, PyArray3};
 use pyo3::prelude::*;
 
 pub fn array_to_numpy<T: numpy::Element, D: ndarray::Dimension>(
@@ -11,14 +11,11 @@ pub fn array_to_numpy<T: numpy::Element, D: ndarray::Dimension>(
     return Ok(numpy_array);
 }
 
-pub fn preprocess_array<N>(
-    array: &PyArray2<N>,
-) -> Result<ArrayBase<OwnedRepr<N>, Dim<[usize; 2]>>, PyErr>
+pub fn preprocess_boxes<N>(array: &PyArray2<N>) -> Result<Array2<N>, PyErr>
 where
     N: Num + numpy::Element + Send,
 {
-    // Usage:
-    let array: ArrayBase<OwnedRepr<N>, Dim<[usize; 2]>> = unsafe { array.as_array().to_owned() };
+    let array = unsafe { array.as_array().to_owned() };
     let array_shape = array.shape();
 
     if array_shape[1] != 4 {
@@ -42,6 +39,14 @@ where
     return Ok(array);
 }
 
+pub fn preprocess_array3<N>(array: &PyArray3<N>) -> Array3<N>
+where
+    N: numpy::Element,
+{
+    let array = unsafe { array.as_array().to_owned() };
+    return array;
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -59,20 +64,20 @@ mod tests {
     }
 
     #[test]
-    fn test_preprocess_array() {
+    fn test_preprocess_boxes() {
         Python::with_gil(|python| {
             let array = PyArray2::<f32>::zeros(python, [2, 4], false);
-            let result = preprocess_array::<f32>(array);
+            let result = preprocess_boxes::<f32>(array);
             assert!(result.is_ok());
             let unwrapped_result = result.unwrap();
             assert_eq!(unwrapped_result.shape(), &[2, 4]);
         });
     }
     #[test]
-    fn test_preprocess_array_bad_shape() {
+    fn test_preprocess_boxes_bad_shape() {
         Python::with_gil(|python| {
             let array = PyArray2::<f32>::zeros(python, [2, 16], false);
-            let result = preprocess_array::<f32>(array);
+            let result = preprocess_boxes::<f32>(array);
             assert!(result.is_err());
         });
     }

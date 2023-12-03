@@ -1,10 +1,10 @@
 mod utils;
 
 use num_traits::{Num, ToPrimitive};
-use numpy::{PyArray1, PyArray2};
+use numpy::{PyArray1, PyArray2, PyArray3};
 use powerboxesrs::{boxes, giou, iou};
 use pyo3::prelude::*;
-use utils::preprocess_array;
+use utils::{preprocess_array3, preprocess_boxes};
 
 #[pymodule]
 fn _powerboxes(_py: Python, m: &PyModule) -> PyResult<()> {
@@ -78,7 +78,17 @@ fn _powerboxes(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(box_convert_u32, m)?)?;
     m.add_function(wrap_pyfunction!(box_convert_u16, m)?)?;
     m.add_function(wrap_pyfunction!(box_convert_u8, m)?)?;
+    // Masks to boxes
+    m.add_function(wrap_pyfunction!(masks_to_boxes, m)?)?;
     Ok(())
+}
+// Masks to boxes
+#[pyfunction]
+fn masks_to_boxes(_py: Python, masks: &PyArray3<bool>) -> PyResult<Py<PyArray2<usize>>> {
+    let masks = preprocess_array3(masks);
+    let boxes = boxes::masks_to_boxes(&masks);
+    let boxes_as_numpy = utils::array_to_numpy(_py, boxes).unwrap();
+    return Ok(boxes_as_numpy.to_owned());
 }
 
 // IoU
@@ -90,8 +100,8 @@ fn iou_distance_generic<T>(
 where
     T: Num + ToPrimitive + PartialOrd + numpy::Element + Copy,
 {
-    let boxes1 = preprocess_array(boxes1).unwrap();
-    let boxes2 = preprocess_array(boxes2).unwrap();
+    let boxes1 = preprocess_boxes(boxes1).unwrap();
+    let boxes2 = preprocess_boxes(boxes2).unwrap();
     let iou = iou::iou_distance(&boxes1, &boxes2);
     let iou_as_numpy = utils::array_to_numpy(_py, iou).unwrap();
     return Ok(iou_as_numpy.to_owned());
@@ -178,8 +188,8 @@ fn parallel_iou_distance_generic<T>(
 where
     T: Num + ToPrimitive + PartialOrd + numpy::Element + Copy + Sync + Send,
 {
-    let boxes1 = preprocess_array(boxes1).unwrap();
-    let boxes2 = preprocess_array(boxes2).unwrap();
+    let boxes1 = preprocess_boxes(boxes1).unwrap();
+    let boxes2 = preprocess_boxes(boxes2).unwrap();
     let iou = iou::parallel_iou_distance(&boxes1, &boxes2);
     let iou_as_numpy = utils::array_to_numpy(_py, iou).unwrap();
     return Ok(iou_as_numpy.to_owned());
@@ -265,8 +275,8 @@ fn giou_distance_generic<T>(
 where
     T: Num + ToPrimitive + PartialOrd + numpy::Element + Copy,
 {
-    let boxes1 = preprocess_array(boxes1).unwrap();
-    let boxes2 = preprocess_array(boxes2).unwrap();
+    let boxes1 = preprocess_boxes(boxes1).unwrap();
+    let boxes2 = preprocess_boxes(boxes2).unwrap();
     let iou = giou::giou_distance(&boxes1, &boxes2);
     let iou_as_numpy = utils::array_to_numpy(_py, iou).unwrap();
     return Ok(iou_as_numpy.to_owned());
@@ -352,8 +362,8 @@ fn parallel_giou_distance_generic<T>(
 where
     T: Num + ToPrimitive + PartialOrd + numpy::Element + Copy,
 {
-    let boxes1 = preprocess_array(boxes1).unwrap();
-    let boxes2 = preprocess_array(boxes2).unwrap();
+    let boxes1 = preprocess_boxes(boxes1).unwrap();
+    let boxes2 = preprocess_boxes(boxes2).unwrap();
     let iou = giou::giou_distance(&boxes1, &boxes2);
     let iou_as_numpy = utils::array_to_numpy(_py, iou).unwrap();
     return Ok(iou_as_numpy.to_owned());
@@ -439,7 +449,7 @@ fn remove_small_boxes_generic<T>(
 where
     T: Num + ToPrimitive + PartialOrd + numpy::Element + Copy,
 {
-    let boxes = preprocess_array(boxes).unwrap();
+    let boxes = preprocess_boxes(boxes).unwrap();
     let filtered_boxes = boxes::remove_small_boxes(&boxes, min_size);
     let filtered_boxes_as_numpy = utils::array_to_numpy(_py, filtered_boxes).unwrap();
     return Ok(filtered_boxes_as_numpy.to_owned());
@@ -521,7 +531,7 @@ fn generic_box_areas<T>(_py: Python, boxes: &PyArray2<T>) -> PyResult<Py<PyArray
 where
     T: Num + numpy::Element + PartialOrd + ToPrimitive + Sync + Send + Copy,
 {
-    let boxes = preprocess_array(boxes).unwrap();
+    let boxes = preprocess_boxes(boxes).unwrap();
     let areas = boxes::box_areas(&boxes);
     let areas_as_numpy = utils::array_to_numpy(_py, areas).unwrap();
     return Ok(areas_as_numpy.to_owned());
@@ -573,7 +583,7 @@ fn box_convert_generic<T>(
 where
     T: Num + numpy::Element + PartialOrd + ToPrimitive + Sync + Send + Copy,
 {
-    let boxes = preprocess_array(boxes).unwrap();
+    let boxes = preprocess_boxes(boxes).unwrap();
     let in_fmt = match in_fmt {
         "xyxy" => boxes::BoxFormat::XYXY,
         "xywh" => boxes::BoxFormat::XYWH,

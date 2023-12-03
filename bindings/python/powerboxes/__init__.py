@@ -13,6 +13,8 @@ from ._iou import (
     _dtype_to_func_iou_distance,
     _dtype_to_func_parallel_iou_distance,
 )
+from ._powerboxes import masks_to_boxes
+
 from typing import TypeVar, Union
 BOXES_NOT_SAME_TYPE = "boxes1 and boxes2 must have the same dtype"
 BOXES_NOT_NP_ARRAY = "boxes must be numpy array"
@@ -175,6 +177,23 @@ def box_convert(boxes: npt.NDArray[T], in_fmt: str, out_fmt: str) -> npt.NDArray
         raise TypeError(BOXES_NOT_NP_ARRAY)
     return _dtype_to_func_box_convert[boxes.dtype](boxes, in_fmt, out_fmt)
 
+def masks_to_boxes(masks: npt.NDArray[np.bool_]) -> npt.NDArray[np.int_]:
+    """
+    Compute the bounding boxes around the provided masks.
+
+    Returns a [N, 4] tensor containing bounding boxes. The boxes are in ``(x1, y1, x2, y2)`` format with
+    ``0 <= x1 < x2`` and ``0 <= y1 < y2``.
+
+    Args:
+        masks (Tensor[N, H, W]): masks to transform where N is the number of masks
+            and (H, W) are the spatial dimensions.
+
+    Returns:
+        Tensor[N, 4]: bounding boxes
+    """
+    if not isinstance(masks, np.ndarray):
+        raise TypeError(BOXES_NOT_NP_ARRAY)
+    return masks_to_boxes(masks)
 
 __all__ = [
     "iou_distance",
@@ -184,5 +203,10 @@ __all__ = [
     "box_convert",
     "giou_distance",
     "parallel_giou_distance",
+<<<<<<< HEAD
+    "masks_to_boxes",
     "supported_dtypes"
+=======
+    "supported_dtypes"
+>>>>>>> 03270eb928cb1d1b1be3454b845d9107f1a01833
 ]
