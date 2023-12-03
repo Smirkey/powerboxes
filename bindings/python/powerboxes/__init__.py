@@ -203,10 +203,6 @@ __all__ = [
     "box_convert",
     "giou_distance",
     "parallel_giou_distance",
-<<<<<<< HEAD
     "masks_to_boxes",
     "supported_dtypes"
-=======
-    "supported_dtypes"
->>>>>>> 03270eb928cb1d1b1be3454b845d9107f1a01833
 ]
