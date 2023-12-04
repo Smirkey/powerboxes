@@ -361,10 +361,10 @@ pub fn masks_to_boxes(masks: &Array3<bool>) -> Array2<usize> {
     let mut boxes = Array2::<usize>::zeros((num_masks, 4));
 
     for (i, mask) in masks.outer_iter().enumerate() {
-        let mut x1 = width;
-        let mut y1 = height;
-        let mut x2 = 0;
-        let mut y2 = 0;
+        let mut x1 = 0;
+        let mut y1 = 0;
+        let mut x2 = width;
+        let mut y2 = height;
 
         for (j, row) in mask.outer_iter().enumerate() {
             for (k, &value) in row.iter().enumerate() {
@@ -389,7 +389,7 @@ pub fn masks_to_boxes(masks: &Array3<bool>) -> Array2<usize> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use ndarray::{arr2, array};
+    use ndarray::{arr2, arr3, array};
     #[test]
     fn test_box_convert_xyxy_to_xywh() {
         let boxes = arr2(&[
@@ -570,5 +570,16 @@ mod tests {
         let min_size = 10.;
         let filtered_boxes = remove_small_boxes(&boxes, min_size);
         assert_eq!(filtered_boxes, array![[0., 0., 10., 10.]]);
+    }
+
+    #[test]
+    fn test_masks_to_boxes() {
+        let masks: Array3<bool> = arr3(&[
+            [[true, true, true], [false, false, false]],
+            [[false, false, false], [true, true, true]],
+            [[false, false, false], [false, false, true]],
+        ]);
+        let boxes = masks_to_boxes(&masks);
+        assert_eq!(boxes, array![[0, 0, 3, 2], [0, 0, 3, 2], [0, 0, 3, 2]]);
     }
 }
