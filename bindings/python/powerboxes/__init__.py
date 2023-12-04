@@ -13,7 +13,7 @@ from ._iou import (
     _dtype_to_func_iou_distance,
     _dtype_to_func_parallel_iou_distance,
 )
-from ._powerboxes import masks_to_boxes
+from ._powerboxes import masks_to_boxes as _masks_to_boxes
 
 from typing import TypeVar, Union
 BOXES_NOT_SAME_TYPE = "boxes1 and boxes2 must have the same dtype"
@@ -193,7 +193,7 @@ def masks_to_boxes(masks: npt.NDArray[np.bool_]) -> npt.NDArray[np.int_]:
     """
     if not isinstance(masks, np.ndarray):
         raise TypeError(BOXES_NOT_NP_ARRAY)
-    return masks_to_boxes(masks)
+    return _masks_to_boxes(masks)
 
 __all__ = [
     "iou_distance",
