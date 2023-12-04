@@ -23,5 +23,5 @@ def test_masks_box():
         image.seek(index)
         masks[index] = np.array(image)
     out = masks_to_boxes(masks.astype(np.bool_))
-    assert out.dtype == np.int_
-    assert np.testing.assert_allclose(out, expected, atol=1e-4)
+    assert out.dtype == np.dtype("uint64")
+    np.testing.assert_allclose(out, expected, atol=1e-4)

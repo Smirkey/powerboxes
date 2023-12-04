@@ -354,6 +354,17 @@ where
 /// # Returns
 ///
 /// A [N, 4] array of boxes in xyxy format.
+/// # Example
+/// ```
+/// use ndarray::{arr3, array};
+/// use powerboxesrs::boxes::masks_to_boxes;
+/// let masks = arr3(&[
+///   [[true, true, true], [false, false, false]],
+///   [[false, false, false], [true, true, true]],
+///   [[false, false, false], [false, false, true]],
+/// ]);
+/// let boxes = masks_to_boxes(&masks);
+/// assert_eq!(boxes, array![[0, 0, 2, 0], [0, 1, 2, 1], [2, 1, 2, 1]]);
 pub fn masks_to_boxes(masks: &Array3<bool>) -> Array2<usize> {
     let num_masks = masks.shape()[0];
     let height = masks.shape()[1];
@@ -361,22 +372,29 @@ pub fn masks_to_boxes(masks: &Array3<bool>) -> Array2<usize> {
     let mut boxes = Array2::<usize>::zeros((num_masks, 4));
 
     for (i, mask) in masks.outer_iter().enumerate() {
-        let mut x1 = 0;
-        let mut y1 = 0;
-        let mut x2 = width;
-        let mut y2 = height;
+        let mut x1 = width;
+        let mut y1 = height;
+        let mut x2 = 0;
+        let mut y2 = 0;
 
-        for (j, row) in mask.outer_iter().enumerate() {
-            for (k, &value) in row.iter().enumerate() {
-                if value {
-                    x1 = usize::min(x1, k);
-                    y1 = usize::min(y1, j);
-                    x2 = usize::max(x2, k);
-                    y2 = usize::max(y2, j);
+        // get the indices where the mask is true
+        mask.indexed_iter().for_each(|(index, &value)| {
+            if value {
+                let (y, x) = index;
+                if x < x1 {
+                    x1 = x;
+                }
+                if x > x2 {
+                    x2 = x;
+                }
+                if y < y1 {
+                    y1 = y;
+                }
+                if y > y2 {
+                    y2 = y;
                 }
             }
-        }
-
+        });
         boxes[[i, 0]] = x1;
         boxes[[i, 1]] = y1;
         boxes[[i, 2]] = x2;
@@ -580,6 +598,6 @@ mod tests {
             [[false, false, false], [false, false, true]],
         ]);
         let boxes = masks_to_boxes(&masks);
-        assert_eq!(boxes, array![[0, 0, 3, 2], [0, 0, 3, 2], [0, 0, 3, 2]]);
+        assert_eq!(boxes, array![[0, 0, 2, 0], [0, 1, 2, 1], [2, 1, 2, 1]]);
     }
 }
