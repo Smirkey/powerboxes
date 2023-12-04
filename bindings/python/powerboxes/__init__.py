@@ -177,7 +177,7 @@ def box_convert(boxes: npt.NDArray[T], in_fmt: str, out_fmt: str) -> npt.NDArray
         raise TypeError(BOXES_NOT_NP_ARRAY)
     return _dtype_to_func_box_convert[boxes.dtype](boxes, in_fmt, out_fmt)
 
-def masks_to_boxes(masks: npt.NDArray[np.bool_]) -> npt.NDArray[np.int_]:
+def masks_to_boxes(masks: npt.NDArray[np.bool_]) -> npt.NDArray[np.uint64]:
     """
     Compute the bounding boxes around the provided masks.
 

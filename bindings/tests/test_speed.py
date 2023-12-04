@@ -8,6 +8,7 @@ from powerboxes import (
     parallel_giou_distance,
     parallel_iou_distance,
     remove_small_boxes,
+    masks_to_boxes,
     supported_dtypes
 )
 
@@ -99,3 +100,8 @@ def test_box_convert_xywh_cxcywh(benchmark, dtype):
 def test_box_convert_xywh_xyxy(benchmark, dtype):
     boxes = np.random.random((100, 4)).astype(dtype)
     benchmark(box_convert, boxes, "xywh", "xyxy")
+
+@pytest.mark.benchmark(group="masks_to_boxes")
+def test_masks_to_boxes(benchmark):
+    masks = np.array([True]*(100*100*100)).reshape((100, 100, 100))
+    benchmark(masks_to_boxes, masks)
