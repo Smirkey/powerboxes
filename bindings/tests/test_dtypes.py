@@ -10,7 +10,8 @@ from powerboxes import (
     parallel_giou_distance,
     parallel_iou_distance,
     remove_small_boxes,
-    supported_dtypes
+    masks_to_boxes,
+    supported_dtypes,
 )
 
 np.random.seed(42)
@@ -123,3 +124,7 @@ def test_box_convert(dtype):
 def test_box_convert_bad_inputs():
     with pytest.raises(TypeError, match=BOXES_NOT_NP_ARRAY):
         box_convert("foo", "xyxy", "xywh")
+
+def test_masks_to_boxes_bad_inputs():
+    with pytest.raises(TypeError, match=BOXES_NOT_NP_ARRAY):
+        masks_to_boxes("foo")
