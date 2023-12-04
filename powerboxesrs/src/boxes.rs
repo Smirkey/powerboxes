@@ -1,4 +1,4 @@
-use ndarray::{Array1, Array2, Axis, Zip};
+use ndarray::{Array1, Array2, Array3, Axis, Zip};
 use num_traits::{Num, ToPrimitive};
 pub enum BoxFormat {
     XYXY,
@@ -344,10 +344,70 @@ where
     return converted_boxes;
 }
 
+/// Compute the bounding boxes around the provided masks.
+/// Returns a [N, 4] array containing bounding boxes. The boxes are in xyxy format
+///
+/// # Arguments
+///
+/// * `masks` - A [N, H, W] array of masks to transform where N is the number of masks and (H, W) are the spatial dimensions of the image.
+///
+/// # Returns
+///
+/// A [N, 4] array of boxes in xyxy format.
+/// # Example
+/// ```
+/// use ndarray::{arr3, array};
+/// use powerboxesrs::boxes::masks_to_boxes;
+/// let masks = arr3(&[
+///   [[true, true, true], [false, false, false]],
+///   [[false, false, false], [true, true, true]],
+///   [[false, false, false], [false, false, true]],
+/// ]);
+/// let boxes = masks_to_boxes(&masks);
+/// assert_eq!(boxes, array![[0, 0, 2, 0], [0, 1, 2, 1], [2, 1, 2, 1]]);
+pub fn masks_to_boxes(masks: &Array3<bool>) -> Array2<usize> {
+    let num_masks = masks.shape()[0];
+    let height = masks.shape()[1];
+    let width = masks.shape()[2];
+    let mut boxes = Array2::<usize>::zeros((num_masks, 4));
+
+    for (i, mask) in masks.outer_iter().enumerate() {
+        let mut x1 = width;
+        let mut y1 = height;
+        let mut x2 = 0;
+        let mut y2 = 0;
+
+        // get the indices where the mask is true
+        mask.indexed_iter().for_each(|(index, &value)| {
+            if value {
+                let (y, x) = index;
+                if x < x1 {
+                    x1 = x;
+                }
+                if x > x2 {
+                    x2 = x;
+                }
+                if y < y1 {
+                    y1 = y;
+                }
+                if y > y2 {
+                    y2 = y;
+                }
+            }
+        });
+        boxes[[i, 0]] = x1;
+        boxes[[i, 1]] = y1;
+        boxes[[i, 2]] = x2;
+        boxes[[i, 3]] = y2;
+    }
+
+    return boxes;
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
-    use ndarray::{arr2, array};
+    use ndarray::{arr2, arr3, array};
     #[test]
     fn test_box_convert_xyxy_to_xywh() {
         let boxes = arr2(&[
@@ -528,5 +588,16 @@ mod tests {
         let min_size = 10.;
         let filtered_boxes = remove_small_boxes(&boxes, min_size);
         assert_eq!(filtered_boxes, array![[0., 0., 10., 10.]]);
+    }
+
+    #[test]
+    fn test_masks_to_boxes() {
+        let masks: Array3<bool> = arr3(&[
+            [[true, true, true], [false, false, false]],
+            [[false, false, false], [true, true, true]],
+            [[false, false, false], [false, false, true]],
+        ]);
+        let boxes = masks_to_boxes(&masks);
+        assert_eq!(boxes, array![[0, 0, 2, 0], [0, 1, 2, 1], [2, 1, 2, 1]]);
     }
 }
