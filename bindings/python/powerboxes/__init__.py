@@ -178,18 +178,16 @@ def box_convert(boxes: npt.NDArray[T], in_fmt: str, out_fmt: str) -> npt.NDArray
     return _dtype_to_func_box_convert[boxes.dtype](boxes, in_fmt, out_fmt)
 
 def masks_to_boxes(masks: npt.NDArray[np.bool_]) -> npt.NDArray[np.uint64]:
-    """
-    Compute the bounding boxes around the provided masks.
-
-    Returns a [N, 4] tensor containing bounding boxes. The boxes are in ``(x1, y1, x2, y2)`` format with
-    ``0 <= x1 < x2`` and ``0 <= y1 < y2``.
+    """Converts masks to boxes in xyxy format.
 
     Args:
-        masks (Tensor[N, H, W]): masks to transform where N is the number of masks
-            and (H, W) are the spatial dimensions.
+        masks: 3d array of masks in (N, H, W) format
+
+    Raises:
+        TypeError: if masks is not numpy array
 
     Returns:
-        Tensor[N, 4]: bounding boxes
+        npt.NDArray[np.uint64]: 2d array of boxes in xyxy format
     """
     if not isinstance(masks, np.ndarray):
         raise TypeError(BOXES_NOT_NP_ARRAY)
