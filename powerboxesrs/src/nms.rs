@@ -55,9 +55,10 @@ where
                 continue;
             }
             let idx_j = order[j];
-            let box1_as_array2 = Array::from_shape_vec((1, 4), boxes.row(idx).to_vec()).unwrap();
-            let box2_as_array2 = Array::from_shape_vec((1, 4), boxes.row(idx_j).to_vec()).unwrap();
-            let iou = iou::iou(&box1_as_array2, &box2_as_array2).row(0)[0];
+            let box1 = boxes.row(idx).to_owned();
+            let box2 = boxes.row(idx_j).to_owned();
+
+            let iou = iou::box_iou(&box1, &box2);
             if iou > iou_threshold {
                 suppress[idx_j] = true;
             }
