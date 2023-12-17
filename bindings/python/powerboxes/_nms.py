@@ -1,6 +1,6 @@
 import numpy as np
 
-from ._powerboxes._nms import (
+from ._powerboxes import (
     nms_f32,
     nms_f64,
     nms_i16,

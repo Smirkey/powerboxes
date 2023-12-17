@@ -4,7 +4,7 @@ use num_traits::{Num, ToPrimitive};
 use numpy::{PyArray1, PyArray2, PyArray3};
 use powerboxesrs::{boxes, giou, iou, nms};
 use pyo3::prelude::*;
-use utils::{preprocess_array3, preprocess_boxes};
+use utils::{preprocess_array1, preprocess_array3, preprocess_boxes};
 
 #[pymodule]
 fn _powerboxes(_py: Python, m: &PyModule) -> PyResult<()> {
@@ -713,7 +713,7 @@ where
     T: Num + numpy::Element + PartialOrd + ToPrimitive + Sync + Send + Copy,
 {
     let boxes = preprocess_boxes(boxes).unwrap();
-    let scores = preprocess_array3(scores).unwrap();
+    let scores = preprocess_array1(scores);
     let keep = nms::nms(&boxes, &scores, iou_threshold, score_threshold);
     let keep_as_numpy = utils::array_to_numpy(_py, keep).unwrap();
     return Ok(keep_as_numpy.to_owned());

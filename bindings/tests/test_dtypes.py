@@ -136,9 +136,9 @@ def test_masks_to_boxes_bad_inputs():
 def test_nms(dtype):
     boxes1 = np.random.random((100, 4))
     scores = np.random.random((100,))
-    nms(boxes1.astype(dtype), scores.astype(dtype), 0.5, 0.5)
+    nms(boxes1.astype(dtype), scores, 0.5, 0.5)
 
 
 def test_nms_bad_inputs():
-    with pytest.raises(TypeError, match="boxes and scores must be numpy arrays"):
+    with pytest.raises(TypeError, match="Boxes and scores must be numpy arrays"):
         nms("foo", "bar", 0.5, 0.5)

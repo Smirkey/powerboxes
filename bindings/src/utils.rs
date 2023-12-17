@@ -1,6 +1,6 @@
-use ndarray::{Array2, Array3, ArrayBase, OwnedRepr};
+use ndarray::{Array1, Array2, Array3, ArrayBase, OwnedRepr};
 use num_traits::Num;
-use numpy::{IntoPyArray, PyArray, PyArray2, PyArray3};
+use numpy::{IntoPyArray, PyArray, PyArray1, PyArray2, PyArray3};
 use pyo3::prelude::*;
 
 pub fn array_to_numpy<T: numpy::Element, D: ndarray::Dimension>(
@@ -47,6 +47,14 @@ where
     return array;
 }
 
+pub fn preprocess_array1<N>(array: &PyArray1<N>) -> Array1<N>
+where
+    N: numpy::Element,
+{
+    let array = unsafe { array.as_array().to_owned() };
+    return array;
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -79,6 +87,15 @@ mod tests {
             let array = PyArray2::<f32>::zeros(python, [2, 16], false);
             let result = preprocess_boxes::<f32>(array);
             assert!(result.is_err());
+        });
+    }
+
+    #[test]
+    fn test_preprocess_array1() {
+        Python::with_gil(|python| {
+            let array = PyArray1::<f32>::zeros(python, [2], false);
+            let result = preprocess_array1::<f32>(array);
+            assert_eq!(result.shape(), &[2]);
         });
     }
 }
