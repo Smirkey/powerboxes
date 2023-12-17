@@ -1,4 +1,4 @@
-use ndarray::{Array, Array1, Array2};
+use ndarray::{Array1, Array2};
 use num_traits::{Num, ToPrimitive};
 
 use crate::iou;
@@ -18,7 +18,7 @@ use crate::iou;
 /// # Examples
 ///
 /// ```
-/// use ndarray::array;
+/// use ndarray::{arr2, Array1};
 /// use powerboxesrs::nms::nms;
 ///
 /// let boxes = arr2(&[[0.0, 0.0, 2.0, 2.0], [1.0, 1.0, 3.0, 3.0]]);
@@ -69,7 +69,7 @@ where
 
 #[cfg(test)]
 mod tests {
-    use ndarray::arr2;
+    use ndarray::{arr2, Array1};
 
     use super::*;
 
