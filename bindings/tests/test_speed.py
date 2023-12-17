@@ -5,14 +5,16 @@ from powerboxes import (
     boxes_areas,
     giou_distance,
     iou_distance,
+    masks_to_boxes,
+    nms,
     parallel_giou_distance,
     parallel_iou_distance,
     remove_small_boxes,
-    masks_to_boxes,
-    supported_dtypes
+    supported_dtypes,
 )
 
 np.random.seed(42)
+
 
 @pytest.mark.benchmark(group="giou_distance")
 @pytest.mark.parametrize("dtype", supported_dtypes)
@@ -101,7 +103,16 @@ def test_box_convert_xywh_xyxy(benchmark, dtype):
     boxes = np.random.random((100, 4)).astype(dtype)
     benchmark(box_convert, boxes, "xywh", "xyxy")
 
+
 @pytest.mark.benchmark(group="masks_to_boxes")
 def test_masks_to_boxes(benchmark):
-    masks = np.array([True]*(100*100*100)).reshape((100, 100, 100))
+    masks = np.array([True] * (100 * 100 * 100)).reshape((100, 100, 100))
     benchmark(masks_to_boxes, masks)
+
+
+@pytest.mark.benchmark(group="nms")
+@pytest.mark.parametrize("dtype", supported_dtypes)
+def test_nms(benchmark, dtype):
+    boxes = np.random.random((100, 4)).astype(dtype)
+    scores = np.random.random((100,)).astype(np.float64)
+    benchmark(nms, boxes, scores, 0.5, 0.5)
