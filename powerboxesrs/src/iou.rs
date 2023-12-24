@@ -1,5 +1,5 @@
 use crate::{boxes, utils};
-use ndarray::{Array1, Array2, Zip};
+use ndarray::{Array2, Zip};
 use num_traits::{Num, ToPrimitive};
 
 /// Calculates the intersection over union (IoU) distance between two sets of bounding boxes.

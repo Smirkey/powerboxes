@@ -37,7 +37,6 @@ pub fn nms<N>(
 where
     N: Num + PartialOrd + ToPrimitive + Copy,
 {
-    let boxes = boxes.to_owned();
     // Compute areas once
     let areas = boxes::box_areas(&boxes);
     // sort boxes by scores
