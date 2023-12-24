@@ -115,7 +115,7 @@ where
 /// let box2 = array![0.5, 0.5, 1.5, 1.5];
 /// let iou = box_iou(&box1, &box2);
 /// assert_eq!(iou, 0.14285714285714285);
-pub fn box_iou<N>(box1: &Array1<N>, box2: &Array1<N>) -> f64
+pub fn box_iou<N>(box1: &Array1<N>, box2: &Array1<N>, area_box1: f64, area_box2: f64) -> f64
 where
     N: Num + PartialOrd + ToPrimitive + Copy,
 {
@@ -127,8 +127,6 @@ where
     let a2_y1 = box2[1];
     let a2_x2 = box2[2];
     let a2_y2 = box2[3];
-    let area1 = ((a1_x2 - a1_x1) * (a1_y2 - a1_y1)).to_f64().unwrap();
-    let area2 = ((a2_x2 - a2_x1) * (a2_y2 - a2_y1)).to_f64().unwrap();
     let x1 = utils::max(a1_x1, a2_x1);
     let y1 = utils::max(a1_y1, a2_y1);
     let x2 = utils::min(a1_x2, a2_x2);
@@ -138,10 +136,11 @@ where
     }
     let intersection = (x2 - x1) * (y2 - y1);
     let intersection = intersection.to_f64().unwrap();
-    let intersection = utils::min(intersection, utils::min(area1, area2));
-    let iou = intersection / (area1 + area2 - intersection + utils::EPS);
+    let intersection = f64::min(intersection, f64::min(area_box1, area_box2));
+    let iou = intersection / (area_box1 + area_box2 - intersection + utils::EPS);
     return iou;
 }
+
 /// Calculates the intersection over union (IoU) distance between two sets of bounding boxes.
 /// This function uses rayon to parallelize the computation, which can be faster than the
 /// non-parallelized version for large numbers of boxes.
@@ -281,7 +280,8 @@ mod tests {
     fn test_box_iou() {
         let box1 = arr1(&[0.0, 0.0, 1.0, 1.0]);
         let box2 = arr1(&[0.5, 0.5, 1.5, 1.5]);
-        let iou = box_iou(&box1, &box2);
+        let areas = boxes::box_areas(&arr2(&[[0.0, 0.0, 1.0, 1.0], [0.5, 0.5, 1.5, 1.5]]));
+        let iou = box_iou(&box1, &box2, areas[0], areas[1]);
         assert_eq!(iou, 0.14285714285714285);
     }
 }

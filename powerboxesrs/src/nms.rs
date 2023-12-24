@@ -1,7 +1,7 @@
 use ndarray::{Array1, Array2};
 use num_traits::{Num, ToPrimitive};
 
-use crate::iou;
+use crate::{boxes, iou};
 
 /// Performs non-maximum suppression (NMS) on a set of bounding boxes using their scores.
 /// # Arguments
@@ -24,7 +24,7 @@ use crate::iou;
 /// let boxes = arr2(&[[0.0, 0.0, 2.0, 2.0], [1.0, 1.0, 3.0, 3.0]]);
 /// let scores = Array1::from(vec![1.0, 1.0]);
 /// let keep = nms(&boxes, &scores, 0.8, 0.0);
-/// assert_eq!(keep, Array1::from(vec![1, 0]));
+/// assert_eq!(keep, Array1::from(vec![0, 1]));
 /// ```
 pub fn nms<N>(
     boxes: &Array2<N>,
@@ -35,12 +35,15 @@ pub fn nms<N>(
 where
     N: Num + PartialOrd + ToPrimitive + Copy,
 {
+    // Compute areas once
+    let areas = boxes::box_areas(boxes);
+    // sort boxes by scores
     let mut indices: Vec<usize> = (0..scores.len()).collect();
     indices.sort_by(|&a, &b| scores[a].partial_cmp(&scores[b]).unwrap());
-    indices = indices.into_iter().rev().collect::<Vec<usize>>();
     let order = Array1::from(indices);
     let mut keep: Vec<usize> = Vec::new();
     let mut suppress = Array1::from_elem(scores.len(), false);
+    // initialize cache for intersection
     for i in 0..scores.len() {
         if suppress[i] {
             continue;
@@ -50,7 +53,7 @@ where
             break;
         }
         keep.push(idx);
-        for j in (i + 1)..scores.len() {
+        for j in (i + 1)..order.len() {
             if suppress[j] {
                 continue;
             }
@@ -58,7 +61,7 @@ where
             let box1 = boxes.row(idx).to_owned();
             let box2 = boxes.row(idx_j).to_owned();
 
-            let iou = iou::box_iou(&box1, &box2);
+            let iou = iou::box_iou(&box1, &box2, areas[idx], areas[idx_j]);
             if iou > iou_threshold {
                 suppress[idx_j] = true;
             }

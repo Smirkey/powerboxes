@@ -710,7 +710,7 @@ fn nms_generic<T>(
     score_threshold: f64,
 ) -> PyResult<Py<PyArray1<usize>>>
 where
-    T: Num + numpy::Element + PartialOrd + ToPrimitive + Sync + Send + Copy,
+    T: Num + numpy::Element + PartialOrd + ToPrimitive + Copy,
 {
     let boxes = preprocess_boxes(boxes).unwrap();
     let scores = preprocess_array1(scores);

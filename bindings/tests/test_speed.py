@@ -112,7 +112,8 @@ def test_masks_to_boxes(benchmark):
 
 @pytest.mark.benchmark(group="nms")
 @pytest.mark.parametrize("dtype", supported_dtypes)
-def test_nms(benchmark, dtype):
-    boxes = np.random.random((100, 4)).astype(dtype)
-    scores = np.random.random((100,)).astype(np.float64)
+def test_nms(benchmark, dtype, generate_boxes):
+    boxes = generate_boxes
+    boxes = boxes.astype(dtype)
+    scores = np.random.random(len(boxes))
     benchmark(nms, boxes, scores, 0.5, 0.5)
