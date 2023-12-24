@@ -1,9 +1,9 @@
 use std::cmp::Ordering;
 
-use ndarray::{s, Array1, Array2};
+use ndarray::{Array1, Array2};
 use num_traits::{Num, ToPrimitive};
 
-use crate::{boxes, iou, utils};
+use crate::{boxes, utils};
 
 /// Performs non-maximum suppression (NMS) on a set of bounding boxes using their scores.
 /// # Arguments
