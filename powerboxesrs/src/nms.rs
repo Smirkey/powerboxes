@@ -1,7 +1,9 @@
+use std::cmp::Ordering;
+
 use ndarray::{Array1, Array2};
 use num_traits::{Num, ToPrimitive};
 
-use crate::iou;
+use crate::{boxes, utils};
 
 /// Performs non-maximum suppression (NMS) on a set of bounding boxes using their scores.
 /// # Arguments
@@ -24,7 +26,7 @@ use crate::iou;
 /// let boxes = arr2(&[[0.0, 0.0, 2.0, 2.0], [1.0, 1.0, 3.0, 3.0]]);
 /// let scores = Array1::from(vec![1.0, 1.0]);
 /// let keep = nms(&boxes, &scores, 0.8, 0.0);
-/// assert_eq!(keep, Array1::from(vec![1, 0]));
+/// assert_eq!(keep, Array1::from(vec![0, 1]));
 /// ```
 pub fn nms<N>(
     boxes: &Array2<N>,
@@ -35,30 +37,53 @@ pub fn nms<N>(
 where
     N: Num + PartialOrd + ToPrimitive + Copy,
 {
+    // Compute areas once
+    let areas = boxes::box_areas(&boxes);
+    // sort boxes by scores
     let mut indices: Vec<usize> = (0..scores.len()).collect();
-    indices.sort_by(|&a, &b| scores[a].partial_cmp(&scores[b]).unwrap());
-    indices = indices.into_iter().rev().collect::<Vec<usize>>();
+    indices.sort_unstable_by(|&a, &b| scores[b].partial_cmp(&scores[a]).unwrap_or(Ordering::Equal));
     let order = Array1::from(indices);
     let mut keep: Vec<usize> = Vec::new();
     let mut suppress = Array1::from_elem(scores.len(), false);
+
     for i in 0..scores.len() {
-        if suppress[i] {
-            continue;
-        }
         let idx = order[i];
         if scores[idx] < score_threshold {
             break;
         }
+        if suppress[i] {
+            continue;
+        }
         keep.push(idx);
+        let area1 = areas[idx];
+        let box1 = boxes.row(idx);
         for j in (i + 1)..scores.len() {
             if suppress[j] {
                 continue;
             }
             let idx_j = order[j];
-            let box1 = boxes.row(idx).to_owned();
-            let box2 = boxes.row(idx_j).to_owned();
+            let area2 = areas[idx_j];
+            let box2 = boxes.row(idx_j);
 
-            let iou = iou::box_iou(&box1, &box2);
+            let mut iou = 0.0;
+            let a1_x1 = box1[0];
+            let a1_y1 = box1[1];
+            let a1_x2 = box1[2];
+            let a1_y2 = box1[3];
+            let a2_x1 = box2[0];
+            let a2_y1 = box2[1];
+            let a2_x2 = box2[2];
+            let a2_y2 = box2[3];
+            let x1 = utils::max(a1_x1, a2_x1);
+            let x2 = utils::min(a1_x2, a2_x2);
+            let y1 = utils::max(a1_y1, a2_y1);
+            let y2 = utils::min(a1_y2, a2_y2);
+            if y2 > y1 && x2 > x1 {
+                let intersection = (x2 - x1) * (y2 - y1);
+                let intersection = intersection.to_f64().unwrap();
+                let intersection = f64::min(intersection, f64::min(area1, area2));
+                iou = intersection / (area1 + area2 - intersection + utils::EPS);
+            }
             if iou > iou_threshold {
                 suppress[idx_j] = true;
             }
@@ -112,6 +137,6 @@ mod tests {
         let boxes = arr2(&[[0.0, 0.0, 2.0, 2.0], [1.0, 1.0, 3.0, 3.0]]);
         let scores = Array1::from(vec![1.0, 1.0]);
         let keep = nms(&boxes, &scores, 0.8, 0.0);
-        assert_eq!(keep, Array1::from(vec![1, 0]));
+        assert_eq!(keep, Array1::from(vec![0, 1]));
     }
 }

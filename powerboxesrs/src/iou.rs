@@ -1,5 +1,5 @@
 use crate::{boxes, utils};
-use ndarray::{Array1, Array2, Zip};
+use ndarray::{Array2, Zip};
 use num_traits::{Num, ToPrimitive};
 
 /// Calculates the intersection over union (IoU) distance between two sets of bounding boxes.
@@ -97,51 +97,6 @@ where
     return iou;
 }
 
-/// Calculates the intersection over union (IoU) between two bounding boxes.
-/// This function is used by the non-maximum suppression (NMS) algorithm.
-/// # Arguments
-/// * `box1` - A 1D array of shape (4,) representing a bounding box in xyxy format.
-/// * `box2` - A 1D array of shape (4,) representing a bounding box in xyxy format.
-///
-/// # Returns
-///
-/// A float representing the IoU between the two bounding boxes.
-///
-/// # Examples
-/// ```
-/// use ndarray::array;
-/// use powerboxesrs::iou::box_iou;
-/// let box1 = array![0.0, 0.0, 1.0, 1.0];
-/// let box2 = array![0.5, 0.5, 1.5, 1.5];
-/// let iou = box_iou(&box1, &box2);
-/// assert_eq!(iou, 0.14285714285714285);
-pub fn box_iou<N>(box1: &Array1<N>, box2: &Array1<N>) -> f64
-where
-    N: Num + PartialOrd + ToPrimitive + Copy,
-{
-    let a1_x1 = box1[0];
-    let a1_y1 = box1[1];
-    let a1_x2 = box1[2];
-    let a1_y2 = box1[3];
-    let a2_x1 = box2[0];
-    let a2_y1 = box2[1];
-    let a2_x2 = box2[2];
-    let a2_y2 = box2[3];
-    let area1 = ((a1_x2 - a1_x1) * (a1_y2 - a1_y1)).to_f64().unwrap();
-    let area2 = ((a2_x2 - a2_x1) * (a2_y2 - a2_y1)).to_f64().unwrap();
-    let x1 = utils::max(a1_x1, a2_x1);
-    let y1 = utils::max(a1_y1, a2_y1);
-    let x2 = utils::min(a1_x2, a2_x2);
-    let y2 = utils::min(a1_y2, a2_y2);
-    if x2 < x1 || y2 < y1 {
-        return 0.0;
-    }
-    let intersection = (x2 - x1) * (y2 - y1);
-    let intersection = intersection.to_f64().unwrap();
-    let intersection = utils::min(intersection, utils::min(area1, area2));
-    let iou = intersection / (area1 + area2 - intersection + utils::EPS);
-    return iou;
-}
 /// Calculates the intersection over union (IoU) distance between two sets of bounding boxes.
 /// This function uses rayon to parallelize the computation, which can be faster than the
 /// non-parallelized version for large numbers of boxes.
@@ -212,7 +167,7 @@ where
 
 #[cfg(test)]
 mod tests {
-    use ndarray::{arr1, arr2};
+    use ndarray::arr2;
 
     use super::*;
 
@@ -275,13 +230,5 @@ mod tests {
         assert_eq!(iou_distance_result, arr2(&[[1.0]]));
         assert_eq!(parallel_iou_distance_result, arr2(&[[1.0]]));
         assert_eq!(1. - iou_distance_result, iou_result);
-    }
-
-    #[test]
-    fn test_box_iou() {
-        let box1 = arr1(&[0.0, 0.0, 1.0, 1.0]);
-        let box2 = arr1(&[0.5, 0.5, 1.5, 1.5]);
-        let iou = box_iou(&box1, &box2);
-        assert_eq!(iou, 0.14285714285714285);
     }
 }
