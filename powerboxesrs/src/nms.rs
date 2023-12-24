@@ -1,9 +1,9 @@
 use std::cmp::Ordering;
 
-use ndarray::{Array1, Array2};
+use ndarray::{s, Array1, Array2};
 use num_traits::{Num, ToPrimitive};
 
-use crate::{boxes, iou};
+use crate::{boxes, iou, utils};
 
 /// Performs non-maximum suppression (NMS) on a set of bounding boxes using their scores.
 /// # Arguments
@@ -37,8 +37,9 @@ pub fn nms<N>(
 where
     N: Num + PartialOrd + ToPrimitive + Copy,
 {
+    let boxes = boxes.to_owned();
     // Compute areas once
-    let areas = boxes::box_areas(boxes);
+    let areas = boxes::box_areas(&boxes);
     // sort boxes by scores
     let mut indices: Vec<usize> = (0..scores.len()).collect();
     indices.sort_unstable_by(|&a, &b| scores[b].partial_cmp(&scores[a]).unwrap_or(Ordering::Equal));
@@ -56,15 +57,34 @@ where
         }
         keep.push(idx);
         let area1 = areas[idx];
-        let box1 = boxes.row(idx).to_owned();
+        let box1 = boxes.row(idx);
         for j in (i + 1)..scores.len() {
             if suppress[j] {
                 continue;
             }
             let idx_j = order[j];
-            let box2 = boxes.row(idx_j).to_owned();
+            let area2 = areas[idx_j];
+            let box2 = boxes.row(idx_j);
 
-            let iou = iou::box_iou(&box1, &box2, area1, areas[idx_j]);
+            let mut iou = 0.0;
+            let a1_x1 = box1[0];
+            let a1_y1 = box1[1];
+            let a1_x2 = box1[2];
+            let a1_y2 = box1[3];
+            let a2_x1 = box2[0];
+            let a2_y1 = box2[1];
+            let a2_x2 = box2[2];
+            let a2_y2 = box2[3];
+            let x1 = utils::max(a1_x1, a2_x1);
+            let x2 = utils::min(a1_x2, a2_x2);
+            let y1 = utils::max(a1_y1, a2_y1);
+            let y2 = utils::min(a1_y2, a2_y2);
+            if y2 > y1 && x2 > x1 {
+                let intersection = (x2 - x1) * (y2 - y1);
+                let intersection = intersection.to_f64().unwrap();
+                let intersection = f64::min(intersection, f64::min(area1, area2));
+                iou = intersection / (area1 + area2 - intersection + utils::EPS);
+            }
             if iou > iou_threshold {
                 suppress[idx_j] = true;
             }
