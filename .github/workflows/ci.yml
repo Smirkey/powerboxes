@@ -55,7 +55,7 @@ jobs:
           cargo check
           cargo test
           maturin develop
-          pytest tests --cov=powerboxes --cov-report xml
+          pytest tests --cov=powerboxes --cov-report xml -m "not benchmark"
           cargo llvm-cov --no-run --lcov --output-path coverage-bindings.lcov
           cd ../powerboxesrs
           source <(cargo llvm-cov show-env --export-prefix)
@@ -113,7 +113,7 @@ jobs:
 
       - run: pip freeze
 
-      - run: pytest bindings/tests
+      - run: pytest bindings/tests -m "not benchmark"
 
   test-os:
     name: test on ${{ matrix.os }}
@@ -148,7 +148,7 @@ jobs:
 
       - run: pip freeze
 
-      - run: pytest
+      - run: pytest -m "not benchmark"
 
       - run: cd powerboxesrs && cargo test && cd ../bindings && cargo test
 
