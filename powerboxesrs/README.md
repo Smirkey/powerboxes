@@ -16,12 +16,16 @@ cargo add powerboxesrs
 - `box_areas`: Compute the area of list of boxes
 - `box_convert`: Convert a box from one format to another. Supported formats are `xyxy`, `xywh`, `cxcywh`.
 - `remove_small_boxes`: Remove boxes with area smaller than a threshold
+- `mask_to_boxes`: Convert a mask to a list of boxes
 
 #### Box Metrics
 - `iou_distance`: Compute the intersection over union matrix of two sets of boxes
 - `parallel_iou_distance`: Compute the intersection over union matrix of two sets of boxes in parallel
 - `giou_distance`: Compute the generalized intersection over union matrix of two sets of boxes
 - `parallel_giou_distance`: Compute the generalized intersection over union matrix of two sets of boxes in parallel
+
+#### Box NMS
+- `nms`: Non-maximum suppression, returns the indices of the boxes to keep
 
 
 ## Use it in Rust
