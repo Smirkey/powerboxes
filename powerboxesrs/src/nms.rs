@@ -24,7 +24,7 @@ use crate::{boxes, iou};
 /// let boxes = arr2(&[[0.0, 0.0, 2.0, 2.0], [1.0, 1.0, 3.0, 3.0]]);
 /// let scores = Array1::from(vec![1.0, 1.0]);
 /// let keep = nms(&boxes, &scores, 0.8, 0.0);
-/// assert_eq!(keep, Array1::from(vec![0, 1]));
+/// assert_eq!(keep, Array1::from(vec![1, 0]));
 /// ```
 pub fn nms<N>(
     boxes: &Array2<N>,
@@ -37,31 +37,37 @@ where
 {
     // Compute areas once
     let areas = boxes::box_areas(boxes);
+    println!("areas: {:?}", areas);
     // sort boxes by scores
     let mut indices: Vec<usize> = (0..scores.len()).collect();
     indices.sort_by(|&a, &b| scores[a].partial_cmp(&scores[b]).unwrap());
+    indices = indices.into_iter().rev().collect::<Vec<usize>>();
     let order = Array1::from(indices);
     let mut keep: Vec<usize> = Vec::new();
     let mut suppress = Array1::from_elem(scores.len(), false);
-    // initialize cache for intersection
+
+    println!("order: {:?}", order);
+    println!("scores: {:?}", scores);
+
     for i in 0..scores.len() {
-        if suppress[i] {
-            continue;
-        }
         let idx = order[i];
         if scores[idx] < score_threshold {
             break;
         }
+        if suppress[i] {
+            continue;
+        }
         keep.push(idx);
-        for j in (i + 1)..order.len() {
+        let area1 = areas[idx];
+        let box1 = boxes.row(idx).to_owned();
+        for j in (i + 1)..scores.len() {
             if suppress[j] {
                 continue;
             }
             let idx_j = order[j];
-            let box1 = boxes.row(idx).to_owned();
             let box2 = boxes.row(idx_j).to_owned();
 
-            let iou = iou::box_iou(&box1, &box2, areas[idx], areas[idx_j]);
+            let iou = iou::box_iou(&box1, &box2, area1, areas[idx_j]);
             if iou > iou_threshold {
                 suppress[idx_j] = true;
             }

@@ -37,11 +37,7 @@ where
 
     Zip::indexed(&mut areas).for_each(|i, area| {
         let box1 = boxes.row(i);
-        let x1 = box1[0];
-        let y1 = box1[1];
-        let x2 = box1[2];
-        let y2 = box1[3];
-        let area_ = (x2 - x1) * (y2 - y1);
+        let area_ = (box1[2] - box1[0]) * (box1[3] - box1[1]);
         *area = area_.to_f64().unwrap();
     });
 

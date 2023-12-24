@@ -113,7 +113,7 @@ where
 /// use powerboxesrs::iou::box_iou;
 /// let box1 = array![0.0, 0.0, 1.0, 1.0];
 /// let box2 = array![0.5, 0.5, 1.5, 1.5];
-/// let iou = box_iou(&box1, &box2);
+/// let iou = box_iou(&box1, &box2, 1.0, 1.0);
 /// assert_eq!(iou, 0.14285714285714285);
 pub fn box_iou<N>(box1: &Array1<N>, box2: &Array1<N>, area_box1: f64, area_box2: f64) -> f64
 where
@@ -128,10 +128,13 @@ where
     let a2_x2 = box2[2];
     let a2_y2 = box2[3];
     let x1 = utils::max(a1_x1, a2_x1);
-    let y1 = utils::max(a1_y1, a2_y1);
     let x2 = utils::min(a1_x2, a2_x2);
+    if x2 < x1 {
+        return 0.0;
+    }
+    let y1 = utils::max(a1_y1, a2_y1);
     let y2 = utils::min(a1_y2, a2_y2);
-    if x2 < x1 || y2 < y1 {
+    if y2 < y1 {
         return 0.0;
     }
     let intersection = (x2 - x1) * (y2 - y1);
