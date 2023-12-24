@@ -167,7 +167,7 @@ where
 
 #[cfg(test)]
 mod tests {
-    use ndarray::{arr1, arr2};
+    use ndarray::arr2;
 
     use super::*;
 
