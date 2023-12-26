@@ -3,8 +3,8 @@ use std::cmp::Ordering;
 use crate::{boxes, utils};
 use ndarray::{Array1, Array2, Axis};
 use num_traits::{Num, ToPrimitive};
-use rstar::primitives::Rectangle;
-use rstar::{RTree, RTreeNum, AABB};
+// use rstar::primitives::Rectangle;
+// use rstar::{RTree, RTreeNum, AABB};
 
 /// Performs non-maximum suppression (NMS) on a set of bounding boxes using their scores.
 /// # Arguments
@@ -45,15 +45,11 @@ where
         .map(|(idx, _)| idx)
         .collect();
     let filtered_boxes = boxes.select(Axis(0), &above_score_threshold);
-    let filtered_scores = scores.select(Axis(0), &above_score_threshold);
     // Compute areas once
     let areas = boxes::box_areas(&filtered_boxes);
-    // sort boxes by scores
-    above_score_threshold.sort_unstable_by(|&a, &b| {
-        filtered_scores[b]
-            .partial_cmp(&filtered_scores[a])
-            .unwrap_or(Ordering::Equal)
-    });
+    // sort box indices by scores
+    above_score_threshold
+        .sort_unstable_by(|&a, &b| scores[b].partial_cmp(&scores[a]).unwrap_or(Ordering::Equal));
     let order = Array1::from(above_score_threshold);
     let mut keep: Vec<usize> = Vec::new();
     let mut suppress = Array1::from_elem(order.len(), false);
@@ -86,83 +82,83 @@ where
                 iou = intersection / (area1 + area2 - intersection + utils::EPS);
             }
             if iou > iou_threshold {
-                suppress[idx_j] = true;
+                suppress[j] = true;
             }
         }
     }
     return Array1::from(keep);
 }
 
-pub fn rtree_nms<N>(
-    boxes: &Array2<N>,
-    scores: &Array1<f64>,
-    iou_threshold: f64,
-    score_threshold: f64,
-) where
-    N: RTreeNum + ToPrimitive,
-{
-    // filter out boxes lower than score threshold
-    let above_score_threshold: Vec<usize> = scores
-        .indexed_iter()
-        .filter(|(_, &score)| score >= score_threshold)
-        .map(|(idx, _)| idx)
-        .collect();
-    let boxes = boxes.select(Axis(0), &above_score_threshold);
-    let scores = scores.select(Axis(0), &above_score_threshold);
-    // Compute areas once
-    let areas = boxes::box_areas(&boxes);
-    // sort boxes by scores
-    let mut indices: Vec<usize> = (0..scores.len()).collect();
-    indices.sort_unstable_by(|&a, &b| scores[b].partial_cmp(&scores[a]).unwrap_or(Ordering::Equal));
-    let order = Array1::from(indices);
-    let mut suppress = Array1::from_elem(scores.len(), false);
-    // build rtree
-    let mut rtree: RTree<Rectangle<_>> = RTree::bulk_load(
-        order
-            .iter()
-            .map(|&idx| {
-                let box_ = boxes.row(idx);
-                AABB::from_corners([box_[0], box_[1]], [box_[2], box_[3]]).into()
-            })
-            .collect(),
-    );
-    for idx in order {
-        if suppress[idx] {
-            continue;
-        }
-        let box_ = boxes.row(idx);
-        let area1 = areas[idx];
-        let candidates: Vec<_> = rtree
-            .locate_in_envelope_intersecting(&AABB::from_corners(
-                [box_[0], box_[1]],
-                [box_[2], box_[3]],
-            ))
-            .collect();
-        for candidate in candidates.iter() {
-            let idx_j = 0;
-            if suppress[idx_j] {
-                continue;
-            }
-            let area2 = areas[idx_j];
-            let box2 = boxes.row(idx_j);
+// pub fn rtree_nms<N>(
+//     boxes: &Array2<N>,
+//     scores: &Array1<f64>,
+//     iou_threshold: f64,
+//     score_threshold: f64,
+// ) where
+//     N: RTreeNum + ToPrimitive,
+// {
+//     // filter out boxes lower than score threshold
+//     let above_score_threshold: Vec<usize> = scores
+//         .indexed_iter()
+//         .filter(|(_, &score)| score >= score_threshold)
+//         .map(|(idx, _)| idx)
+//         .collect();
+//     let boxes = boxes.select(Axis(0), &above_score_threshold);
+//     let scores = scores.select(Axis(0), &above_score_threshold);
+//     // Compute areas once
+//     let areas = boxes::box_areas(&boxes);
+//     // sort boxes by scores
+//     let mut indices: Vec<usize> = (0..scores.len()).collect();
+//     indices.sort_unstable_by(|&a, &b| scores[b].partial_cmp(&scores[a]).unwrap_or(Ordering::Equal));
+//     let order = Array1::from(indices);
+//     let mut suppress = Array1::from_elem(scores.len(), false);
+//     // build rtree
+//     let mut rtree: RTree<Rectangle<_>> = RTree::bulk_load(
+//         order
+//             .iter()
+//             .map(|&idx| {
+//                 let box_ = boxes.row(idx);
+//                 AABB::from_corners([box_[0], box_[1]], [box_[2], box_[3]]).into()
+//             })
+//             .collect(),
+//     );
+//     for idx in order {
+//         if suppress[idx] {
+//             continue;
+//         }
+//         let box_ = boxes.row(idx);
+//         let area1 = areas[idx];
+//         let candidates: Vec<_> = rtree
+//             .locate_in_envelope_intersecting(&AABB::from_corners(
+//                 [box_[0], box_[1]],
+//                 [box_[2], box_[3]],
+//             ))
+//             .collect();
+//         for candidate in candidates.iter() {
+//             let idx_j = 0;
+//             if suppress[idx_j] {
+//                 continue;
+//             }
+//             let area2 = areas[idx_j];
+//             let box2 = boxes.row(idx_j);
 
-            let mut iou = 0.0;
-            let x1 = utils::max(box_[0], box2[0]);
-            let x2 = utils::min(box_[2], box2[2]);
-            let y1 = utils::max(box_[1], box2[1]);
-            let y2 = utils::min(box_[3], box2[3]);
-            if y2 > y1 && x2 > x1 {
-                let intersection = (x2 - x1) * (y2 - y1);
-                let intersection = intersection.to_f64().unwrap();
-                let intersection = f64::min(intersection, f64::min(area1, area2));
-                iou = intersection / (area1 + area2 - intersection + utils::EPS);
-            }
-            if iou > iou_threshold {
-                suppress[idx_j] = true;
-            }
-        }
-    }
-}
+//             let mut iou = 0.0;
+//             let x1 = utils::max(box_[0], box2[0]);
+//             let x2 = utils::min(box_[2], box2[2]);
+//             let y1 = utils::max(box_[1], box2[1]);
+//             let y2 = utils::min(box_[3], box2[3]);
+//             if y2 > y1 && x2 > x1 {
+//                 let intersection = (x2 - x1) * (y2 - y1);
+//                 let intersection = intersection.to_f64().unwrap();
+//                 let intersection = f64::min(intersection, f64::min(area1, area2));
+//                 iou = intersection / (area1 + area2 - intersection + utils::EPS);
+//             }
+//             if iou > iou_threshold {
+//                 suppress[idx_j] = true;
+//             }
+//         }
+//     }
+// }
 
 #[cfg(test)]
 mod tests {
