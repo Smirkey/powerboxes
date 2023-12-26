@@ -1,9 +1,8 @@
 use std::cmp::Ordering;
 
 use crate::{boxes, utils};
-use ndarray::{s, Array1, Array2, Axis};
+use ndarray::{Array1, Array2, Axis};
 use num_traits::{Num, ToPrimitive};
-use rstar::primitives::Rectangle;
 use rstar::{RTree, RTreeNum, RTreeObject, AABB};
 
 /// Performs non-maximum suppression (NMS) on a set of bounding boxes using their scores and IoU.
