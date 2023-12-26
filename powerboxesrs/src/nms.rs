@@ -1,8 +1,8 @@
-use std::{cmp::Ordering, fmt::Debug};
+use std::cmp::Ordering;
 
 use crate::{boxes, utils};
 use ndarray::{Array1, Array2, Axis};
-use num_traits::{Bounded, Num, Signed, ToPrimitive};
+use num_traits::{Num, ToPrimitive};
 use rstar::primitives::Rectangle;
 use rstar::{RTree, RTreeNum, AABB};
 
@@ -39,39 +39,39 @@ where
     N: Num + PartialOrd + ToPrimitive + Copy,
 {
     // filter out boxes lower than score threshold
-    let above_score_threshold: Vec<usize> = scores
+    let mut above_score_threshold: Vec<usize> = scores
         .indexed_iter()
         .filter(|(_, &score)| score >= score_threshold)
         .map(|(idx, _)| idx)
         .collect();
-    let boxes = boxes.select(Axis(0), &above_score_threshold);
-    let scores = scores.select(Axis(0), &above_score_threshold);
+    let filtered_boxes = boxes.select(Axis(0), &above_score_threshold);
+    let filtered_scores = scores.select(Axis(0), &above_score_threshold);
     // Compute areas once
-    let areas = boxes::box_areas(&boxes);
+    let areas = boxes::box_areas(&filtered_boxes);
     // sort boxes by scores
-    let mut indices: Vec<usize> = (0..scores.len()).collect();
-    indices.sort_unstable_by(|&a, &b| scores[b].partial_cmp(&scores[a]).unwrap_or(Ordering::Equal));
-    let order = Array1::from(indices);
+    above_score_threshold.sort_unstable_by(|&a, &b| {
+        filtered_scores[b]
+            .partial_cmp(&filtered_scores[a])
+            .unwrap_or(Ordering::Equal)
+    });
+    let order = Array1::from(above_score_threshold);
     let mut keep: Vec<usize> = Vec::new();
-    let mut suppress = Array1::from_elem(scores.len(), false);
+    let mut suppress = Array1::from_elem(order.len(), false);
 
-    for i in 0..scores.len() {
+    for i in 0..order.len() {
         let idx = order[i];
-        if scores[idx] < score_threshold {
-            break;
-        }
         if suppress[i] {
             continue;
         }
         keep.push(idx);
-        let area1 = areas[idx];
+        let area1 = areas[i];
         let box1 = boxes.row(idx);
-        for j in (i + 1)..scores.len() {
+        for j in (i + 1)..order.len() {
             if suppress[j] {
                 continue;
             }
             let idx_j = order[j];
-            let area2 = areas[idx_j];
+            let area2 = areas[j];
             let box2 = boxes.row(idx_j);
 
             let mut iou = 0.0;

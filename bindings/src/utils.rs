@@ -15,7 +15,7 @@ pub fn preprocess_boxes<N>(array: &PyArray2<N>) -> Result<Array2<N>, PyErr>
 where
     N: Num + numpy::Element + Send,
 {
-    let array = unsafe { array.as_array().to_owned() };
+    let array = unsafe { array.as_array() };
     let array_shape = array.shape();
 
     if array_shape[1] != 4 {
