@@ -50,6 +50,7 @@ intersection = pb.iou_distance(box, box)
 
 #### Box NMS
 - `nms`: Non-maximum suppression, returns the indices of the boxes to keep
+- `rtree_nms`: Non-maximum suppression, returns the indices of the boxes to keep, uses a r-tree internally to avoid quadratic complexity, useful when having many boxes.
 
 ## Use it in Rust
 See the [documentation](https://docs.rs/powerboxesrs) for more details.
