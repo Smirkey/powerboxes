@@ -189,8 +189,6 @@ where
             [box1[2], box1[3]],
         )) {
             let idx_j = bbox.index;
-            println!("{:?}", suppress);
-            println!("{:?}", idx_j);
             if suppress[idx_j] {
                 continue;
             }
