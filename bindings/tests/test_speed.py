@@ -127,3 +127,19 @@ def test_rtree_nms(benchmark, dtype, generate_boxes):
     boxes = boxes.astype(dtype)
     scores = np.random.random(len(boxes))
     benchmark(rtree_nms, boxes, scores, 0.5, 0.5)
+
+
+@pytest.mark.benchmark(group="nms_many_boxes")
+@pytest.mark.parametrize("n_boxes", [1000, 5000, 10000, 20000])
+def test_nms_many_boxes(benchmark, n_boxes, generate_boxes):
+    boxes = generate_boxes
+    scores = np.random.random(len(boxes))
+    benchmark(nms, boxes, scores, 0.5, 0.5)
+
+
+@pytest.mark.benchmark(group="nms_many_boxes")
+@pytest.mark.parametrize("n_boxes", [1000, 5000, 10000, 20000])
+def test_rtree_nms_many_boxes(benchmark, n_boxes, generate_boxes):
+    boxes = generate_boxes
+    scores = np.random.random(len(boxes))
+    benchmark(rtree_nms, boxes, scores, 0.5, 0.5)
