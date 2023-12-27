@@ -30,9 +30,9 @@ _dtype_to_func_nms = {
 }
 
 _dtype_to_func_rtree_nms = {
-    np.dtype("float64"): nms_f64,
-    np.dtype("float32"): nms_f32,
-    np.dtype("int64"): nms_i64,
-    np.dtype("int32"): nms_i32,
-    np.dtype("int16"): nms_i16,
+    np.dtype("float64"): rtree_nms_f64,
+    np.dtype("float32"): rtree_nms_f32,
+    np.dtype("int64"): rtree_nms_i64,
+    np.dtype("int32"): rtree_nms_i32,
+    np.dtype("int16"): rtree_nms_i16,
 }
