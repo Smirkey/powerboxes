@@ -116,7 +116,7 @@ def test_masks_to_boxes(benchmark):
 def test_nms(benchmark, dtype, generate_boxes):
     boxes = generate_boxes
     boxes = boxes.astype(dtype)
-    scores = np.ones(len(boxes)).astype(np.float64)
+    scores = np.ones(len(boxes)).astype(np.float64) * 0.6
     benchmark(nms, boxes, scores, 0.5, 0.5)
 
 
@@ -125,7 +125,7 @@ def test_nms(benchmark, dtype, generate_boxes):
 def test_rtree_nms(benchmark, dtype, generate_boxes):
     boxes = generate_boxes
     boxes = boxes.astype(dtype)
-    scores = np.ones(len(boxes)).astype(np.float64)
+    scores = np.ones(len(boxes)).astype(np.float64) * 0.6
     benchmark(rtree_nms, boxes, scores, 0.5, 0.5)
 
 
@@ -133,7 +133,7 @@ def test_rtree_nms(benchmark, dtype, generate_boxes):
 @pytest.mark.parametrize("n_boxes", [1000, 5000, 10000])
 def test_nms_many_boxes(benchmark, n_boxes, generate_boxes):
     boxes = generate_boxes
-    scores = np.ones(len(boxes)).astype(np.float64)
+    scores = np.ones(len(boxes)).astype(np.float64) * 0.6
     benchmark(nms, boxes, scores, 0.5, 0.5)
 
 
@@ -141,5 +141,5 @@ def test_nms_many_boxes(benchmark, n_boxes, generate_boxes):
 @pytest.mark.parametrize("n_boxes", [1000, 5000, 10000])
 def test_rtree_nms_many_boxes(benchmark, n_boxes, generate_boxes):
     boxes = generate_boxes
-    scores = np.ones(len(boxes)).astype(np.float64)
+    scores = np.ones(len(boxes)).astype(np.float64) * 0.6
     benchmark(rtree_nms, boxes, scores, 0.5, 0.5)
