@@ -880,7 +880,16 @@ fn rtree_nms_generic<T>(
     score_threshold: f64,
 ) -> PyResult<Py<PyArray1<usize>>>
 where
-    T: Num + numpy::Element + PartialOrd + ToPrimitive + Copy + Signed + Bounded + Debug,
+    T: Num
+        + numpy::Element
+        + PartialOrd
+        + ToPrimitive
+        + Copy
+        + Signed
+        + Bounded
+        + Debug
+        + Sync
+        + Send,
 {
     let boxes = preprocess_boxes(boxes).unwrap();
     let scores = preprocess_array1(scores);

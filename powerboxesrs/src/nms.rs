@@ -3,7 +3,7 @@ use std::cmp::Ordering;
 use crate::{boxes, utils};
 use ndarray::{Array1, Array2, Axis};
 use num_traits::{Num, ToPrimitive};
-use rstar::{RTree, RTreeNum, RTreeObject, AABB};
+use rstar::{RStarInsertionStrategy, RTree, RTreeNum, RTreeObject, RTreeParams, AABB};
 
 /// Performs non-maximum suppression (NMS) on a set of bounding boxes using their scores and IoU.
 /// # Arguments
@@ -100,13 +100,23 @@ struct Bbox<T> {
 // Implement RTreeObject for Bbox
 impl<T> RTreeObject for Bbox<T>
 where
-    T: RTreeNum + ToPrimitive,
+    T: RTreeNum + ToPrimitive + Sync + Send,
 {
     type Envelope = AABB<[T; 2]>;
 
     fn envelope(&self) -> Self::Envelope {
         AABB::from_corners([self.x1, self.y1], [self.x2, self.y2])
     }
+}
+
+impl<T> RTreeParams for Bbox<T>
+where
+    T: RTreeNum + ToPrimitive + Sync + Send,
+{
+    const MIN_SIZE: usize = 3;
+    const MAX_SIZE: usize = 32;
+    const REINSERTION_COUNT: usize = 5;
+    type DefaultInsertionStrategy = RStarInsertionStrategy;
 }
 
 /// Performs non-maximum suppression (NMS) on a set of bounding using their score and IoU.
@@ -143,7 +153,7 @@ pub fn rtree_nms<N>(
     score_threshold: f64,
 ) -> Array1<usize>
 where
-    N: RTreeNum + ToPrimitive,
+    N: RTreeNum + ToPrimitive + Send + Sync,
 {
     // filter out boxes lower than score threshold
     let mut above_score_threshold: Vec<usize> = scores
@@ -160,6 +170,7 @@ where
     let mut keep: Vec<usize> = Vec::new();
     let mut suppress = Array1::from_elem(scores.len(), false);
     // build rtree
+
     let rtree: RTree<Bbox<N>> = RTree::bulk_load(
         order
             .iter()
