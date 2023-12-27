@@ -51,11 +51,11 @@ where
         .sort_unstable_by(|&a, &b| scores[b].partial_cmp(&scores[a]).unwrap_or(Ordering::Equal));
     let order = Array1::from(above_score_threshold);
     let mut keep: Vec<usize> = Vec::new();
-    let mut suppress = Array1::from_elem(scores.len(), false);
+    let mut suppress = Array1::from_elem(order.len(), false);
 
     for i in 0..order.len() {
         let idx = order[i];
-        if suppress[idx] {
+        if suppress[i] {
             continue;
         }
         keep.push(idx);
@@ -63,7 +63,7 @@ where
         let box1 = boxes.row(idx);
         for j in (i + 1)..order.len() {
             let idx_j = order[j];
-            if suppress[idx_j] {
+            if suppress[j] {
                 continue;
             }
             let area2 = areas[j];
@@ -81,7 +81,7 @@ where
                 iou = intersection / (area1 + area2 - intersection + utils::EPS);
             }
             if iou > iou_threshold {
-                suppress[idx_j] = true;
+                suppress[j] = true;
             }
         }
     }
