@@ -3,7 +3,7 @@ use std::cmp::Ordering;
 use crate::{boxes, utils};
 use ndarray::{Array1, Array2, Axis};
 use num_traits::{Num, ToPrimitive};
-use rstar::{RTree, RTreeNum, RTreeObject, AABB};
+use rstar::{RStarInsertionStrategy, RTree, RTreeNum, RTreeObject, RTreeParams, AABB};
 
 /// Performs non-maximum suppression (NMS) on a set of bounding boxes using their scores and IoU.
 /// # Arguments
@@ -51,11 +51,11 @@ where
         .sort_unstable_by(|&a, &b| scores[b].partial_cmp(&scores[a]).unwrap_or(Ordering::Equal));
     let order = Array1::from(above_score_threshold);
     let mut keep: Vec<usize> = Vec::new();
-    let mut suppress = Array1::from_elem(scores.len(), false);
+    let mut suppress = Array1::from_elem(order.len(), false);
 
     for i in 0..order.len() {
         let idx = order[i];
-        if suppress[idx] {
+        if suppress[i] {
             continue;
         }
         keep.push(idx);
@@ -63,7 +63,7 @@ where
         let box1 = boxes.row(idx);
         for j in (i + 1)..order.len() {
             let idx_j = order[j];
-            if suppress[idx_j] {
+            if suppress[j] {
                 continue;
             }
             let area2 = areas[j];
@@ -81,7 +81,7 @@ where
                 iou = intersection / (area1 + area2 - intersection + utils::EPS);
             }
             if iou > iou_threshold {
-                suppress[idx_j] = true;
+                suppress[j] = true;
             }
         }
     }
@@ -100,13 +100,23 @@ struct Bbox<T> {
 // Implement RTreeObject for Bbox
 impl<T> RTreeObject for Bbox<T>
 where
-    T: RTreeNum + ToPrimitive,
+    T: RTreeNum + ToPrimitive + Sync + Send,
 {
     type Envelope = AABB<[T; 2]>;
 
     fn envelope(&self) -> Self::Envelope {
         AABB::from_corners([self.x1, self.y1], [self.x2, self.y2])
     }
+}
+
+impl<T> RTreeParams for Bbox<T>
+where
+    T: RTreeNum + ToPrimitive + Sync + Send,
+{
+    const MIN_SIZE: usize = 16;
+    const MAX_SIZE: usize = 256;
+    const REINSERTION_COUNT: usize = 5;
+    type DefaultInsertionStrategy = RStarInsertionStrategy;
 }
 
 /// Performs non-maximum suppression (NMS) on a set of bounding using their score and IoU.
@@ -143,7 +153,7 @@ pub fn rtree_nms<N>(
     score_threshold: f64,
 ) -> Array1<usize>
 where
-    N: RTreeNum + ToPrimitive,
+    N: RTreeNum + ToPrimitive + Send + Sync,
 {
     // filter out boxes lower than score threshold
     let mut above_score_threshold: Vec<usize> = scores
@@ -160,6 +170,7 @@ where
     let mut keep: Vec<usize> = Vec::new();
     let mut suppress = Array1::from_elem(scores.len(), false);
     // build rtree
+
     let rtree: RTree<Bbox<N>> = RTree::bulk_load(
         order
             .iter()
@@ -189,8 +200,6 @@ where
             [box1[2], box1[3]],
         )) {
             let idx_j = bbox.index;
-            println!("{:?}", suppress);
-            println!("{:?}", idx_j);
             if suppress[idx_j] {
                 continue;
             }

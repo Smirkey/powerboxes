@@ -16,7 +16,7 @@ from ._iou import (
     _dtype_to_func_iou_distance,
     _dtype_to_func_parallel_iou_distance,
 )
-from ._nms import _dtype_to_func_nms
+from ._nms import _dtype_to_func_nms, _dtype_to_func_rtree_nms
 from ._powerboxes import masks_to_boxes as _masks_to_boxes
 
 _BOXES_NOT_SAME_TYPE = "boxes1 and boxes2 must have the same dtype"
@@ -247,6 +247,36 @@ def nms(
     )
 
 
+def rtree_nms(
+    boxes: npt.NDArray[T],
+    scores: npt.NDArray[np.float64],
+    iou_threshold: float,
+    score_threshold: float,
+) -> npt.NDArray[np.uint64]:
+    """Applies non-maximum suppression to boxes.
+
+    Uses an rtree to speed up computation. This is only available for
+    signed integer dtypes and float32 and float64.
+
+    Args:
+        boxes: 2d array of boxes in xyxy format
+        scores: 1d array of scores
+        iou_threshold: threshold for iou
+        score_threshold: threshold for scores
+
+    Raises:
+        TypeError: if boxes or scores are not numpy arrays
+
+    Returns:
+        npt.NDArray[np.uint64]: 1d array of indices to keep
+    """
+    if not isinstance(boxes, np.ndarray) or not isinstance(scores, np.ndarray):
+        raise TypeError("Boxes and scores must be numpy arrays")
+    return _dtype_to_func_rtree_nms[boxes.dtype](
+        boxes, scores, iou_threshold, score_threshold
+    )
+
+
 __all__ = [
     "iou_distance",
     "parallel_iou_distance",
@@ -258,5 +288,6 @@ __all__ = [
     "masks_to_boxes",
     "supported_dtypes",
     "nms",
+    "rtree_nms",
     "__version__",
 ]

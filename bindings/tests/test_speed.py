@@ -10,10 +10,22 @@ from powerboxes import (
     parallel_giou_distance,
     parallel_iou_distance,
     remove_small_boxes,
+    rtree_nms,
     supported_dtypes,
 )
 
 np.random.seed(42)
+
+SCORES = np.random.random((100,))
+
+
+@pytest.fixture(scope="function")
+def generate_boxes(request):
+    n_boxes = request.param if hasattr(request, "param") else 100
+    im_size = 10_000
+    topleft = np.random.uniform(0.0, high=im_size, size=(n_boxes, 2))
+    wh = np.random.uniform(15, 45, size=topleft.shape)
+    return np.concatenate([topleft, topleft + wh], axis=1).astype(np.float64)
 
 
 @pytest.mark.benchmark(group="giou_distance")
@@ -115,5 +127,28 @@ def test_masks_to_boxes(benchmark):
 def test_nms(benchmark, dtype, generate_boxes):
     boxes = generate_boxes
     boxes = boxes.astype(dtype)
+    benchmark(nms, boxes, SCORES, 0.5, 0.5)
+
+
+@pytest.mark.benchmark(group="nms")
+@pytest.mark.parametrize("dtype", ["float64", "float32", "int64", "int32", "int16"])
+def test_rtree_nms(benchmark, dtype, generate_boxes):
+    boxes = generate_boxes
+    boxes = boxes.astype(dtype)
+    benchmark(rtree_nms, boxes, SCORES, 0.5, 0.5)
+
+
+@pytest.mark.benchmark(group="nms_many_boxes")
+@pytest.mark.parametrize("generate_boxes", [1000, 5000, 10000, 20000], indirect=True)
+def test_nms_many_boxes(benchmark, generate_boxes):
+    boxes = generate_boxes
     scores = np.random.random(len(boxes))
     benchmark(nms, boxes, scores, 0.5, 0.5)
+
+
+@pytest.mark.benchmark(group="nms_many_boxes")
+@pytest.mark.parametrize("generate_boxes", [1000, 5000, 10000, 20000], indirect=True)
+def test_rtree_nms_many_boxes(benchmark, generate_boxes):
+    boxes = generate_boxes
+    scores = np.random.random(len(boxes))
+    benchmark(rtree_nms, boxes, scores, 0.5, 0.5)

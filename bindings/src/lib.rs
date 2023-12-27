@@ -1,6 +1,8 @@
 mod utils;
 
-use num_traits::{Num, ToPrimitive};
+use std::fmt::Debug;
+
+use num_traits::{Bounded, Num, Signed, ToPrimitive};
 use numpy::{PyArray1, PyArray2, PyArray3};
 use powerboxesrs::{boxes, giou, iou, nms};
 use pyo3::prelude::*;
@@ -88,6 +90,12 @@ fn _powerboxes(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(nms_u32, m)?)?;
     m.add_function(wrap_pyfunction!(nms_u16, m)?)?;
     m.add_function(wrap_pyfunction!(nms_u8, m)?)?;
+    // rtree nms
+    m.add_function(wrap_pyfunction!(rtree_nms_f64, m)?)?;
+    m.add_function(wrap_pyfunction!(rtree_nms_f32, m)?)?;
+    m.add_function(wrap_pyfunction!(rtree_nms_i64, m)?)?;
+    m.add_function(wrap_pyfunction!(rtree_nms_i32, m)?)?;
+    m.add_function(wrap_pyfunction!(rtree_nms_i16, m)?)?;
     // Masks to boxes
     m.add_function(wrap_pyfunction!(masks_to_boxes, m)?)?;
     Ok(())
@@ -855,6 +863,113 @@ fn nms_u8(
     score_threshold: f64,
 ) -> PyResult<Py<PyArray1<usize>>> {
     return Ok(nms_generic(
+        _py,
+        boxes,
+        scores,
+        iou_threshold,
+        score_threshold,
+    )?);
+}
+
+// rtree nms
+fn rtree_nms_generic<T>(
+    _py: Python,
+    boxes: &PyArray2<T>,
+    scores: &PyArray1<f64>,
+    iou_threshold: f64,
+    score_threshold: f64,
+) -> PyResult<Py<PyArray1<usize>>>
+where
+    T: Num
+        + numpy::Element
+        + PartialOrd
+        + ToPrimitive
+        + Copy
+        + Signed
+        + Bounded
+        + Debug
+        + Sync
+        + Send,
+{
+    let boxes = preprocess_boxes(boxes).unwrap();
+    let scores = preprocess_array1(scores);
+    let keep = nms::rtree_nms(&boxes, &scores, iou_threshold, score_threshold);
+    let keep_as_numpy = utils::array_to_numpy(_py, keep).unwrap();
+    return Ok(keep_as_numpy.to_owned());
+}
+#[pyfunction]
+fn rtree_nms_f64(
+    _py: Python,
+    boxes: &PyArray2<f64>,
+    scores: &PyArray1<f64>,
+    iou_threshold: f64,
+    score_threshold: f64,
+) -> PyResult<Py<PyArray1<usize>>> {
+    return Ok(rtree_nms_generic(
+        _py,
+        boxes,
+        scores,
+        iou_threshold,
+        score_threshold,
+    )?);
+}
+#[pyfunction]
+fn rtree_nms_f32(
+    _py: Python,
+    boxes: &PyArray2<f32>,
+    scores: &PyArray1<f64>,
+    iou_threshold: f64,
+    score_threshold: f64,
+) -> PyResult<Py<PyArray1<usize>>> {
+    return Ok(rtree_nms_generic(
+        _py,
+        boxes,
+        scores,
+        iou_threshold,
+        score_threshold,
+    )?);
+}
+#[pyfunction]
+fn rtree_nms_i64(
+    _py: Python,
+    boxes: &PyArray2<i64>,
+    scores: &PyArray1<f64>,
+    iou_threshold: f64,
+    score_threshold: f64,
+) -> PyResult<Py<PyArray1<usize>>> {
+    return Ok(rtree_nms_generic(
+        _py,
+        boxes,
+        scores,
+        iou_threshold,
+        score_threshold,
+    )?);
+}
+#[pyfunction]
+fn rtree_nms_i32(
+    _py: Python,
+    boxes: &PyArray2<i32>,
+    scores: &PyArray1<f64>,
+    iou_threshold: f64,
+    score_threshold: f64,
+) -> PyResult<Py<PyArray1<usize>>> {
+    return Ok(rtree_nms_generic(
+        _py,
+        boxes,
+        scores,
+        iou_threshold,
+        score_threshold,
+    )?);
+}
+#[pyfunction]
+fn rtree_nms_i16(
+    _py: Python,
+    boxes: &PyArray2<i16>,
+    scores: &PyArray1<f64>,
+    iou_threshold: f64,
+    score_threshold: f64,
+) -> PyResult<Py<PyArray1<usize>>> {
+    return Ok(rtree_nms_generic(
         _py,
         boxes,
         scores,
