@@ -113,8 +113,8 @@ impl<T> RTreeParams for Bbox<T>
 where
     T: RTreeNum + ToPrimitive + Sync + Send,
 {
-    const MIN_SIZE: usize = 3;
-    const MAX_SIZE: usize = 32;
+    const MIN_SIZE: usize = 16;
+    const MAX_SIZE: usize = 256;
     const REINSERTION_COUNT: usize = 5;
     type DefaultInsertionStrategy = RStarInsertionStrategy;
 }
