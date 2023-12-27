@@ -117,3 +117,12 @@ def test_nms(benchmark, dtype, generate_boxes):
     boxes = boxes.astype(dtype)
     scores = np.random.random(len(boxes))
     benchmark(nms, boxes, scores, 0.5, 0.5)
+
+
+@pytest.mark.benchmark(group="nms")
+@pytest.mark.parametrize("dtype", ["float64", "float32", "int64", "int32", "int16"])
+def test_rtree_nms(benchmark, dtype, generate_boxes):
+    boxes = generate_boxes
+    boxes = boxes.astype(dtype)
+    scores = np.random.random(len(boxes))
+    benchmark(nms, boxes, scores, 0.5, 0.5)
