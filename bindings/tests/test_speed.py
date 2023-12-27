@@ -16,8 +16,9 @@ from powerboxes import (
 
 np.random.seed(42)
 
-SCORES = np.random.random((100, 1))
-
+@pytest.fixture
+def scores():
+    return np.random.random((100,))
 
 @pytest.mark.benchmark(group="giou_distance")
 @pytest.mark.parametrize("dtype", supported_dtypes)
@@ -115,18 +116,18 @@ def test_masks_to_boxes(benchmark):
 
 @pytest.mark.benchmark(group="nms")
 @pytest.mark.parametrize("dtype", supported_dtypes)
-def test_nms(benchmark, dtype, generate_boxes):
+def test_nms(benchmark, dtype, generate_boxes, scores):
     boxes = generate_boxes
     boxes = boxes.astype(dtype)
-    benchmark(nms, boxes, SCORES, 0.5, 0.5)
+    benchmark(nms, boxes, scores, 0.5, 0.5)
 
 
 @pytest.mark.benchmark(group="nms")
 @pytest.mark.parametrize("dtype", ["float64", "float32", "int64", "int32", "int16"])
-def test_rtree_nms(benchmark, dtype, generate_boxes):
+def test_rtree_nms(benchmark, dtype, generate_boxes, scores):
     boxes = generate_boxes
     boxes = boxes.astype(dtype)
-    benchmark(rtree_nms, boxes, SCORES, 0.5, 0.5)
+    benchmark(rtree_nms, boxes, scores, 0.5, 0.5)
 
 
 @pytest.mark.benchmark(group="nms_many_boxes")
