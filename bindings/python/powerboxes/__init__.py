@@ -16,7 +16,7 @@ from ._iou import (
     _dtype_to_func_iou_distance,
     _dtype_to_func_parallel_iou_distance,
 )
-from ._nms import _dtype_to_func_nms
+from ._nms import _dtype_to_func_nms, _dtype_to_func_rtree_nms
 from ._powerboxes import masks_to_boxes as _masks_to_boxes
 
 _BOXES_NOT_SAME_TYPE = "boxes1 and boxes2 must have the same dtype"
@@ -272,7 +272,7 @@ def rtree_nms(
     """
     if not isinstance(boxes, np.ndarray) or not isinstance(scores, np.ndarray):
         raise TypeError("Boxes and scores must be numpy arrays")
-    return _dtype_to_func_nms[boxes.dtype](
+    return _dtype_to_func_rtree_nms[boxes.dtype](
         boxes, scores, iou_threshold, score_threshold
     )
 
