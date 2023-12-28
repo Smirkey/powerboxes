@@ -52,19 +52,19 @@ Some benchmarks of powerboxes against various open source alternatives, not all 
 ### Box area, (I suspect torchvision to use multiple cores)
 Here it's torchvision vs powerboxes
 
-![Box area](./images/box_area.png)
+![Box area](../images/box_area.png)
 
 ### Box convert,(I suspect torchvision to use multiple cores)
 Here it's torchvision vs powerboxes
 
-![Box convert](./images/box_area.png)
+![Box convert](../images/box_area.png)
 
 ### Box IoU matrix
 Torchvision vs shapely vs lsnms
 
-![Box IoU](./images/box_iou.png)
+![Box IoU](../images/box_iou.png)
 
 ### NMS
 Torchvision vs powerboxes vs shapely
 
-![Box NMS](./images/box_nms.png)
+![Box NMS](../images/box_nms.png)
