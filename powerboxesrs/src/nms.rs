@@ -1,3 +1,4 @@
+// Largely inspired by lsnms: https://github.com/remydubois/lsnms
 use std::cmp::Ordering;
 
 use crate::{boxes, utils};

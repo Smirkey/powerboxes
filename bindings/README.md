@@ -60,11 +60,17 @@ Here it's torchvision vs powerboxes
 ![Box convert](../images/box_area.png)
 
 ### Box IoU matrix
-Torchvision vs shapely vs lsnms
+Torchvision vs shapely vs shapely
 
 ![Box IoU](../images/box_iou.png)
 
 ### NMS
-Torchvision vs powerboxes vs shapely
+Torchvision vs powerboxes vs lsnms
 
-![Box NMS](../images/box_nms.png)
+#### Large image (10000x10000 pixels)
+
+![Box NMS](../images/box_nms_large_image.png)
+
+#### Normal image (1000x1000 pixels)
+
+![Box NMS](../images/box_nms_normal_image.png)
