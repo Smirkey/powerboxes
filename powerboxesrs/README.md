@@ -3,7 +3,7 @@
 [![Crates.io](https://img.shields.io/crates/v/powerboxesrs.svg)](https://crates.io/crates/powerboxesrs)
 
 # <div align="center"> PowerBoxesrs </div>
-Powerboxesrs is a rust package containing utility functions for transforming bounding boxes and computing metric.
+Powerboxes is a package containing utility functions for transforming bounding boxes and computing metrics.
 
 ## Installation
 

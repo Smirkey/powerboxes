@@ -6,7 +6,7 @@
 
 # <div align="center"> PowerBoxes </div>
 Powerboxes is a package containing utility functions for transforming bounding boxes and computing metrics. It is implemented in both Python and Rust.
-It shows a significant speedup over the equivalent numpy implementations in Python, or other libraries such as [shapely](https://github.com/shapely/shapely).
+It shows a significant speedup over the equivalent numpy implementations in Python, or other libraries such as [shapely](https://github.com/shapely/shapely) or [torchvision](https://pytorch.org/vision/main/ops.html).
 
 ## Installation
 
@@ -63,3 +63,27 @@ let areas = box_areas(&boxes);
 assert_eq!(areas, array![9., 121.]);
 ```
 
+
+## Benchmarks
+
+Some benchmarks of powerboxes against various open source alternatives, not all functions are benchmarked. Notice that we use log scales, **all differences are major** !
+
+### Box area, (I suspect torchvision to use multiple cores)
+Here it's torchvision vs powerboxes
+
+![Box area](./images/box_area.png)
+
+### Box convert,(I suspect torchvision to use multiple cores)
+Here it's torchvision vs powerboxes
+
+![Box convert](./images/box_area.png)
+
+### Box IoU matrix
+Torchvision vs shapely vs lsnms
+
+![Box IoU](./images/box_iou.png)
+
+### NMS
+Torchvision vs powerboxes vs shapely
+
+![Box NMS](./images/box_nms.png)
