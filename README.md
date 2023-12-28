@@ -67,13 +67,14 @@ assert_eq!(areas, array![9., 121.]);
 ## Benchmarks
 
 Some benchmarks of powerboxes against various open source alternatives, not all functions are benchmarked. Notice that we use log scales, **all differences are major** !
+Benchmarks can be found in this google colab [notebook](https://colab.research.google.com/drive/1Z8auT4GZFbwaNs9hZfnB0kvYBbX-MOgS?usp=sharing)
 
-### Box area, (I suspect torchvision to use multiple cores)
+### Box area
 Here it's torchvision vs powerboxes
 
 ![Box area](./images/box_area.png)
 
-### Box convert,(I suspect torchvision to use multiple cores)
+### Box convert
 Here it's torchvision vs powerboxes
 
 ![Box convert](./images/box_area.png)
