@@ -128,6 +128,16 @@ def test_iou_distance_bad_inputs():
         iou_distance("bonjour", "how are you?")
 
 
+def test_iou_distance_bad_dtype():
+    boxes1 = np.random.random((100, 4))
+    boxes2 = np.random.random((100, 4))
+    with pytest.raises(TypeError):
+        iou_distance(
+            boxes1.astype(unsuported_dtype_example),
+            boxes2.astype(unsuported_dtype_example),
+        )
+
+
 @pytest.mark.parametrize("dtype", supported_dtypes)
 def test_tiou_distance(dtype):
     boxes1 = np.random.random((100, 4))
@@ -147,7 +157,7 @@ def test_tiou_distance_bad_inputs():
         tiou_distance("bonjour", "how are you?")
 
 
-def test_iou_distance_bad_dtype():
+def test_tiou_distance_bad_dtype():
     boxes1 = np.random.random((100, 4))
     boxes2 = np.random.random((100, 4))
     with pytest.raises(TypeError):
