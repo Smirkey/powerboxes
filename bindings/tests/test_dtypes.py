@@ -14,6 +14,7 @@ from powerboxes import (
     remove_small_boxes,
     rtree_nms,
     supported_dtypes,
+    tiou_distance,
 )
 
 np.random.seed(42)
@@ -138,6 +139,35 @@ def test_iou_distance_bad_dtype():
 
 
 @pytest.mark.parametrize("dtype", supported_dtypes)
+def test_tiou_distance(dtype):
+    boxes1 = np.random.random((100, 4))
+    boxes2 = np.random.random((100, 4))
+    tiou_distance(boxes1.astype(dtype), boxes2.astype(dtype))
+
+
+def test_tiou_distance_different_dtypes():
+    boxes1 = np.random.random((100, 4))
+    boxes2 = np.random.random((100, 4))
+    with pytest.raises(ValueError, match=_BOXES_NOT_SAME_TYPE):
+        tiou_distance(boxes1.astype(np.float64), boxes2.astype(np.uint8))
+
+
+def test_tiou_distance_bad_inputs():
+    with pytest.raises(TypeError, match=_BOXES_NOT_NP_ARRAY):
+        tiou_distance("bonjour", "how are you?")
+
+
+def test_tiou_distance_bad_dtype():
+    boxes1 = np.random.random((100, 4))
+    boxes2 = np.random.random((100, 4))
+    with pytest.raises(TypeError):
+        tiou_distance(
+            boxes1.astype(unsuported_dtype_example),
+            boxes2.astype(unsuported_dtype_example),
+        )
+
+
+@pytest.mark.parametrize("dtype", supported_dtypes)
 def test_remove_small_boxes(dtype):
     boxes = np.random.random((100, 4))
     remove_small_boxes(boxes.astype(dtype), 0.4)
@@ -146,6 +176,14 @@ def test_remove_small_boxes(dtype):
 def test_remove_small_boxes_bad_inputs():
     with pytest.raises(TypeError, match=_BOXES_NOT_NP_ARRAY):
         remove_small_boxes("bonjour", "how are you?")
+
+
+def test_remove_small_boxes_bad_dtype():
+    boxes1 = np.random.random((100, 4)).astype(unsuported_dtype_example)
+    with pytest.raises(TypeError):
+        remove_small_boxes(
+            boxes1.astype(unsuported_dtype_example),
+        )
 
 
 @pytest.mark.parametrize("dtype", supported_dtypes)
@@ -159,8 +197,8 @@ def test_boxes_areas_bad_inpus():
         boxes_areas("hey")
 
 
-def test_box_areas_bad_dtype():
-    boxes1 = np.random.random((100, 4))
+def test_boxes_areas_bad_dtype():
+    boxes1 = np.random.random((100, 4)).astype(unsuported_dtype_example)
     with pytest.raises(TypeError):
         boxes_areas(
             boxes1.astype(unsuported_dtype_example),
@@ -178,17 +216,17 @@ def test_box_convert_bad_inputs():
         box_convert("foo", "xyxy", "xywh")
 
 
-def test_masks_to_boxes_bad_inputs():
-    with pytest.raises(TypeError, match=_BOXES_NOT_NP_ARRAY):
-        masks_to_boxes("foo")
-
-
 def test_box_convert_bad_dtype():
-    boxes1 = np.random.random((100, 4))
+    boxes1 = np.random.random((100, 4)).astype(unsuported_dtype_example)
     with pytest.raises(TypeError):
         box_convert(
             boxes1.astype(unsuported_dtype_example),
         )
+
+
+def test_masks_to_boxes_bad_inputs():
+    with pytest.raises(TypeError, match=_BOXES_NOT_NP_ARRAY):
+        masks_to_boxes("foo")
 
 
 @pytest.mark.parametrize("dtype", supported_dtypes)

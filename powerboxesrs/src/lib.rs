@@ -28,7 +28,7 @@
 //!
 //! ### Functions available
 //! warning: **all functions expect the boxes to be in the format `xyxy` (top left and bottom right corners)** (not box conversion functions, of course)
-//!           
+//!
 //! #### Box Transformations and utilities
 //! - `box_areas`: Compute the area of list of boxes
 //! - `box_convert`: Convert a box from one format to another. Supported formats are `xyxy`, `xywh`, `cxcywh`.
@@ -49,4 +49,5 @@ pub mod boxes;
 pub mod giou;
 pub mod iou;
 pub mod nms;
+pub mod tiou;
 mod utils;

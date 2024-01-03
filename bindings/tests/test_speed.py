@@ -12,6 +12,7 @@ from powerboxes import (
     remove_small_boxes,
     rtree_nms,
     supported_dtypes,
+    tiou_distance,
 )
 
 np.random.seed(42)
@@ -26,6 +27,14 @@ def generate_boxes(request):
     topleft = np.random.uniform(0.0, high=im_size, size=(n_boxes, 2))
     wh = np.random.uniform(15, 45, size=topleft.shape)
     return np.concatenate([topleft, topleft + wh], axis=1).astype(np.float64)
+
+
+@pytest.mark.benchmark(group="tiou_distance")
+@pytest.mark.parametrize("dtype", supported_dtypes)
+def test_tiou_distance(benchmark, dtype):
+    boxes1 = np.random.random((100, 4)).astype(dtype)
+    boxes2 = np.random.random((100, 4)).astype(dtype)
+    benchmark(tiou_distance, boxes1, boxes2)
 
 
 @pytest.mark.benchmark(group="giou_distance")
