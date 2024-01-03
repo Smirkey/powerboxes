@@ -60,8 +60,7 @@ where
             // Calculate the area of the enclosing box (C)
             let c_area = (c_x2 - c_x1) * (c_y2 - c_y1);
             let c_area = c_area.to_f64().unwrap();
-            tiou_matrix[[i, j]] =
-                utils::max(utils::ONE - utils::min(area1 / c_area, area2 / c_area), 0.);
+            tiou_matrix[[i, j]] = utils::ONE - utils::min(area1 / c_area, area2 / c_area)
         }
     }
 
