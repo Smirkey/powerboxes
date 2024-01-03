@@ -33,7 +33,7 @@ supported_dtypes = [
     "uint32",
     "uint64",
 ]
-__version__ = "0.2.0"
+__version__ = "0.1.3"
 
 T = TypeVar(
     "T",
@@ -54,7 +54,7 @@ T = TypeVar(
 def iou_distance(
     boxes1: npt.NDArray[T], boxes2: npt.NDArray[T]
 ) -> npt.NDArray[np.float64]:
-    """Computes pairwise box iou distances.
+    """Compute pairwise box iou distances.
 
     Args:
         boxes1: 2d array of boxes in xyxy format
@@ -83,7 +83,7 @@ def iou_distance(
 def parallel_iou_distance(
     boxes1: npt.NDArray[T], boxes2: npt.NDArray[T]
 ) -> npt.NDArray[np.float64]:
-    """Computes pairwise box iou distances, in parallel.
+    """Compute pairwise box iou distances, in parallel.
 
     Args:
         boxes1: 2d array of boxes in xyxy format
@@ -112,9 +112,9 @@ def parallel_iou_distance(
 def parallel_giou_distance(
     boxes1: npt.NDArray[T], boxes2: npt.NDArray[T]
 ) -> npt.NDArray[np.float64]:
-    """Computes pairwise box giou distances, in parallel.
+    """Compute pairwise box giou distances, in parallel.
 
-    see: https://giou.stanford.edu/
+    see https://giou.stanford.edu/
 
     Args:
         boxes1: 2d array of boxes in xyxy format
@@ -143,7 +143,7 @@ def parallel_giou_distance(
 def giou_distance(
     boxes1: npt.NDArray[T], boxes2: npt.NDArray[T]
 ) -> npt.NDArray[np.float64]:
-    """Computes pairwise box giou distances.
+    """Compute pairwise box giou distances.
 
     see: https://giou.stanford.edu/
 
@@ -174,7 +174,7 @@ def giou_distance(
 def tiou_distance(
     boxes1: npt.NDArray[T], boxes2: npt.NDArray[T]
 ) -> npt.NDArray[np.float64]:
-    """Computes pairwise box tiou (tracking iou)  distances.
+    """Compute pairwise box tiou (tracking iou)  distances.
 
     see https://arxiv.org/pdf/2310.05171.pdf for tiou definition
 
@@ -203,7 +203,7 @@ def tiou_distance(
 
 
 def remove_small_boxes(boxes: npt.NDArray[T], min_size) -> npt.NDArray[T]:
-    """Removes boxes with area less than min_area.
+    """Remove boxes with area less than min_area.
 
     Args:
         boxes: 2d array of boxes in xyxy format
@@ -226,7 +226,7 @@ def remove_small_boxes(boxes: npt.NDArray[T], min_size) -> npt.NDArray[T]:
 
 
 def boxes_areas(boxes: npt.NDArray[T]) -> npt.NDArray[np.float64]:
-    """Computes areas of boxes.
+    """Compute areas of boxes.
 
     Args:
         boxes: 2d array of boxes in xyxy format
@@ -245,7 +245,7 @@ def boxes_areas(boxes: npt.NDArray[T]) -> npt.NDArray[np.float64]:
 
 
 def box_convert(boxes: npt.NDArray[T], in_fmt: str, out_fmt: str) -> npt.NDArray[T]:
-    """Converts boxes from one format to another.
+    """Convert boxes from one format to another.
 
     Available formats are:
         - 'xyxy': (xmin, ymin, xmax, ymax)
@@ -271,7 +271,7 @@ def box_convert(boxes: npt.NDArray[T], in_fmt: str, out_fmt: str) -> npt.NDArray
 
 
 def masks_to_boxes(masks: npt.NDArray[np.bool_]) -> npt.NDArray[np.uint64]:
-    """Converts masks to boxes in xyxy format.
+    """Convert masks to boxes in xyxy format.
 
     Args:
         masks: 3d array of masks in (N, H, W) format
@@ -293,7 +293,7 @@ def nms(
     iou_threshold: float,
     score_threshold: float,
 ) -> npt.NDArray[np.uint64]:
-    """Applies non-maximum suppression to boxes.
+    """Apply non-maximum suppression to boxes.
 
     Args:
         boxes: 2d array of boxes in xyxy format
@@ -325,7 +325,7 @@ def rtree_nms(
     iou_threshold: float,
     score_threshold: float,
 ) -> npt.NDArray[np.uint64]:
-    """Applies non-maximum suppression to boxes.
+    """Apply non-maximum suppression to boxes.
 
     Uses an rtree to speed up computation. This is only available for
     signed integer dtypes and float32 and float64.
@@ -365,7 +365,7 @@ __all__ = [
     "masks_to_boxes",
     "supported_dtypes",
     "nms",
-    "tiou_distance",
+    "tiou",
     "rtree_nms",
     "__version__",
 ]
