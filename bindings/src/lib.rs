@@ -4,12 +4,22 @@ use std::fmt::Debug;
 
 use num_traits::{Bounded, Num, Signed, ToPrimitive};
 use numpy::{PyArray1, PyArray2, PyArray3};
-use powerboxesrs::{boxes, giou, iou, nms};
+use powerboxesrs::{boxes, giou, iou, nms, tiou};
 use pyo3::prelude::*;
 use utils::{preprocess_array1, preprocess_array3, preprocess_boxes};
 
 #[pymodule]
 fn _powerboxes(_py: Python, m: &PyModule) -> PyResult<()> {
+    // TIoU
+    m.add_function(wrap_pyfunction!(tiou_distance_f64, m)?)?;
+    m.add_function(wrap_pyfunction!(tiou_distance_f32, m)?)?;
+    m.add_function(wrap_pyfunction!(tiou_distance_i64, m)?)?;
+    m.add_function(wrap_pyfunction!(tiou_distance_i32, m)?)?;
+    m.add_function(wrap_pyfunction!(tiou_distance_i16, m)?)?;
+    m.add_function(wrap_pyfunction!(tiou_distance_u64, m)?)?;
+    m.add_function(wrap_pyfunction!(tiou_distance_u32, m)?)?;
+    m.add_function(wrap_pyfunction!(tiou_distance_u16, m)?)?;
+    m.add_function(wrap_pyfunction!(tiou_distance_u8, m)?)?;
     // IoU
     m.add_function(wrap_pyfunction!(iou_distance_f64, m)?)?;
     m.add_function(wrap_pyfunction!(iou_distance_f32, m)?)?;
@@ -283,6 +293,94 @@ fn parallel_iou_distance_u8(
     boxes2: &PyArray2<u8>,
 ) -> PyResult<Py<PyArray2<f64>>> {
     return Ok(parallel_iou_distance_generic(_py, boxes1, boxes2)?);
+}
+// TIoU
+fn tiou_distance_generic<T>(
+    _py: Python,
+    boxes1: &PyArray2<T>,
+    boxes2: &PyArray2<T>,
+) -> PyResult<Py<PyArray2<f64>>>
+where
+    T: Num + ToPrimitive + PartialOrd + numpy::Element + Copy,
+{
+    let boxes1 = preprocess_boxes(boxes1).unwrap();
+    let boxes2 = preprocess_boxes(boxes2).unwrap();
+    let tiou = tiou::tiou_distance(&boxes1, &boxes2);
+    let tiou_as_numpy = utils::array_to_numpy(_py, tiou).unwrap();
+    return Ok(tiou_as_numpy.to_owned());
+}
+
+#[pyfunction]
+fn tiou_distance_f64(
+    _py: Python,
+    boxes1: &PyArray2<f64>,
+    boxes2: &PyArray2<f64>,
+) -> PyResult<Py<PyArray2<f64>>> {
+    return Ok(tiou_distance_generic(_py, boxes1, boxes2)?);
+}
+#[pyfunction]
+fn tiou_distance_f32(
+    _py: Python,
+    boxes1: &PyArray2<f32>,
+    boxes2: &PyArray2<f32>,
+) -> PyResult<Py<PyArray2<f64>>> {
+    return Ok(tiou_distance_generic(_py, boxes1, boxes2)?);
+}
+#[pyfunction]
+fn tiou_distance_i64(
+    _py: Python,
+    boxes1: &PyArray2<i64>,
+    boxes2: &PyArray2<i64>,
+) -> PyResult<Py<PyArray2<f64>>> {
+    return Ok(tiou_distance_generic(_py, boxes1, boxes2)?);
+}
+#[pyfunction]
+fn tiou_distance_i32(
+    _py: Python,
+    boxes1: &PyArray2<i32>,
+    boxes2: &PyArray2<i32>,
+) -> PyResult<Py<PyArray2<f64>>> {
+    return Ok(tiou_distance_generic(_py, boxes1, boxes2)?);
+}
+#[pyfunction]
+fn tiou_distance_i16(
+    _py: Python,
+    boxes1: &PyArray2<i16>,
+    boxes2: &PyArray2<i16>,
+) -> PyResult<Py<PyArray2<f64>>> {
+    return Ok(tiou_distance_generic(_py, boxes1, boxes2)?);
+}
+#[pyfunction]
+fn tiou_distance_u64(
+    _py: Python,
+    boxes1: &PyArray2<u64>,
+    boxes2: &PyArray2<u64>,
+) -> PyResult<Py<PyArray2<f64>>> {
+    return Ok(tiou_distance_generic(_py, boxes1, boxes2)?);
+}
+#[pyfunction]
+fn tiou_distance_u32(
+    _py: Python,
+    boxes1: &PyArray2<u32>,
+    boxes2: &PyArray2<u32>,
+) -> PyResult<Py<PyArray2<f64>>> {
+    return Ok(tiou_distance_generic(_py, boxes1, boxes2)?);
+}
+#[pyfunction]
+fn tiou_distance_u16(
+    _py: Python,
+    boxes1: &PyArray2<u16>,
+    boxes2: &PyArray2<u16>,
+) -> PyResult<Py<PyArray2<f64>>> {
+    return Ok(tiou_distance_generic(_py, boxes1, boxes2)?);
+}
+#[pyfunction]
+fn tiou_distance_u8(
+    _py: Python,
+    boxes1: &PyArray2<u8>,
+    boxes2: &PyArray2<u8>,
+) -> PyResult<Py<PyArray2<f64>>> {
+    return Ok(tiou_distance_generic(_py, boxes1, boxes2)?);
 }
 // GIoU
 fn giou_distance_generic<T>(

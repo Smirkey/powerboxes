@@ -18,6 +18,7 @@ from ._iou import (
 )
 from ._nms import _dtype_to_func_nms, _dtype_to_func_rtree_nms
 from ._powerboxes import masks_to_boxes as _masks_to_boxes
+from ._tiou import _dtype_to_func_tiou_distance
 
 _BOXES_NOT_SAME_TYPE = "boxes1 and boxes2 must have the same dtype"
 _BOXES_NOT_NP_ARRAY = "boxes must be numpy array"
@@ -32,7 +33,7 @@ supported_dtypes = [
     "uint32",
     "uint64",
 ]
-__version__ = "0.1.3"
+__version__ = "0.2.0"
 
 T = TypeVar(
     "T",
@@ -162,6 +163,37 @@ def giou_distance(
     if boxes1.dtype == boxes2.dtype:
         try:
             return _dtype_to_func_giou_distance[boxes1.dtype](boxes1, boxes2)
+        except KeyError:
+            raise TypeError(
+                f"Box dtype: {boxes1.dtype} not in supported dtypes {supported_dtypes}"
+            )
+    else:
+        raise ValueError(_BOXES_NOT_SAME_TYPE)
+
+
+def tiou_distance(
+    boxes1: npt.NDArray[T], boxes2: npt.NDArray[T]
+) -> npt.NDArray[np.float64]:
+    """Computes pairwise box tiou (tracking iou)  distances.
+
+    see https://arxiv.org/pdf/2310.05171.pdf for tiou definition
+
+    Args:
+        boxes1: 2d array of boxes in xyxy format
+        boxes2: 2d array of boxes in xyxy format
+
+    Raises:
+        TypeError: if boxes1 or boxes2 are not numpy arrays
+        ValueError: if boxes1 and boxes2 have different dtypes
+
+    Returns:
+        np.ndarray: 2d matrix of pairwise distances
+    """
+    if not isinstance(boxes1, np.ndarray) or not isinstance(boxes2, np.ndarray):
+        raise TypeError(_BOXES_NOT_NP_ARRAY)
+    if boxes1.dtype == boxes2.dtype:
+        try:
+            return _dtype_to_func_tiou_distance[boxes1.dtype](boxes1, boxes2)
         except KeyError:
             raise TypeError(
                 f"Box dtype: {boxes1.dtype} not in supported dtypes {supported_dtypes}"
@@ -333,6 +365,7 @@ __all__ = [
     "masks_to_boxes",
     "supported_dtypes",
     "nms",
+    "tiou_distance",
     "rtree_nms",
     "__version__",
 ]
