@@ -38,8 +38,8 @@ pub fn nms<N>(
 where
     N: Num + PartialOrd + ToPrimitive + Copy,
 {
-    let mut above_score_threshold: Vec<usize> = (1..scores.len()).collect();
-    if score_threshold < utils::EPS {
+    let mut above_score_threshold: Vec<usize> = (0..scores.len()).collect();
+    if score_threshold > utils::EPS {
         // filter out boxes lower than score threshold
         above_score_threshold = scores
             .iter()
@@ -161,8 +161,8 @@ pub fn rtree_nms<N>(
 where
     N: RTreeNum + ToPrimitive + Send + Sync,
 {
-    let mut above_score_threshold: Vec<usize> = (1..scores.len()).collect();
-    if score_threshold < utils::EPS {
+    let mut above_score_threshold: Vec<usize> = (0..scores.len()).collect();
+    if score_threshold > utils::EPS {
         // filter out boxes lower than score threshold
         above_score_threshold = scores
             .iter()
