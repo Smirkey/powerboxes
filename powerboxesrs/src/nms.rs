@@ -38,12 +38,17 @@ pub fn nms<N>(
 where
     N: Num + PartialOrd + ToPrimitive + Copy,
 {
-    // filter out boxes lower than score threshold
-    let mut above_score_threshold: Vec<usize> = scores
-        .indexed_iter()
-        .filter(|(_, &score)| score >= score_threshold)
-        .map(|(idx, _)| idx)
-        .collect();
+    let mut above_score_threshold: Vec<usize> = (1..scores.len()).collect();
+    if score_threshold < utils::EPS {
+        // filter out boxes lower than score threshold
+        above_score_threshold = scores
+            .iter()
+            .enumerate()
+            .filter(|(_, &score)| score >= score_threshold)
+            .map(|(idx, _)| idx)
+            .collect();
+    }
+
     let filtered_boxes = boxes.select(Axis(0), &above_score_threshold);
     // Compute areas once
     let areas = boxes::box_areas(&filtered_boxes);
@@ -156,12 +161,16 @@ pub fn rtree_nms<N>(
 where
     N: RTreeNum + ToPrimitive + Send + Sync,
 {
-    // filter out boxes lower than score threshold
-    let mut above_score_threshold: Vec<usize> = scores
-        .indexed_iter()
-        .filter(|(_, &score)| score >= score_threshold)
-        .map(|(idx, _)| idx)
-        .collect();
+    let mut above_score_threshold: Vec<usize> = (1..scores.len()).collect();
+    if score_threshold < utils::EPS {
+        // filter out boxes lower than score threshold
+        above_score_threshold = scores
+            .iter()
+            .enumerate()
+            .filter(|(_, &score)| score >= score_threshold)
+            .map(|(idx, _)| idx)
+            .collect();
+    }
     // Compute areas once
     let areas = boxes::box_areas(&boxes);
     // sort box indices by scores

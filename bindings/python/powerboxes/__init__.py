@@ -69,7 +69,12 @@ def iou_distance(
     if not isinstance(boxes1, np.ndarray) or not isinstance(boxes2, np.ndarray):
         raise TypeError(_BOXES_NOT_NP_ARRAY)
     if boxes1.dtype == boxes2.dtype:
-        return _dtype_to_func_iou_distance[boxes1.dtype](boxes1, boxes2)
+        try:
+            return _dtype_to_func_iou_distance[boxes1.dtype](boxes1, boxes2)
+        except KeyError:
+            raise TypeError(
+                f"Box dtype: {boxes1.dtype} not in supported dtypes {supported_dtypes}"
+            )
     else:
         raise ValueError(_BOXES_NOT_SAME_TYPE)
 
@@ -93,7 +98,12 @@ def parallel_iou_distance(
     if not isinstance(boxes1, np.ndarray) or not isinstance(boxes2, np.ndarray):
         raise TypeError(_BOXES_NOT_NP_ARRAY)
     if boxes1.dtype == boxes2.dtype:
-        return _dtype_to_func_parallel_iou_distance[boxes1.dtype](boxes1, boxes2)
+        try:
+            return _dtype_to_func_parallel_iou_distance[boxes1.dtype](boxes1, boxes2)
+        except KeyError:
+            raise TypeError(
+                f"Box dtype: {boxes1.dtype} not in supported dtypes {supported_dtypes}"
+            )
     else:
         raise ValueError(_BOXES_NOT_SAME_TYPE)
 
@@ -119,7 +129,12 @@ def parallel_giou_distance(
     if not isinstance(boxes1, np.ndarray) or not isinstance(boxes2, np.ndarray):
         raise TypeError(_BOXES_NOT_NP_ARRAY)
     if boxes1.dtype == boxes2.dtype:
-        return _dtype_to_func_parallel_giou_distance[boxes1.dtype](boxes1, boxes2)
+        try:
+            return _dtype_to_func_parallel_giou_distance[boxes1.dtype](boxes1, boxes2)
+        except KeyError:
+            raise TypeError(
+                f"Box dtype: {boxes1.dtype} not in supported dtypes {supported_dtypes}"
+            )
     else:
         raise ValueError(_BOXES_NOT_SAME_TYPE)
 
@@ -145,7 +160,12 @@ def giou_distance(
     if not isinstance(boxes1, np.ndarray) or not isinstance(boxes2, np.ndarray):
         raise TypeError(_BOXES_NOT_NP_ARRAY)
     if boxes1.dtype == boxes2.dtype:
-        return _dtype_to_func_giou_distance[boxes1.dtype](boxes1, boxes2)
+        try:
+            return _dtype_to_func_giou_distance[boxes1.dtype](boxes1, boxes2)
+        except KeyError:
+            raise TypeError(
+                f"Box dtype: {boxes1.dtype} not in supported dtypes {supported_dtypes}"
+            )
     else:
         raise ValueError(_BOXES_NOT_SAME_TYPE)
 
@@ -165,7 +185,12 @@ def remove_small_boxes(boxes: npt.NDArray[T], min_size) -> npt.NDArray[T]:
     """
     if not isinstance(boxes, np.ndarray):
         raise TypeError(_BOXES_NOT_NP_ARRAY)
-    return _dtype_to_func_remove_small_boxes[boxes.dtype](boxes, min_size)
+    try:
+        return _dtype_to_func_remove_small_boxes[boxes.dtype](boxes, min_size)
+    except KeyError:
+        raise TypeError(
+            f"Box dtype: {boxes.dtype} not in supported dtypes {supported_dtypes}"
+        )
 
 
 def boxes_areas(boxes: npt.NDArray[T]) -> npt.NDArray[np.float64]:
@@ -179,7 +204,12 @@ def boxes_areas(boxes: npt.NDArray[T]) -> npt.NDArray[np.float64]:
     """
     if not isinstance(boxes, np.ndarray):
         raise TypeError(_BOXES_NOT_NP_ARRAY)
-    return _dtype_to_func_box_areas[boxes.dtype](boxes)
+    try:
+        return _dtype_to_func_box_areas[boxes.dtype](boxes)
+    except KeyError:
+        raise TypeError(
+            f"Box dtype: {boxes.dtype} not in supported dtypes {supported_dtypes}"
+        )
 
 
 def box_convert(boxes: npt.NDArray[T], in_fmt: str, out_fmt: str) -> npt.NDArray[T]:
@@ -200,7 +230,12 @@ def box_convert(boxes: npt.NDArray[T], in_fmt: str, out_fmt: str) -> npt.NDArray
     """
     if not isinstance(boxes, np.ndarray):
         raise TypeError(_BOXES_NOT_NP_ARRAY)
-    return _dtype_to_func_box_convert[boxes.dtype](boxes, in_fmt, out_fmt)
+    try:
+        return _dtype_to_func_box_convert[boxes.dtype](boxes, in_fmt, out_fmt)
+    except KeyError:
+        raise TypeError(
+            f"Box dtype: {boxes.dtype} not in supported dtypes {supported_dtypes}"
+        )
 
 
 def masks_to_boxes(masks: npt.NDArray[np.bool_]) -> npt.NDArray[np.uint64]:
@@ -242,13 +277,18 @@ def nms(
     """
     if not isinstance(boxes, np.ndarray) or not isinstance(scores, np.ndarray):
         raise TypeError("Boxes and scores must be numpy arrays")
-    return _dtype_to_func_nms[boxes.dtype](
-        boxes, scores, iou_threshold, score_threshold
-    )
+    try:
+        return _dtype_to_func_nms[boxes.dtype](
+            boxes, scores, iou_threshold, score_threshold
+        )
+    except KeyError:
+        raise TypeError(
+            f"Box dtype: {boxes.dtype} not in supported dtypes {supported_dtypes}"
+        )
 
 
 def rtree_nms(
-    boxes: npt.NDArray[T],
+    boxes: npt.NDArray[Union[np.float64, np.float32, np.int64, np.int32, np.int16]],
     scores: npt.NDArray[np.float64],
     iou_threshold: float,
     score_threshold: float,
@@ -272,9 +312,14 @@ def rtree_nms(
     """
     if not isinstance(boxes, np.ndarray) or not isinstance(scores, np.ndarray):
         raise TypeError("Boxes and scores must be numpy arrays")
-    return _dtype_to_func_rtree_nms[boxes.dtype](
-        boxes, scores, iou_threshold, score_threshold
-    )
+    try:
+        return _dtype_to_func_rtree_nms[boxes.dtype](
+            boxes, scores, iou_threshold, score_threshold
+        )
+    except KeyError:
+        raise TypeError(
+            f"Box dtype: {boxes.dtype} not in supported dtypes {supported_dtypes}"
+        )
 
 
 __all__ = [

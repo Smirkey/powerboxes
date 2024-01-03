@@ -18,6 +18,8 @@ from powerboxes import (
 
 np.random.seed(42)
 
+unsuported_dtype_example = np.float16
+
 
 @pytest.mark.parametrize("dtype", supported_dtypes)
 def test_giou_distance(dtype):
@@ -26,7 +28,7 @@ def test_giou_distance(dtype):
     giou_distance(boxes1.astype(dtype), boxes2.astype(dtype))
 
 
-def test_giou_distance_wrong_dtype():
+def test_giou_distance_different_dtypes():
     boxes1 = np.random.random((100, 4))
     boxes2 = np.random.random((100, 4))
     with pytest.raises(ValueError, match=_BOXES_NOT_SAME_TYPE):
@@ -38,6 +40,16 @@ def test_giou_distance_bad_inputs():
         giou_distance("bonjour", "how are you?")
 
 
+def test_giou_distance_bad_dtype():
+    boxes1 = np.random.random((100, 4))
+    boxes2 = np.random.random((100, 4))
+    with pytest.raises(TypeError):
+        giou_distance(
+            boxes1.astype(unsuported_dtype_example),
+            boxes2.astype(unsuported_dtype_example),
+        )
+
+
 @pytest.mark.parametrize("dtype", supported_dtypes)
 def test_parallel_giou_distance(dtype):
     boxes1 = np.random.random((100, 4))
@@ -45,7 +57,7 @@ def test_parallel_giou_distance(dtype):
     parallel_giou_distance(boxes1.astype(dtype), boxes2.astype(dtype))
 
 
-def test_parallel_giou_distance_wrong_dtype():
+def test_parallel_giou_distance_different_dtypes():
     boxes1 = np.random.random((100, 4))
     boxes2 = np.random.random((100, 4))
     with pytest.raises(ValueError, match=_BOXES_NOT_SAME_TYPE):
@@ -57,6 +69,16 @@ def test_parallel_giou_distance_bad_inputs():
         parallel_giou_distance("bonjour", "how are you?")
 
 
+def test_parallel_giou_distance_bad_dtype():
+    boxes1 = np.random.random((100, 4))
+    boxes2 = np.random.random((100, 4))
+    with pytest.raises(TypeError):
+        parallel_giou_distance(
+            boxes1.astype(unsuported_dtype_example),
+            boxes2.astype(unsuported_dtype_example),
+        )
+
+
 @pytest.mark.parametrize("dtype", supported_dtypes)
 def test_parallel_iou_distance(dtype):
     boxes1 = np.random.random((100, 4))
@@ -64,7 +86,7 @@ def test_parallel_iou_distance(dtype):
     parallel_iou_distance(boxes1.astype(dtype), boxes2.astype(dtype))
 
 
-def test_parallel_iou_distance_wrong_dtype():
+def test_parallel_iou_distance_different_dtypes():
     boxes1 = np.random.random((100, 4))
     boxes2 = np.random.random((100, 4))
     with pytest.raises(ValueError, match=_BOXES_NOT_SAME_TYPE):
@@ -76,6 +98,16 @@ def test_parallel_iou_distance_bad_inputs():
         parallel_iou_distance("bonjour", "how are you?")
 
 
+def test_parallel_iou_distance_bad_dtype():
+    boxes1 = np.random.random((100, 4))
+    boxes2 = np.random.random((100, 4))
+    with pytest.raises(TypeError):
+        parallel_iou_distance(
+            boxes1.astype(unsuported_dtype_example),
+            boxes2.astype(unsuported_dtype_example),
+        )
+
+
 @pytest.mark.parametrize("dtype", supported_dtypes)
 def test_iou_distance(dtype):
     boxes1 = np.random.random((100, 4))
@@ -83,7 +115,7 @@ def test_iou_distance(dtype):
     iou_distance(boxes1.astype(dtype), boxes2.astype(dtype))
 
 
-def test_iou_distance_wrong_dtype():
+def test_iou_distance_different_dtypes():
     boxes1 = np.random.random((100, 4))
     boxes2 = np.random.random((100, 4))
     with pytest.raises(ValueError, match=_BOXES_NOT_SAME_TYPE):
@@ -93,6 +125,16 @@ def test_iou_distance_wrong_dtype():
 def test_iou_distance_bad_inputs():
     with pytest.raises(TypeError, match=_BOXES_NOT_NP_ARRAY):
         iou_distance("bonjour", "how are you?")
+
+
+def test_iou_distance_bad_dtype():
+    boxes1 = np.random.random((100, 4))
+    boxes2 = np.random.random((100, 4))
+    with pytest.raises(TypeError):
+        iou_distance(
+            boxes1.astype(unsuported_dtype_example),
+            boxes2.astype(unsuported_dtype_example),
+        )
 
 
 @pytest.mark.parametrize("dtype", supported_dtypes)
@@ -117,6 +159,14 @@ def test_boxes_areas_bad_inpus():
         boxes_areas("hey")
 
 
+def test_box_areas_bad_dtype():
+    boxes1 = np.random.random((100, 4))
+    with pytest.raises(TypeError):
+        boxes_areas(
+            boxes1.astype(unsuported_dtype_example),
+        )
+
+
 @pytest.mark.parametrize("dtype", supported_dtypes)
 def test_box_convert(dtype):
     boxes = np.random.random((100, 4))
@@ -133,6 +183,14 @@ def test_masks_to_boxes_bad_inputs():
         masks_to_boxes("foo")
 
 
+def test_box_convert_bad_dtype():
+    boxes1 = np.random.random((100, 4))
+    with pytest.raises(TypeError):
+        box_convert(
+            boxes1.astype(unsuported_dtype_example),
+        )
+
+
 @pytest.mark.parametrize("dtype", supported_dtypes)
 def test_nms(dtype):
     boxes1 = np.random.random((100, 4))
@@ -144,12 +202,28 @@ def test_nms_bad_inputs():
     with pytest.raises(TypeError, match="Boxes and scores must be numpy arrays"):
         nms("foo", "bar", 0.5, 0.5)
 
+
+def test_nms_bad_dtype():
+    boxes1 = np.random.random((100, 4))
+    scores = np.random.random((100,))
+    with pytest.raises(TypeError):
+        nms(boxes1.astype(unsuported_dtype_example), scores, 0.5, 0.5)
+
+
 @pytest.mark.parametrize("dtype", ["float64", "float32", "int64", "int32", "int16"])
 def test_rtree_nms(dtype):
     boxes1 = np.random.random((100, 4))
     scores = np.random.random((100,))
     rtree_nms(boxes1.astype(dtype), scores, 0.5, 0.5)
 
+
 def test_rtree_nms_bad_inputs():
     with pytest.raises(TypeError, match="Boxes and scores must be numpy arrays"):
         rtree_nms("foo", "bar", 0.5, 0.5)
+
+
+def test_rtree_nms_bad_dtype():
+    boxes1 = np.random.random((100, 4))
+    scores = np.random.random((100,))
+    with pytest.raises(TypeError):
+        rtree_nms(boxes1.astype(unsuported_dtype_example), scores, 0.5, 0.5)
