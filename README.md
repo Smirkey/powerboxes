@@ -70,22 +70,22 @@ Some benchmarks of powerboxes against various open source alternatives, not all 
 Benchmarks can be found in this google colab [notebook](https://colab.research.google.com/drive/1Z8auT4GZFbwaNs9hZfnB0kvYBbX-MOgS?usp=sharing)
 
 ### Box area
-Here it's torchvision vs powerboxes
+Here it's torchvision vs powerboxes vs numpy
 
 ![Box area](./images/box_area.png)
 
 ### Box convert
 Here it's torchvision vs powerboxes
 
-![Box convert](./images/box_area.png)
+![Box convert](./images/box_convert.png)
 
 ### Box IoU matrix
-Torchvision vs powerboxes vs shapely
+Torchvision vs numpy vs powerboxes
 
 ![Box IoU](./images/box_iou.png)
 
 ### NMS
-Torchvision vs powerboxes vs lsnms
+Torchvision vs powerboxes vs lsnms vs numpy
 
 #### Large image (10000x10000 pixels)
 
