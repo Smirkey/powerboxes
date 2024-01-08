@@ -279,7 +279,7 @@ def test_rotated_iou_distance(dtype):
 
 
 def test_rotated_iou_distance_bad_inputs():
-    with pytest.raises(TypeError, match="Boxes and scores must be numpy arrays"):
+    with pytest.raises(TypeError, match=_BOXES_NOT_NP_ARRAY):
         rotated_iou_distance("foo", "bar")
 
 
