@@ -282,9 +282,15 @@ def test_rotated_iou_distance_bad_inputs():
     with pytest.raises(TypeError, match=_BOXES_NOT_NP_ARRAY):
         rotated_iou_distance("foo", "bar")
     with pytest.raises(Exception):
-        rotated_iou_distance(np.random.random((100, 4)), np.random.random((100, 4)))
-    with pytest.raises(Exception):
-        rotated_iou_distance(np.random.random((0, 4)), np.random.random((100, 4)))
+        try:
+            rotated_iou_distance(np.random.random((100, 4)), np.random.random((100, 4)))
+        except:   # noqa: E722
+            raise RuntimeError()
+    with pytest.raises(RuntimeError):
+        try:
+            rotated_iou_distance(np.random.random((0, 4)), np.random.random((100, 4)))
+        except:  # noqa: E722
+            raise RuntimeError()
 
 
 def test_rotated_iou_distance_dtype():
