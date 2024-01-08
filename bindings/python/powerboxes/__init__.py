@@ -18,6 +18,7 @@ from ._iou import (
 )
 from ._nms import _dtype_to_func_nms, _dtype_to_func_rtree_nms
 from ._powerboxes import masks_to_boxes as _masks_to_boxes
+from ._powerboxes import rotated_iou_distance as _rotated_iou_distance
 from ._tiou import _dtype_to_func_tiou_distance
 
 _BOXES_NOT_SAME_TYPE = "boxes1 and boxes2 must have the same dtype"
@@ -202,6 +203,19 @@ def tiou_distance(
         raise ValueError(_BOXES_NOT_SAME_TYPE)
 
 
+def rotated_iou_distance(
+    boxes1: npt.NDArray[T], boxes2: npt.NDArray[T]
+) -> npt.NDArray[np.float64]:
+    if not isinstance(boxes1, np.ndarray) or not isinstance(boxes2, np.ndarray):
+        raise TypeError(_BOXES_NOT_NP_ARRAY)
+    if boxes1.dtype == boxes2.dtype == np.dtype("float64"):
+        return _rotated_iou_distance(boxes1, boxes2)
+    else:
+        raise TypeError(
+            f"Boxes dtype: {boxes1.dtype}, {boxes2.dtype} not in float64 dtype"
+        )
+
+
 def remove_small_boxes(boxes: npt.NDArray[T], min_size) -> npt.NDArray[T]:
     """Remove boxes with area less than min_area.
 
@@ -365,7 +379,8 @@ __all__ = [
     "masks_to_boxes",
     "supported_dtypes",
     "nms",
-    "tiou",
+    "tiou_distance",
+    "rotated_iou_distance"
     "rtree_nms",
     "__version__",
 ]

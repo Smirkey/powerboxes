@@ -20,7 +20,7 @@ where
 
     if array_shape[1] != 4 {
         return Err(pyo3::exceptions::PyValueError::new_err(
-            "Arrays must have shape (N, 4)",
+            "Arrays must have at least shape (N, 4)",
         ));
     } else {
         let num_boxes = array_shape[0];
@@ -28,6 +28,34 @@ where
         if num_boxes == 0 {
             return Err(pyo3::exceptions::PyValueError::new_err(
                 "Arrays must have shape (N, 4) with N > 0",
+            ));
+        }
+    }
+
+    let array = array
+        .to_owned()
+        .into_shape((array_shape[0], array_shape[1]))
+        .unwrap();
+    return Ok(array);
+}
+
+pub fn preprocess_rotated_boxes<N>(array: &PyArray2<N>) -> Result<Array2<N>, PyErr>
+where
+    N: Num + numpy::Element + Send,
+{
+    let array = unsafe { array.as_array() };
+    let array_shape = array.shape();
+
+    if array_shape[1] != 5 {
+        return Err(pyo3::exceptions::PyValueError::new_err(
+            "Arrays must have at least shape (N, 5)",
+        ));
+    } else {
+        let num_boxes = array_shape[0];
+
+        if num_boxes == 0 {
+            return Err(pyo3::exceptions::PyValueError::new_err(
+                "Arrays must have shape (N, 5) with N > 0",
             ));
         }
     }

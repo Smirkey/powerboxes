@@ -6,7 +6,7 @@ use num_traits::{Bounded, Num, Signed, ToPrimitive};
 use numpy::{PyArray1, PyArray2, PyArray3};
 use powerboxesrs::{boxes, giou, iou, nms, tiou};
 use pyo3::prelude::*;
-use utils::{preprocess_array1, preprocess_array3, preprocess_boxes};
+use utils::{preprocess_array1, preprocess_array3, preprocess_boxes, preprocess_rotated_boxes};
 
 #[pymodule]
 fn _powerboxes(_py: Python, m: &PyModule) -> PyResult<()> {
@@ -108,6 +108,8 @@ fn _powerboxes(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(rtree_nms_i16, m)?)?;
     // Masks to boxes
     m.add_function(wrap_pyfunction!(masks_to_boxes, m)?)?;
+    // Rotated IoU
+    m.add_function(wrap_pyfunction!(rotated_iou_distance, m)?)?;
     Ok(())
 }
 // Masks to boxes
@@ -117,6 +119,21 @@ fn masks_to_boxes(_py: Python, masks: &PyArray3<bool>) -> PyResult<Py<PyArray2<u
     let boxes = boxes::masks_to_boxes(&masks);
     let boxes_as_numpy = utils::array_to_numpy(_py, boxes).unwrap();
     return Ok(boxes_as_numpy.to_owned());
+}
+
+// Rotated box IoU
+
+#[pyfunction]
+fn rotated_iou_distance(
+    _py: Python,
+    boxes1: &PyArray2<f64>,
+    boxes2: &PyArray2<f64>,
+) -> PyResult<Py<PyArray2<f64>>> {
+    let boxes1 = preprocess_rotated_boxes(boxes1).unwrap();
+    let boxes2 = preprocess_rotated_boxes(boxes2).unwrap();
+    let iou = iou::rotated_iou_distance(&boxes1, &boxes2);
+    let iou_as_numpy = utils::array_to_numpy(_py, iou).unwrap();
+    return Ok(iou_as_numpy.to_owned());
 }
 
 // IoU
