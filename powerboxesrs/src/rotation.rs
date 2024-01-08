@@ -1,7 +1,6 @@
 use std::f64::consts::PI;
-use std::ops::{Add, Sub};
+use std::ops::Add;
 
-#[derive(Clone, Copy)]
 pub struct Point {
     pub x: f64,
     pub y: f64,
@@ -12,14 +11,6 @@ impl Add for Point {
 
     fn add(self, other: Point) -> Point {
         Point::new(self.x + other.x, self.y + other.y)
-    }
-}
-
-impl Sub for Point {
-    type Output = Point;
-
-    fn sub(self, other: Point) -> Point {
-        Point::new(self.x - other.x, self.y - other.y)
     }
 }
 
