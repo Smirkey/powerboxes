@@ -1,6 +1,7 @@
-use crate::{boxes, utils};
-use ndarray::{Array2, Zip};
+use crate::{boxes, rotation::cxcywha_to_points, utils};
+use ndarray::{Array2, Axis, Zip};
 use num_traits::{Num, ToPrimitive};
+use rstar::{Envelope, RStarInsertionStrategy, RTree, RTreeNum, RTreeObject, RTreeParams, AABB};
 
 /// Calculates the intersection over union (IoU) distance between two sets of bounding boxes.
 ///
@@ -165,6 +166,101 @@ where
     return iou_matrix;
 }
 
+// Struct we use to represent a bbox object in rstar R-tree
+struct OrientedBbox<T> {
+    index: usize,
+    x1: T,
+    y1: T,
+    x2: T,
+    y2: T,
+    x3: T,
+    y3: T,
+    x4: T,
+    y4: T,
+}
+
+// Implement RTreeObject for Bbox
+impl<T> RTreeObject for OrientedBbox<T>
+where
+    T: RTreeNum + ToPrimitive + Sync + Send,
+{
+    type Envelope = AABB<[T; 2]>;
+
+    fn envelope(&self) -> Self::Envelope {
+        AABB::from_points([
+            &[self.x1, self.y1],
+            &[self.x2, self.y2],
+            &[self.x3, self.y3],
+            &[self.x4, self.y4],
+        ])
+    }
+}
+
+impl<T> RTreeParams for OrientedBbox<T>
+where
+    T: RTreeNum + ToPrimitive + Sync + Send,
+{
+    const MIN_SIZE: usize = 16;
+    const MAX_SIZE: usize = 256;
+    const REINSERTION_COUNT: usize = 5;
+    type DefaultInsertionStrategy = RStarInsertionStrategy;
+}
+
+pub fn rotated_iou_distance(boxes1: &Array2<f64>, boxes2: &Array2<f64>) -> Array2<f64> {
+    let num_boxes1 = boxes1.nrows();
+    let num_boxes2 = boxes2.nrows();
+
+    let mut iou_matrix = Array2::<f64>::ones((num_boxes1, num_boxes2));
+    let points_boxes_1: Vec<OrientedBbox<f64>> = boxes1
+        .axis_iter(Axis(0))
+        .enumerate()
+        .map(|(i, row)| {
+            let (p1, p2, p3, p4) = cxcywha_to_points(row[0], row[1], row[2], row[3], row[4]);
+            OrientedBbox {
+                index: i,
+                x1: p1.x,
+                y1: p1.y,
+                x2: p2.x,
+                y2: p2.y,
+                x3: p3.x,
+                y3: p3.y,
+                x4: p4.x,
+                y4: p4.y,
+            }
+        })
+        .collect();
+    let points_boxes_2: Vec<OrientedBbox<f64>> = boxes2
+        .axis_iter(Axis(0))
+        .enumerate()
+        .map(|(i, row)| {
+            let (p1, p2, p3, p4) = cxcywha_to_points(row[0], row[1], row[2], row[3], row[4]);
+            OrientedBbox {
+                index: i,
+                x1: p1.x,
+                y1: p1.y,
+                x2: p2.x,
+                y2: p2.y,
+                x3: p3.x,
+                y3: p3.y,
+                x4: p4.x,
+                y4: p4.y,
+            }
+        })
+        .collect();
+    let rtree_boxes_1: RTree<OrientedBbox<f64>> = RTree::bulk_load(points_boxes_1);
+    let rtree_boxes_2: RTree<OrientedBbox<f64>> = RTree::bulk_load(points_boxes_2);
+
+    for (box1, box2) in rtree_boxes_1.intersection_candidates_with_other_tree(&rtree_boxes_2) {
+        let box1_envelope = box1.envelope();
+        let box2_envelope = box2.envelope();
+        let intersection = box1_envelope.intersection_area(&box2_envelope);
+        let iou = intersection
+            / (box1_envelope.area() + box2_envelope.area() - intersection + utils::EPS);
+        iou_matrix[[box1.index, box2.index]] = utils::ONE - iou;
+    }
+    return iou_matrix;
+}
+
 #[cfg(test)]
 mod tests {
     use ndarray::arr2;
@@ -230,5 +326,13 @@ mod tests {
         assert_eq!(iou_distance_result, arr2(&[[1.0]]));
         assert_eq!(parallel_iou_distance_result, arr2(&[[1.0]]));
         assert_eq!(1. - iou_distance_result, iou_result);
+    }
+
+    #[test]
+    fn test_rotated_iou_disstance() {
+        let boxes1 = arr2(&[[5.0, 5.0, 2.0, 2.0, 0.0]]);
+        let boxes2 = arr2(&[[4.0, 4.0, 2.0, 2.0, 0.0]]);
+        let rotated_iou_distance_result = rotated_iou_distance(&boxes1, &boxes2);
+        assert_eq!(rotated_iou_distance_result, arr2(&[[0.8571428571428572]]));
     }
 }

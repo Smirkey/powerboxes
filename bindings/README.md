@@ -49,23 +49,23 @@ intersection = pb.iou_distance(box, box)
 
 Some benchmarks of powerboxes against various open source alternatives, not all functions are benchmarked. Notice that we use log scales, **all differences are major** !
 
-### Box area, (I suspect torchvision to use multiple cores)
-Here it's torchvision vs powerboxes
+### Box area
+Here it's torchvision vs powerboxes vs numpy
 
 ![Box area](../images/box_area.png)
 
-### Box convert,(I suspect torchvision to use multiple cores)
+### Box convert
 Here it's torchvision vs powerboxes
 
-![Box convert](../images/box_area.png)
+![Box convert](../images/box_convert.png)
 
 ### Box IoU matrix
-Torchvision vs shapely vs shapely
+Torchvision vs numpy vs powerboxes
 
 ![Box IoU](../images/box_iou.png)
 
 ### NMS
-Torchvision vs powerboxes vs lsnms
+Torchvision vs powerboxes vs lsnms vs numpy
 
 #### Large image (10000x10000 pixels)
 

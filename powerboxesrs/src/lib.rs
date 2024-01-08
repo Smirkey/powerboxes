@@ -49,5 +49,6 @@ pub mod boxes;
 pub mod giou;
 pub mod iou;
 pub mod nms;
+mod rotation;
 pub mod tiou;
 mod utils;
