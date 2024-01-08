@@ -281,6 +281,10 @@ def test_rotated_iou_distance(dtype):
 def test_rotated_iou_distance_bad_inputs():
     with pytest.raises(TypeError, match=_BOXES_NOT_NP_ARRAY):
         rotated_iou_distance("foo", "bar")
+    with pytest.raises(Exception, match=_BOXES_NOT_NP_ARRAY):
+        rotated_iou_distance(np.random.random((100, 4)), np.random.random((100, 4)))
+    with pytest.raises(Exception, match=_BOXES_NOT_NP_ARRAY):
+        rotated_iou_distance(np.random.random((0, 4)), np.random.random((100, 4)))
 
 
 def test_rotated_iou_distance_dtype():
