@@ -1,7 +1,5 @@
 use ndarray::{Array1, Array2, Array3, Axis, Zip};
 use num_traits::{Num, ToPrimitive};
-use ultraviolet::f32x8;
-
 pub enum BoxFormat {
     XYXY,
     XYWH,
@@ -44,40 +42,6 @@ where
     });
 
     return areas;
-}
-
-pub fn box_areas_simd(boxes: &Array2<f32>) -> Array1<f32> {
-    let num_boxes = boxes.nrows();
-    let mut areas = Array1::<f32>::zeros(num_boxes);
-
-    for i in (0..num_boxes).step_by(8) {
-        let mut x1s = [0.0; 8];
-        let mut y1s = [0.0; 8];
-        let mut x2s = [0.0; 8];
-        let mut y2s = [0.0; 8];
-
-        for j in 0..8 {
-            if i + j < num_boxes {
-                x1s[j] = boxes[[i + j, 0]];
-                y1s[j] = boxes[[i + j, 1]];
-                x2s[j] = boxes[[i + j, 2]];
-                y2s[j] = boxes[[i + j, 3]];
-            }
-        }
-
-        let x1 = f32x8::from(x1s);
-        let x2 = f32x8::from(x2s);
-        let y1 = f32x8::from(y1s);
-        let y2 = f32x8::from(y2s);
-
-        let area = (x2 - x1) * (y2 - y1);
-        for (j, value) in area.as_array_ref().into_iter().enumerate() {
-            if i + j < num_boxes {
-                areas[[i + j]] = *value;
-            }
-        }
-    }
-    areas
 }
 
 /// Calculates the areas of a 2D array of boxes in parallel.
@@ -434,6 +398,18 @@ pub fn masks_to_boxes(masks: &Array3<bool>) -> Array2<usize> {
     }
 
     return boxes;
+}
+
+pub fn rotated_box_areas(boxes: &Array2<f64>) -> Array1<f64> {
+    let n_boxes = boxes.nrows();
+
+    let mut areas = Array1::zeros(n_boxes);
+
+    for i in 0..n_boxes {
+        areas[i] = boxes[[i, 2]] * boxes[[i, 3]]
+    }
+
+    areas
 }
 
 #[cfg(test)]
