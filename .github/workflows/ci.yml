@@ -42,7 +42,7 @@ jobs:
         run: |
           python -m venv venv
           source venv/bin/activate
-          pip install -r bindings/tests/requirements.txt
+          pip install -r bindings/requirements-dev.txt
           pip install maturin
       - name: Run coverage
         run: |
@@ -105,7 +105,7 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - run: pip install -r bindings/tests/requirements.txt
+      - run: pip install -r bindings/requirements-dev.txt
 
       - run: pip install -e bindings/.
         env:
@@ -140,7 +140,7 @@ jobs:
         with:
           python-version: '3.11'
 
-      - run: pip install -r bindings/tests/requirements.txt
+      - run: pip install -r bindings/requirements-dev.txt
 
       - run: pip install -e bindings/.
         env:
@@ -340,7 +340,7 @@ jobs:
       - name: generate pgo data
         run: |
           pip install -U pip
-          pip install -r bindings/tests/requirements.txt
+          pip install -r bindings/requirements-dev.txt
           pip install powerboxes --no-index --no-deps --find-links bindings/pgo-wheel --force-reinstall
           pytest bindings/tests/test_speed.py
           rustup run stable bash -c 'echo LLVM_PROFDATA=$RUSTUP_HOME/toolchains/$RUSTUP_TOOLCHAIN/lib/rustlib/${{ env.RUST_HOST }}/bin/llvm-profdata >> "$GITHUB_ENV"'
@@ -442,7 +442,7 @@ jobs:
           path: bindings/dist
 
       - run: pip install typing-extensions
-      - run: pip install -r bindings/tests/requirements.txt
+      - run: pip install -r bindings/requirements-dev.txt
       - run: pip install powerboxes --no-index --no-deps --find-links bindings/dist --force-reinstall
       - run: pytest bindings/tests
 
