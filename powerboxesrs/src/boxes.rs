@@ -400,6 +400,18 @@ pub fn masks_to_boxes(masks: &Array3<bool>) -> Array2<usize> {
     return boxes;
 }
 
+pub fn rotated_box_areas(boxes: &Array2<f64>) -> Array1<f64> {
+    let n_boxes = boxes.nrows();
+
+    let mut areas = Array1::zeros(n_boxes);
+
+    for i in 0..n_boxes {
+        areas[i] = boxes[[i, 2]] * boxes[[i, 3]]
+    }
+
+    areas
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
