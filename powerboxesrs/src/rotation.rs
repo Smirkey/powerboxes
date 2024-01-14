@@ -1,15 +1,19 @@
 use std::f64::consts::PI;
 use std::ops::{Add, Sub};
 
+/// A simple 2D point structure with x and y coordinates.
 #[derive(Clone, Copy)]
 pub struct Point {
-    x: f64,
-    y: f64,
+    /// The x-coordinate of the point.
+    pub x: f64,
+    /// The y-coordinate of the point.
+    pub y: f64,
 }
 
 impl Add for Point {
     type Output = Point;
 
+    /// Adds two points component-wise and returns a new point.
     fn add(self, other: Point) -> Point {
         Point::new(self.x + other.x, self.y + other.y)
     }
@@ -18,17 +22,24 @@ impl Add for Point {
 impl Sub for Point {
     type Output = Point;
 
+    /// Subtracts two points component-wise and returns a new point.
     fn sub(self, other: Point) -> Point {
         Point::new(self.x - other.x, self.y - other.y)
     }
 }
 
 impl Point {
-    fn new(x: f64, y: f64) -> Self {
+    /// Creates a new point with the given x and y coordinates.
+    pub fn new(x: f64, y: f64) -> Self {
         Point { x, y }
     }
-    fn cross(self, other: Point) -> f64 {
-        return self.x * other.y - self.y * other.x;
+
+    /// Computes the cross product of two points.
+    ///
+    /// # Returns
+    /// The cross product, which is a scalar value.
+    pub fn cross(self, other: Point) -> f64 {
+        self.x * other.y - self.y * other.x
     }
 }
 
@@ -88,25 +99,83 @@ impl Rect {
     }
 }
 
-struct Line {
-    a: f64,
-    b: f64,
-    c: f64,
+/// Represents a 2D line in the form Ax + By + C = 0, where A, B, and C are coefficients.
+///
+/// The `Line` struct provides methods for creating a new line from two points, evaluating the line
+/// equation at a given point, and finding the intersection point with another line.
+///
+/// # Examples
+///
+/// ```
+/// use powerboxesrs::rotation::{Line, Point};
+///
+/// let p1 = Point::new(0.0, 0.0);
+/// let p2 = Point::new(1.0, 1.0);
+/// let line = Line::new(p1, p2);
+///
+/// let point_on_line = Point::new(0.5, 0.5);
+/// let value_at_point = line.call(point_on_line);
+///
+/// let another_line = Line::new(Point::new(0.0, 1.0), Point::new(1.0, 0.0));
+/// let intersection_point = line.intersection(&another_line);
+/// ```
+///
+#[derive(Debug)]
+pub struct Line {
+    /// Coefficient A in the line equation.
+    pub a: f64,
+
+    /// Coefficient B in the line equation.
+    pub b: f64,
+
+    /// Coefficient C in the line equation.
+    pub c: f64,
 }
 
 impl Line {
-    fn new(p1: Point, p2: Point) -> Self {
+    /// Creates a new line from two points.
+    ///
+    /// The line equation is determined as A(x - x₁) + B(y - y₁) = 0, where (x₁, y₁) and (x₂, y₂)
+    /// are the coordinates of the two points.
+    ///
+    /// # Arguments
+    ///
+    /// * `p1` - The first point.
+    /// * `p2` - The second point.
+    ///
+    /// # Returns
+    ///
+    /// Returns a new `Line` struct.
+    pub fn new(p1: Point, p2: Point) -> Self {
         let a = p2.y - p1.y;
         let b = p1.x - p2.x;
         let c = p2.cross(p1);
         Line { a, b, c }
     }
 
-    fn call(&self, p: Point) -> f64 {
+    /// Evaluates the line equation at a given point.
+    ///
+    /// # Arguments
+    ///
+    /// * `p` - The point at which to evaluate the line equation.
+    ///
+    /// # Returns
+    ///
+    /// Returns the value of the line equation at the specified point.
+    pub fn call(&self, p: Point) -> f64 {
         self.a * p.x + self.b * p.y + self.c
     }
 
-    fn intersection(&self, other: &Line) -> Point {
+    /// Finds the intersection point with another line.
+    ///
+    /// # Arguments
+    ///
+    /// * `other` - The other line to find the intersection with.
+    ///
+    /// # Returns
+    ///
+    /// Returns a `Point` representing the intersection point of the two lines.
+    pub fn intersection(&self, other: &Line) -> Point {
         let w = self.a * other.b - self.b * other.a;
         Point::new(
             (self.b * other.c - self.c * other.b) / w,
@@ -115,6 +184,24 @@ impl Line {
     }
 }
 
+/// Calculates the area of intersection between two rectangles represented by `Rect` structs.
+///
+/// The function takes two rectangles, `rect1` and `rect2`, and computes the area of their intersection.
+/// The rectangles are assumed to be represented as structures containing information about their points.
+///
+/// # Arguments
+///
+/// * `rect1` - The first rectangle.
+/// * `rect2` - The second rectangle.
+///
+/// # Returns
+///
+/// Returns a `f64` representing the area of intersection between the two rectangles.
+///
+/// # Notes
+///
+/// This implementation utilizes the Separating Axis Theorem (SAT) for computing the intersection area.
+///
 pub fn intersection_area(rect1: Rect, rect2: Rect) -> f64 {
     let mut intersection = rect1.points();
 
