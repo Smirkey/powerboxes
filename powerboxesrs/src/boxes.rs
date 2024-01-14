@@ -400,6 +400,33 @@ pub fn masks_to_boxes(masks: &Array3<bool>) -> Array2<usize> {
     return boxes;
 }
 
+/// Calculates the areas of rotated boxes in the cxcywha format.
+///
+/// Given an array of rotated boxes represented in the cxcywha format, where each row
+/// corresponds to a box and the columns represent center-x, center-y, width, height,
+/// and orientation angle, this function computes the area of each box and returns
+/// an array containing the computed areas.
+///
+/// # Arguments
+///
+/// * `boxes` - A 2D array representing rotated boxes in the cxcywha format.
+///
+/// # Returns
+///
+/// A 1D array containing the computed areas of each rotated box.
+///
+pub fn rotated_box_areas(boxes: &Array2<f64>) -> Array1<f64> {
+    let n_boxes = boxes.nrows();
+
+    let mut areas = Array1::zeros(n_boxes);
+
+    for i in 0..n_boxes {
+        areas[i] = boxes[[i, 2]] * boxes[[i, 3]]
+    }
+
+    areas
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -595,5 +622,11 @@ mod tests {
         ]);
         let boxes = masks_to_boxes(&masks);
         assert_eq!(boxes, array![[0, 0, 2, 0], [0, 1, 2, 1], [2, 1, 2, 1]]);
+    }
+    #[test]
+    fn test_rotated_box_areas_single_box() {
+        let boxes = array![[1., 2., 3., 4., 100.]];
+        let areas = rotated_box_areas(&boxes);
+        assert_eq!(areas, array![12.]);
     }
 }
