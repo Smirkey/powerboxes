@@ -131,27 +131,21 @@ pub fn intersection_area(rect1: Rect, rect2: Rect) -> f64 {
 
         let mut new_intersection = Vec::new();
         let line_values: Vec<f64> = intersection.iter().map(|t| line.call(*t)).collect();
-        let truncated_intersection: Vec<Point> = intersection[1..]
-            .iter()
-            .chain(&intersection[..1])
-            .cloned()
-            .collect();
-        let truncated_line_values: Vec<f64> = line_values[1..]
-            .iter()
-            .chain(&line_values[..1])
-            .cloned()
-            .collect();
+        let truncated_intersection: Vec<&Point> =
+            intersection[1..].iter().chain(&intersection[..1]).collect();
+        let truncated_line_values: Vec<&f64> =
+            line_values[1..].iter().chain(&line_values[..1]).collect();
         for (((s, t), s_value), t_value) in intersection
             .iter()
             .zip(truncated_intersection)
-            .zip(line_values)
+            .zip(&line_values)
             .zip(truncated_line_values)
         {
-            if s_value <= 0.0 {
+            if s_value <= &0.0 {
                 new_intersection.push(*s)
             }
             if s_value * t_value < 0.0 {
-                let intersection_point = line.intersection(&Line::new(*s, t));
+                let intersection_point = line.intersection(&Line::new(*s, *t));
                 new_intersection.push(intersection_point);
             }
         }
@@ -161,11 +155,8 @@ pub fn intersection_area(rect1: Rect, rect2: Rect) -> f64 {
     if intersection.len() <= 2 {
         return 0.0;
     }
-    let truncated_intersection: Vec<Point> = intersection[1..]
-        .iter()
-        .chain(&intersection[..1])
-        .cloned()
-        .collect();
+    let truncated_intersection: Vec<&Point> =
+        intersection[1..].iter().chain(&intersection[..1]).collect();
     return 0.5
         * intersection
             .iter()
