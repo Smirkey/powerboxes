@@ -267,7 +267,7 @@ mod tests {
         let keep = nms(&boxes, &scores, 0.5, 1.0);
         let keep_rtree = rtree_nms(&boxes, &scores, 0.5, 1.0);
 
-        assert_eq!(keep, Array1::from(vec![]));
+        assert_eq!(keep, Array1::from_shape_simple_fn(0, || { 0 }));
         assert_eq!(keep, keep_rtree)
     }
 

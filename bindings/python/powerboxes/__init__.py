@@ -17,6 +17,7 @@ from ._iou import (
     _dtype_to_func_parallel_iou_distance,
 )
 from ._nms import _dtype_to_func_nms, _dtype_to_func_rtree_nms
+from ._powerboxes import iou_distance_simd
 from ._powerboxes import masks_to_boxes as _masks_to_boxes
 from ._powerboxes import rotated_iou_distance as _rotated_iou_distance
 from ._tiou import _dtype_to_func_tiou_distance
@@ -380,7 +381,7 @@ __all__ = [
     "supported_dtypes",
     "nms",
     "tiou_distance",
-    "rotated_iou_distance"
-    "rtree_nms",
+    "rotated_iou_distance" "rtree_nms",
     "__version__",
+    "iou_distance_simd",
 ]

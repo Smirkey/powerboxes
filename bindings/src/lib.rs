@@ -110,6 +110,8 @@ fn _powerboxes(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(masks_to_boxes, m)?)?;
     // Rotated IoU
     m.add_function(wrap_pyfunction!(rotated_iou_distance, m)?)?;
+    // SIMD IoU
+    m.add_function(wrap_pyfunction!(iou_distance_simd, m)?)?;
     Ok(())
 }
 // Masks to boxes
@@ -120,7 +122,19 @@ fn masks_to_boxes(_py: Python, masks: &PyArray3<bool>) -> PyResult<Py<PyArray2<u
     let boxes_as_numpy = utils::array_to_numpy(_py, boxes).unwrap();
     return Ok(boxes_as_numpy.to_owned());
 }
-
+// SIMD IoU
+#[pyfunction]
+fn iou_distance_simd(
+    _py: Python,
+    boxes1: &PyArray2<f32>,
+    boxes2: &PyArray2<f32>,
+) -> PyResult<Py<PyArray2<f32>>> {
+    let boxes1 = preprocess_boxes(boxes1).unwrap();
+    let boxes2 = preprocess_boxes(boxes2).unwrap();
+    let iou = iou::calculate_iou_matrix_simd(&boxes1, &boxes2);
+    let iou_as_numpy = utils::array_to_numpy(_py, iou).unwrap();
+    return Ok(iou_as_numpy.to_owned());
+}
 // Rotated box IoU
 
 #[pyfunction]
