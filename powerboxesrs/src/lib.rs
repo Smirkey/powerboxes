@@ -11,7 +11,7 @@
 //!
 //! ```toml
 //! [dependencies]
-//! powerboxesrs = "0.2.0"
+//! powerboxesrs = "0.2.1"
 //! ```
 //!
 //! ## Usage

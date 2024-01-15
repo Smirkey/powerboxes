@@ -4,7 +4,7 @@ version = 3
 
 [[package]]
 name = "_powerboxes"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "ndarray",
  "num-traits",
@@ -255,7 +255,7 @@ dependencies = [
 
 [[package]]
 name = "powerboxesrs"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "ndarray",
  "num-traits",
