@@ -5,6 +5,7 @@ use crate::{
 };
 use ndarray::{Array2, Zip};
 use num_traits::{Num, ToPrimitive};
+use rstar::RTree;
 
 /// Calculates the intersection over union (IoU) distance between two sets of bounding boxes.
 ///
@@ -156,16 +157,70 @@ pub fn rotated_iou_distance(boxes1: &Array2<f64>, boxes2: &Array2<f64>) -> Array
         .into_iter()
         .map(|row| Rect::new(row[0], row[1], row[2], row[3], row[4]))
         .collect();
+    let boxes1_bounding_rects: Vec<utils::Bbox<f64>> = boxes1_rects
+        .iter()
+        .enumerate()
+        .map(|(idx, rect)| {
+            let points = rect.points();
+            let (min_x, max_x) = points
+                .iter()
+                .map(|p| p.x)
+                .fold((f64::INFINITY, f64::NEG_INFINITY), |acc, x| {
+                    (acc.0.min(x), acc.1.max(x))
+                });
+            let (min_y, max_y) = points
+                .iter()
+                .map(|p| p.y)
+                .fold((f64::INFINITY, f64::NEG_INFINITY), |acc, y| {
+                    (acc.0.min(y), acc.1.max(y))
+                });
+            utils::Bbox {
+                index: idx,
+                x1: min_x,
+                y1: min_y,
+                x2: max_x,
+                y2: max_y,
+            }
+        })
+        .collect();
+    let boxes2_bounding_rects: Vec<utils::Bbox<f64>> = boxes2_rects
+        .iter()
+        .enumerate()
+        .map(|(idx, rect)| {
+            let points = rect.points();
+            let (min_x, max_x) = points
+                .iter()
+                .map(|p| p.x)
+                .fold((f64::INFINITY, f64::NEG_INFINITY), |acc, x| {
+                    (acc.0.min(x), acc.1.max(x))
+                });
+            let (min_y, max_y) = points
+                .iter()
+                .map(|p| p.y)
+                .fold((f64::INFINITY, f64::NEG_INFINITY), |acc, y| {
+                    (acc.0.min(y), acc.1.max(y))
+                });
+            utils::Bbox {
+                index: idx,
+                x1: min_x,
+                y1: min_y,
+                x2: max_x,
+                y2: max_y,
+            }
+        })
+        .collect();
 
-    for (i, rect1) in boxes1_rects.iter().enumerate() {
-        let area1 = areas1[i];
-        for (j, rect2) in boxes2_rects.iter().enumerate() {
-            let area2 = areas2[j];
-            let intersection = intersection_area(*rect1, *rect2);
-            let union = area1 + area2 - intersection + utils::EPS;
-            iou_matrix[[i, j]] = utils::ONE - intersection / union;
-        }
+    let box1_rtree: RTree<utils::Bbox<f64>> = RTree::bulk_load(boxes1_bounding_rects);
+    let box2_rtree: RTree<utils::Bbox<f64>> = RTree::bulk_load(boxes2_bounding_rects);
+
+    for (box1, box2) in box1_rtree.intersection_candidates_with_other_tree(&box2_rtree) {
+        let area1 = areas1[box1.index];
+        let area2 = areas2[box2.index];
+        let intersection = intersection_area(boxes1_rects[box1.index], boxes2_rects[box2.index]);
+        let union = area1 + area2 - intersection + utils::EPS;
+        iou_matrix[[box1.index, box2.index]] = utils::ONE - intersection / union;
     }
+
     return iou_matrix;
 }
 
