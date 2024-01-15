@@ -18,6 +18,7 @@ from ._iou import (
 )
 from ._nms import _dtype_to_func_nms, _dtype_to_func_rtree_nms
 from ._powerboxes import masks_to_boxes as _masks_to_boxes
+from ._powerboxes import rotated_giou_distance as _rotated_giou_distance
 from ._powerboxes import rotated_iou_distance as _rotated_iou_distance
 from ._tiou import _dtype_to_func_tiou_distance
 
@@ -34,7 +35,7 @@ supported_dtypes = [
     "uint32",
     "uint64",
 ]
-__version__ = "0.1.3"
+__version__ = "0.2.0"
 
 T = TypeVar(
     "T",
@@ -204,12 +205,59 @@ def tiou_distance(
 
 
 def rotated_iou_distance(
-    boxes1: npt.NDArray[T], boxes2: npt.NDArray[T]
+    boxes1: npt.NDArray[np.float64], boxes2: npt.NDArray[np.float64]
 ) -> npt.NDArray[np.float64]:
+    """Compute the pairwise iou distance between rotated boxes
+
+    Boxes should be in (cx, cy, w, h, a) format
+    where cx and cy are center coordinates, w and h
+    width and height and a, the angle in degrees
+
+    Args:
+        boxes1: 2d array of boxes in cxywha format
+        boxes2: 2d array of boxes in cxywha format
+
+    Raises:
+        TypeError: if boxes1 or boxes2 are not numpy arrays
+        ValueError: if boxes1 and boxes2 have different dtypes
+
+    Returns:
+        np.ndarray: 2d matrix of pairwise distances
+    """
     if not isinstance(boxes1, np.ndarray) or not isinstance(boxes2, np.ndarray):
         raise TypeError(_BOXES_NOT_NP_ARRAY)
     if boxes1.dtype == boxes2.dtype == np.dtype("float64"):
         return _rotated_iou_distance(boxes1, boxes2)
+    else:
+        raise TypeError(
+            f"Boxes dtype: {boxes1.dtype}, {boxes2.dtype} not in float64 dtype"
+        )
+
+
+def rotated_giou_distance(
+    boxes1: npt.NDArray[T], boxes2: npt.NDArray[T]
+) -> npt.NDArray[np.float64]:
+    """Compute the pairwise giou distance between rotated boxes
+
+    Boxes should be in (cx, cy, w, h, a) format
+    where cx and cy are center coordinates, w and h
+    width and height and a, the angle in degrees
+
+    Args:
+        boxes1: 2d array of boxes in cxywha format
+        boxes2: 2d array of boxes in cxywha format
+
+    Raises:
+        TypeError: if boxes1 or boxes2 are not numpy arrays
+        ValueError: if boxes1 and boxes2 have different dtypes
+
+    Returns:
+        np.ndarray: 2d matrix of pairwise distances
+    """
+    if not isinstance(boxes1, np.ndarray) or not isinstance(boxes2, np.ndarray):
+        raise TypeError(_BOXES_NOT_NP_ARRAY)
+    if boxes1.dtype == boxes2.dtype == np.dtype("float64"):
+        return _rotated_giou_distance(boxes1, boxes2)
     else:
         raise TypeError(
             f"Boxes dtype: {boxes1.dtype}, {boxes2.dtype} not in float64 dtype"
@@ -380,7 +428,8 @@ __all__ = [
     "supported_dtypes",
     "nms",
     "tiou_distance",
-    "rotated_iou_distance"
+    "rotated_iou_distance",
+    "rotated_giou_distance",
     "rtree_nms",
     "__version__",
 ]
