@@ -47,6 +47,11 @@ intersection = pb.iou_distance(box, box)
 - `parallel_iou_distance`: Compute the intersection over union matrix of two sets of boxes in parallel
 - `giou_distance`: Compute the generalized intersection over union matrix of two sets of boxes
 - `parallel_giou_distance`: Compute the generalized intersection over union matrix of two sets of boxes in parallel
+- `tiou_distance`: Compute the tracking intersection over union matrix of two sets of boxes
+
+#### Rotated Box Metrics
+- `rotated_iou_distance`: Compute the intersection over union matrix of two sets of rotated boxes in cxcywha format
+- `rotated_giou_distance`: Compute the generalized intersection over union matrix of two sets of rotated boxes in cxcywha format
 
 #### Box NMS
 - `nms`: Non-maximum suppression, returns the indices of the boxes to keep

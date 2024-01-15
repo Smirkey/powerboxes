@@ -1,6 +1,6 @@
 use crate::{
     boxes::{self, rotated_box_areas},
-    rotation::{intersection_area, Rect},
+    rotation::{intersection_area, minimal_bounding_rect, Rect},
     utils,
 };
 use ndarray::{Array2, Zip};
@@ -139,13 +139,25 @@ where
     return iou_matrix;
 }
 
+/// Calculates the Rotated Intersection over Union (IoU) distance matrix between two sets of rotated bounding boxes.
+///
+///
+/// # Arguments
+/// * `boxes1` - A 2D array representing the first set of rotated bounding boxes. Each row contains
+///             the parameters (center_x, center_y, width, height, angle) of a rotated box.
+/// * `boxes2` - A 2D array representing the second set of rotated bounding boxes. Each row contains
+///             the parameters (center_x, center_y, width, height, angle) of a rotated box.
+///
+/// # Returns
+/// A 2D array containing the Rotated IoU distance matrix. The element at position (i, j) represents
+/// the Rotated IoU distance between the i-th box in `boxes1` and the j-th box in `boxes2`.
 pub fn rotated_iou_distance(boxes1: &Array2<f64>, boxes2: &Array2<f64>) -> Array2<f64> {
     let num_boxes1 = boxes1.nrows();
     let num_boxes2 = boxes2.nrows();
 
     let mut iou_matrix = Array2::<f64>::ones((num_boxes1, num_boxes2));
-    let areas1 = rotated_box_areas(boxes1);
-    let areas2 = rotated_box_areas(boxes2);
+    let areas1 = rotated_box_areas(&boxes1);
+    let areas2 = rotated_box_areas(&boxes2);
 
     let boxes1_rects: Vec<Rect> = boxes1
         .rows()
@@ -161,19 +173,7 @@ pub fn rotated_iou_distance(boxes1: &Array2<f64>, boxes2: &Array2<f64>) -> Array
         .iter()
         .enumerate()
         .map(|(idx, rect)| {
-            let points = rect.points();
-            let (min_x, max_x) = points
-                .iter()
-                .map(|p| p.x)
-                .fold((f64::INFINITY, f64::NEG_INFINITY), |acc, x| {
-                    (acc.0.min(x), acc.1.max(x))
-                });
-            let (min_y, max_y) = points
-                .iter()
-                .map(|p| p.y)
-                .fold((f64::INFINITY, f64::NEG_INFINITY), |acc, y| {
-                    (acc.0.min(y), acc.1.max(y))
-                });
+            let (min_x, min_y, max_x, max_y) = minimal_bounding_rect(&rect.points());
             utils::Bbox {
                 index: idx,
                 x1: min_x,
@@ -187,19 +187,7 @@ pub fn rotated_iou_distance(boxes1: &Array2<f64>, boxes2: &Array2<f64>) -> Array
         .iter()
         .enumerate()
         .map(|(idx, rect)| {
-            let points = rect.points();
-            let (min_x, max_x) = points
-                .iter()
-                .map(|p| p.x)
-                .fold((f64::INFINITY, f64::NEG_INFINITY), |acc, x| {
-                    (acc.0.min(x), acc.1.max(x))
-                });
-            let (min_y, max_y) = points
-                .iter()
-                .map(|p| p.y)
-                .fold((f64::INFINITY, f64::NEG_INFINITY), |acc, y| {
-                    (acc.0.min(y), acc.1.max(y))
-                });
+            let (min_x, min_y, max_x, max_y) = minimal_bounding_rect(&rect.points());
             utils::Bbox {
                 index: idx,
                 x1: min_x,
@@ -216,7 +204,7 @@ pub fn rotated_iou_distance(boxes1: &Array2<f64>, boxes2: &Array2<f64>) -> Array
     for (box1, box2) in box1_rtree.intersection_candidates_with_other_tree(&box2_rtree) {
         let area1 = areas1[box1.index];
         let area2 = areas2[box2.index];
-        let intersection = intersection_area(boxes1_rects[box1.index], boxes2_rects[box2.index]);
+        let intersection = intersection_area(&boxes1_rects[box1.index], &boxes2_rects[box2.index]);
         let union = area1 + area2 - intersection + utils::EPS;
         iou_matrix[[box1.index, box2.index]] = utils::ONE - intersection / union;
     }
@@ -272,7 +260,7 @@ mod tests {
     }
 
     #[test]
-    fn test_iou_disstance5() {
+    fn test_iou_distance5() {
         let boxes1 = arr2(&[[0.0, 0.0, 2.0, 2.0]]);
         let boxes2 = arr2(&[[3.0, 3.0, 4.0, 4.0]]);
         let iou_distance_result = iou_distance(&boxes1, &boxes2);
@@ -282,7 +270,7 @@ mod tests {
     }
 
     #[test]
-    fn test_rotated_iou_disstance() {
+    fn test_rotated_iou_distance() {
         let boxes1 = arr2(&[[5.0, 5.0, 2.0, 2.0, 0.0]]);
         let boxes2 = arr2(&[[4.0, 4.0, 2.0, 2.0, 0.0]]);
         let rotated_iou_distance_result = rotated_iou_distance(&boxes1, &boxes2);

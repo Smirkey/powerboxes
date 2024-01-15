@@ -12,6 +12,7 @@ from powerboxes import (
     parallel_giou_distance,
     parallel_iou_distance,
     remove_small_boxes,
+    rotated_giou_distance,
     rotated_iou_distance,
     rtree_nms,
     supported_dtypes,
@@ -284,7 +285,7 @@ def test_rotated_iou_distance_bad_inputs():
     with pytest.raises(Exception):
         try:
             rotated_iou_distance(np.random.random((100, 4)), np.random.random((100, 4)))
-        except:   # noqa: E722
+        except:  # noqa: E722
             raise RuntimeError()
     with pytest.raises(RuntimeError):
         try:
@@ -298,6 +299,43 @@ def test_rotated_iou_distance_dtype():
     boxes2 = np.random.random((100, 5))
     with pytest.raises(TypeError):
         rotated_iou_distance(
+            boxes1.astype(unsuported_dtype_example),
+            boxes2.astype(unsuported_dtype_example),
+        )
+
+
+@pytest.mark.parametrize("dtype", ["float64"])
+def test_rotated_giou_distance(dtype):
+    boxes1 = np.random.random((100, 5))
+    boxes2 = np.random.random((100, 5))
+    rotated_giou_distance(
+        boxes1.astype(dtype),
+        boxes2.astype(dtype),
+    )
+
+
+def test_rotated_giou_distance_bad_inputs():
+    with pytest.raises(TypeError, match=_BOXES_NOT_NP_ARRAY):
+        rotated_giou_distance("foo", "bar")
+    with pytest.raises(Exception):
+        try:
+            rotated_giou_distance(
+                np.random.random((100, 4)), np.random.random((100, 4))
+            )
+        except:  # noqa: E722
+            raise RuntimeError()
+    with pytest.raises(RuntimeError):
+        try:
+            rotated_giou_distance(np.random.random((0, 4)), np.random.random((100, 4)))
+        except:  # noqa: E722
+            raise RuntimeError()
+
+
+def test_rotated_giou_distance_dtype():
+    boxes1 = np.random.random((100, 5))
+    boxes2 = np.random.random((100, 5))
+    with pytest.raises(TypeError):
+        rotated_giou_distance(
             boxes1.astype(unsuported_dtype_example),
             boxes2.astype(unsuported_dtype_example),
         )

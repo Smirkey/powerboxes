@@ -1,7 +1,12 @@
 use ndarray::{Array2, Zip};
 use num_traits::{Num, ToPrimitive};
+use rstar::RTree;
 
-use crate::{boxes, utils};
+use crate::{
+    boxes::{self, rotated_box_areas},
+    rotation::{intersection_area, minimal_bounding_rect, Rect},
+    utils,
+};
 /// Computes the Generalized Intersection over Union (GIOU) distance between two sets of bounding boxes.
 /// # Arguments
 ///
@@ -161,6 +166,97 @@ where
     giou_matrix
 }
 
+/// Calculates the rotated Generalized IoU (Giou) distance between two sets of rotated bounding boxes.
+///
+/// Given two sets of rotated bounding boxes represented by `boxes1` and `boxes2`, this function
+/// computes the rotated Giou distance matrix between them. The rotated Giou distance is a measure
+/// of dissimilarity between two rotated bounding boxes, taking into account both their overlap
+/// and the encompassing area.
+///
+/// # Arguments
+///
+/// * `boxes1` - A reference to a 2D array (Array2) containing the parameters of the first set of rotated bounding boxes.
+/// Each row of `boxes1` represents a rotated bounding box with parameters [center_x, center_y, width, height, angle].
+///
+/// * `boxes2` - A reference to a 2D array (Array2) containing the parameters of the second set of rotated bounding boxes.
+/// Each row of `boxes2` represents a rotated bounding box with parameters [center_x, center_y, width, height, angle].
+///
+/// # Returns
+///
+/// A 2D array (Array2) representing the rotated Giou distance matrix between the input sets of rotated bounding boxes.
+/// The element at position (i, j) in the matrix represents the rotated Giou distance between the i-th box in `boxes1` and
+/// the j-th box in `boxes2`.
+///
+pub fn rotated_giou_distance(boxes1: &Array2<f64>, boxes2: &Array2<f64>) -> Array2<f64> {
+    let num_boxes1 = boxes1.nrows();
+    let num_boxes2 = boxes2.nrows();
+
+    let mut iou_matrix = Array2::<f64>::ones((num_boxes1, num_boxes2));
+    let areas1 = rotated_box_areas(&boxes1);
+    let areas2 = rotated_box_areas(&boxes2);
+
+    let boxes1_rects: Vec<Rect> = boxes1
+        .rows()
+        .into_iter()
+        .map(|row| Rect::new(row[0], row[1], row[2], row[3], row[4]))
+        .collect();
+    let boxes2_rects: Vec<Rect> = boxes2
+        .rows()
+        .into_iter()
+        .map(|row| Rect::new(row[0], row[1], row[2], row[3], row[4]))
+        .collect();
+    let boxes1_bounding_rects: Vec<utils::Bbox<f64>> = boxes1_rects
+        .iter()
+        .enumerate()
+        .map(|(idx, rect)| {
+            let (min_x, min_y, max_x, max_y) = minimal_bounding_rect(&rect.points());
+            utils::Bbox {
+                index: idx,
+                x1: min_x,
+                y1: min_y,
+                x2: max_x,
+                y2: max_y,
+            }
+        })
+        .collect();
+    let boxes2_bounding_rects: Vec<utils::Bbox<f64>> = boxes2_rects
+        .iter()
+        .enumerate()
+        .map(|(idx, rect)| {
+            let (min_x, min_y, max_x, max_y) = minimal_bounding_rect(&rect.points());
+            utils::Bbox {
+                index: idx,
+                x1: min_x,
+                y1: min_y,
+                x2: max_x,
+                y2: max_y,
+            }
+        })
+        .collect();
+
+    let box1_rtree: RTree<utils::Bbox<f64>> = RTree::bulk_load(boxes1_bounding_rects);
+    let box2_rtree: RTree<utils::Bbox<f64>> = RTree::bulk_load(boxes2_bounding_rects);
+
+    for (box1, box2) in box1_rtree.intersection_candidates_with_other_tree(&box2_rtree) {
+        let area1 = areas1[box1.index];
+        let area2 = areas2[box2.index];
+        let rect1 = boxes1_rects[box1.index];
+        let rect2 = boxes2_rects[box2.index];
+        let intersection = intersection_area(&rect1, &rect2);
+        let union = area1 + area2 - intersection + utils::EPS;
+        // Calculate the enclosing box (C) coordinates
+        let c_x1 = utils::min(box1.x1, box2.x1);
+        let c_y1 = utils::min(box1.y1, box2.y1);
+        let c_x2 = utils::max(box1.x2, box2.x2);
+        let c_y2 = utils::max(box1.y2, box2.y2);
+        let c_area = (c_x2 - c_x1) * (c_y2 - c_y1);
+        let c_area = c_area.to_f64().unwrap();
+        iou_matrix[[box1.index, box2.index]] = intersection / union - ((c_area - union) / c_area);
+    }
+
+    return iou_matrix;
+}
+
 #[cfg(test)]
 mod tests {
     use ndarray::arr2;
@@ -179,5 +275,13 @@ mod tests {
         assert_eq!(giou_matrix[[1, 0]], 0.8392857142857143);
         assert_eq!(giou_matrix[[1, 1]], 1.2611764705882353);
         assert_eq!(giou_matrix, parallel_giou_matrix);
+    }
+
+    #[test]
+    fn test_rotated_giou() {
+        let boxes1 = arr2(&[[5.0, 5.0, 2.0, 2.0, 0.0]]);
+        let boxes2 = arr2(&[[4.0, 4.0, 2.0, 2.0, 0.0]]);
+        let rotated_iou_distance_result = rotated_giou_distance(&boxes1, &boxes2);
+        assert_eq!(rotated_iou_distance_result, arr2(&[[-0.07936507936507936]]));
     }
 }
