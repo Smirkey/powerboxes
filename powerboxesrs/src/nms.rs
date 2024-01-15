@@ -4,7 +4,7 @@ use std::cmp::Ordering;
 use crate::{boxes, utils};
 use ndarray::{Array1, Array2, Axis};
 use num_traits::{Num, ToPrimitive};
-use rstar::{RStarInsertionStrategy, RTree, RTreeNum, RTreeObject, RTreeParams, AABB};
+use rstar::{RTree, RTreeNum, AABB};
 
 /// Performs non-maximum suppression (NMS) on a set of bounding boxes using their scores and IoU.
 /// # Arguments
@@ -94,37 +94,6 @@ where
     return Array1::from(keep);
 }
 
-// Struct we use to represent a bbox object in rstar R-tree
-struct Bbox<T> {
-    index: usize,
-    x1: T,
-    y1: T,
-    x2: T,
-    y2: T,
-}
-
-// Implement RTreeObject for Bbox
-impl<T> RTreeObject for Bbox<T>
-where
-    T: RTreeNum + ToPrimitive + Sync + Send,
-{
-    type Envelope = AABB<[T; 2]>;
-
-    fn envelope(&self) -> Self::Envelope {
-        AABB::from_corners([self.x1, self.y1], [self.x2, self.y2])
-    }
-}
-
-impl<T> RTreeParams for Bbox<T>
-where
-    T: RTreeNum + ToPrimitive + Sync + Send,
-{
-    const MIN_SIZE: usize = 16;
-    const MAX_SIZE: usize = 256;
-    const REINSERTION_COUNT: usize = 5;
-    type DefaultInsertionStrategy = RStarInsertionStrategy;
-}
-
 /// Performs non-maximum suppression (NMS) on a set of bounding using their score and IoU.
 /// This function internally uses an RTree to speed up the computation. It is recommended to use this function
 /// when the number of boxes is large.
@@ -181,12 +150,12 @@ where
     let mut suppress = Array1::from_elem(scores.len(), false);
     // build rtree
 
-    let rtree: RTree<Bbox<N>> = RTree::bulk_load(
+    let rtree: RTree<utils::Bbox<N>> = RTree::bulk_load(
         order
             .iter()
             .map(|&idx| {
                 let box_ = boxes.row(idx);
-                Bbox {
+                utils::Bbox {
                     x1: box_[0],
                     y1: box_[1],
                     x2: box_[2],
