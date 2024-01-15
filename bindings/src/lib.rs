@@ -110,6 +110,8 @@ fn _powerboxes(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(masks_to_boxes, m)?)?;
     // Rotated IoU
     m.add_function(wrap_pyfunction!(rotated_iou_distance, m)?)?;
+    // Rotated GIoU
+    m.add_function(wrap_pyfunction!(rotated_giou_distance, m)?)?;
     Ok(())
 }
 // Masks to boxes
@@ -132,6 +134,21 @@ fn rotated_iou_distance(
     let boxes1 = preprocess_rotated_boxes(boxes1).unwrap();
     let boxes2 = preprocess_rotated_boxes(boxes2).unwrap();
     let iou = iou::rotated_iou_distance(&boxes1, &boxes2);
+    let iou_as_numpy = utils::array_to_numpy(_py, iou).unwrap();
+    return Ok(iou_as_numpy.to_owned());
+}
+
+// Rotated box GIoU
+
+#[pyfunction]
+fn rotated_giou_distance(
+    _py: Python,
+    boxes1: &PyArray2<f64>,
+    boxes2: &PyArray2<f64>,
+) -> PyResult<Py<PyArray2<f64>>> {
+    let boxes1 = preprocess_rotated_boxes(boxes1).unwrap();
+    let boxes2 = preprocess_rotated_boxes(boxes2).unwrap();
+    let iou = giou::rotated_giou_distance(&boxes1, &boxes2);
     let iou_as_numpy = utils::array_to_numpy(_py, iou).unwrap();
     return Ok(iou_as_numpy.to_owned());
 }

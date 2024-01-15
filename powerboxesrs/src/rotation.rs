@@ -202,7 +202,7 @@ impl Line {
 ///
 /// This implementation utilizes the Separating Axis Theorem (SAT) for computing the intersection area.
 ///
-pub fn intersection_area(rect1: Rect, rect2: Rect) -> f64 {
+pub fn intersection_area(rect1: &Rect, rect2: &Rect) -> f64 {
     let mut intersection = rect1.points();
 
     for (p, q) in rect2
@@ -252,6 +252,18 @@ pub fn intersection_area(rect1: Rect, rect2: Rect) -> f64 {
             .sum::<f64>();
 }
 
+pub fn minimal_bounding_rect(points: &Vec<Point>) -> (f64, f64, f64, f64) {
+    let (mut min_x, mut min_y, mut max_x, mut max_y) = (f64::MAX, f64::MAX, f64::MIN, f64::MIN);
+
+    for point in points {
+        min_x = min_x.min(point.x);
+        min_y = min_y.min(point.y);
+        max_x = max_x.max(point.x);
+        max_y = max_y.max(point.y);
+    }
+    (min_x, min_y, max_x, max_y)
+}
+
 #[cfg(test)]
 mod tests {
 
@@ -261,7 +273,7 @@ mod tests {
     fn test_rotated_intersection_normal_case() {
         let r1 = Rect::new(10., 15., 15., 10., 30.);
         let r2 = Rect::new(15., 15., 20., 10., 0.);
-        let intersection = intersection_area(r1, r2);
+        let intersection = intersection_area(&r1, &r2);
         assert_eq!(intersection, 110.17763185469022);
     }
 
@@ -269,7 +281,7 @@ mod tests {
     fn test_rotated_intersection_zero_intersection() {
         let r1 = Rect::new(10., 15., 15., 10., 30.);
         let r2 = Rect::new(150., 150., 20., 10., 0.);
-        let intersection = intersection_area(r1, r2);
+        let intersection = intersection_area(&r1, &r2);
         assert_eq!(intersection, 0.0);
     }
 
@@ -277,7 +289,7 @@ mod tests {
     fn test_rotated_intersection_max_intersection() {
         let r1 = Rect::new(150., 150., 20., 10., 0.);
         let r2 = Rect::new(150., 150., 20., 10., 0.);
-        let intersection = intersection_area(r1, r2);
+        let intersection = intersection_area(&r1, &r2);
         assert_eq!(intersection, 200.0);
     }
 }

@@ -10,6 +10,7 @@ from powerboxes import (
     parallel_giou_distance,
     parallel_iou_distance,
     remove_small_boxes,
+    rotated_giou_distance,
     rotated_iou_distance,
     rtree_nms,
     supported_dtypes,
@@ -30,12 +31,20 @@ def generate_boxes(request):
     return np.concatenate([topleft, topleft + wh], axis=1).astype(np.float64)
 
 
-@pytest.mark.benchmark(group="tiou_distance")
+@pytest.mark.benchmark(group="rotated_iou_distance")
 @pytest.mark.parametrize("dtype", ["float64"])
 def test_rotated_iou_distance(benchmark, dtype):
     boxes1 = np.random.random((100, 5)).astype(dtype)
     boxes2 = np.random.random((100, 5)).astype(dtype)
     benchmark(rotated_iou_distance, boxes1, boxes2)
+
+
+@pytest.mark.benchmark(group="rotated_giou_distance")
+@pytest.mark.parametrize("dtype", ["float64"])
+def test_rotated_giou_distance(benchmark, dtype):
+    boxes1 = np.random.random((100, 5)).astype(dtype)
+    boxes2 = np.random.random((100, 5)).astype(dtype)
+    benchmark(rotated_giou_distance, boxes1, boxes2)
 
 
 @pytest.mark.benchmark(group="tiou_distance")
