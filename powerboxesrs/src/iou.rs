@@ -39,28 +39,23 @@ where
     let mut iou_matrix = Array2::<f64>::zeros((num_boxes1, num_boxes2));
     let areas_boxes1 = boxes::box_areas(&boxes1);
     let areas_boxes2 = boxes::box_areas(&boxes2);
-    let boxes1_vecs: Vec<(N, N, N, N)> = boxes1
-        .rows()
-        .into_iter()
-        .map(|r| (r[0], r[1], r[2], r[3]))
-        .collect();
-    let boxes2_vecs: Vec<(N, N, N, N)> = boxes2
-        .rows()
-        .into_iter()
-        .map(|r| (r[0], r[1], r[2], r[3]))
-        .collect();
-    for (i, a1) in boxes1_vecs.iter().enumerate() {
-        let (a1_x1, a1_y1, a1_x2, a1_y2) = a1;
-
+    for (i, a1) in boxes1.outer_iter().enumerate() {
+        let a1_x1 = a1[0];
+        let a1_y1 = a1[1];
+        let a1_x2 = a1[2];
+        let a1_y2 = a1[3];
         let area1 = areas_boxes1[i];
 
-        for (j, a2) in boxes2_vecs.iter().enumerate() {
-            let (a2_x1, a2_y1, a2_x2, a2_y2) = a2;
+        for (j, a2) in boxes2.outer_iter().enumerate() {
+            let a2_x1 = a2[0];
+            let a2_y1 = a2[1];
+            let a2_x2 = a2[2];
+            let a2_y2 = a2[3];
             let area2 = areas_boxes2[j];
-            let x1 = utils::max(*a1_x1, *a2_x1);
-            let y1 = utils::max(*a1_y1, *a2_y1);
-            let x2 = utils::min(*a1_x2, *a2_x2);
-            let y2 = utils::min(*a1_y2, *a2_y2);
+            let x1 = utils::max(a1_x1, a2_x1);
+            let y1 = utils::max(a1_y1, a2_y1);
+            let x2 = utils::min(a1_x2, a2_x2);
+            let y2 = utils::min(a1_y2, a2_y2);
             if x2 < x1 || y2 < y1 {
                 iou_matrix[[i, j]] = utils::ONE;
                 continue;
