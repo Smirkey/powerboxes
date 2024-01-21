@@ -1,10 +1,9 @@
 use ndarray::Array2;
 use num_traits::{Num, ToPrimitive};
-use rstar::RTree;
 
 use crate::{
     boxes::{self, rotated_box_areas},
-    rotation::{intersection_area, minimal_bounding_rect, Rect},
+    rotation::{minimal_bounding_rect, Rect},
     utils,
 };
 /// Computes the Tracking Intersection over Union (TIOU) distance between two sets of bounding boxes.

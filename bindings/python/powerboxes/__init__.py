@@ -20,6 +20,7 @@ from ._nms import _dtype_to_func_nms, _dtype_to_func_rtree_nms
 from ._powerboxes import masks_to_boxes as _masks_to_boxes
 from ._powerboxes import rotated_giou_distance as _rotated_giou_distance
 from ._powerboxes import rotated_iou_distance as _rotated_iou_distance
+from ._powerboxes import rotated_tiou_distance as _rotated_tiou_distance
 from ._tiou import _dtype_to_func_tiou_distance
 
 _BOXES_NOT_SAME_TYPE = "boxes1 and boxes2 must have the same dtype"
@@ -289,7 +290,7 @@ def rotated_tiou_distance(
     if not isinstance(boxes1, np.ndarray) or not isinstance(boxes2, np.ndarray):
         raise TypeError(_BOXES_NOT_NP_ARRAY)
     if boxes1.dtype == boxes2.dtype == np.dtype("float64"):
-        return _rotated_giou_distance(boxes1, boxes2)
+        return _rotated_tiou_distance(boxes1, boxes2)
     else:
         raise TypeError(
             f"Boxes dtype: {boxes1.dtype}, {boxes2.dtype} not in float64 dtype"
