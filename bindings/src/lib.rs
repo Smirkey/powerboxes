@@ -158,7 +158,7 @@ fn rotated_giou_distance(
 // Rotated box TIoU
 
 #[pyfunction]
-fn rotated_giou_distance(
+fn rotated_tiou_distance(
     _py: Python,
     boxes1: &PyArray2<f64>,
     boxes2: &PyArray2<f64>,
