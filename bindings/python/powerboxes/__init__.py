@@ -235,9 +235,41 @@ def rotated_iou_distance(
 
 
 def rotated_giou_distance(
-    boxes1: npt.NDArray[T], boxes2: npt.NDArray[T]
+    boxes1: npt.NDArray[np.float64], boxes2: npt.NDArray[np.float64]
 ) -> npt.NDArray[np.float64]:
     """Compute the pairwise giou distance between rotated boxes
+
+    Boxes should be in (cx, cy, w, h, a) format
+    where cx and cy are center coordinates, w and h
+    width and height and a, the angle in degrees
+
+    Args:
+        boxes1: 2d array of boxes in cxywha format
+        boxes2: 2d array of boxes in cxywha format
+
+    Raises:
+        TypeError: if boxes1 or boxes2 are not numpy arrays
+        ValueError: if boxes1 and boxes2 have different dtypes
+
+    Returns:
+        np.ndarray: 2d matrix of pairwise distances
+    """
+    if not isinstance(boxes1, np.ndarray) or not isinstance(boxes2, np.ndarray):
+        raise TypeError(_BOXES_NOT_NP_ARRAY)
+    if boxes1.dtype == boxes2.dtype == np.dtype("float64"):
+        return _rotated_giou_distance(boxes1, boxes2)
+    else:
+        raise TypeError(
+            f"Boxes dtype: {boxes1.dtype}, {boxes2.dtype} not in float64 dtype"
+        )
+
+
+def rotated_tiou_distance(
+    boxes1: npt.NDArray[np.float64], boxes2: npt.NDArray[np.float64]
+) -> npt.NDArray[np.float64]:
+    """Compute pairwise box tiou (tracking iou)  distances.
+
+    see https://arxiv.org/pdf/2310.05171.pdf for tiou definition
 
     Boxes should be in (cx, cy, w, h, a) format
     where cx and cy are center coordinates, w and h
@@ -430,6 +462,7 @@ __all__ = [
     "tiou_distance",
     "rotated_iou_distance",
     "rotated_giou_distance",
+    "rotated_tiou_distance",
     "rtree_nms",
     "__version__",
 ]
