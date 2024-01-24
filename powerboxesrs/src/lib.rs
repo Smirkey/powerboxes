@@ -52,3 +52,4 @@ pub mod nms;
 pub mod rotation;
 pub mod tiou;
 mod utils;
+pub mod diou;
