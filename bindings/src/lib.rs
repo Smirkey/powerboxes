@@ -2,9 +2,9 @@ mod utils;
 
 use std::fmt::Debug;
 
-use num_traits::{Bounded, Num, Signed, ToPrimitive};
+use num_traits::{Bounded, Float, Num, Signed, ToPrimitive};
 use numpy::{PyArray1, PyArray2, PyArray3};
-use powerboxesrs::{boxes, giou, iou, nms, tiou};
+use powerboxesrs::{boxes, diou, giou, iou, nms, tiou};
 use pyo3::prelude::*;
 use utils::{preprocess_array1, preprocess_array3, preprocess_boxes, preprocess_rotated_boxes};
 
@@ -40,6 +40,9 @@ fn _powerboxes(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(parallel_iou_distance_u32, m)?)?;
     m.add_function(wrap_pyfunction!(parallel_iou_distance_u16, m)?)?;
     m.add_function(wrap_pyfunction!(parallel_iou_distance_u8, m)?)?;
+    // DIoU
+    m.add_function(wrap_pyfunction!(diou_distance_f64, m)?)?;
+    m.add_function(wrap_pyfunction!(diou_distance_f32, m)?)?;
     // GIoU
     m.add_function(wrap_pyfunction!(giou_distance_f64, m)?)?;
     m.add_function(wrap_pyfunction!(giou_distance_f32, m)?)?;
@@ -168,6 +171,38 @@ fn rotated_tiou_distance(
     let iou = tiou::rotated_tiou_distance(&boxes1, &boxes2);
     let iou_as_numpy = utils::array_to_numpy(_py, iou).unwrap();
     return Ok(iou_as_numpy.to_owned());
+}
+// DIoU
+fn diou_distance_generic<T>(
+    _py: Python,
+    boxes1: &PyArray2<T>,
+    boxes2: &PyArray2<T>,
+) -> PyResult<Py<PyArray2<f64>>>
+where
+    T: Float + numpy::Element,
+{
+    let boxes1 = preprocess_boxes(boxes1).unwrap();
+    let boxes2 = preprocess_boxes(boxes2).unwrap();
+    let iou = diou::diou_distance(&boxes1, &boxes2);
+    let iou_as_numpy = utils::array_to_numpy(_py, iou).unwrap();
+    return Ok(iou_as_numpy.to_owned());
+}
+
+#[pyfunction]
+fn diou_distance_f64(
+    _py: Python,
+    boxes1: &PyArray2<f64>,
+    boxes2: &PyArray2<f64>,
+) -> PyResult<Py<PyArray2<f64>>> {
+    return Ok(diou_distance_generic(_py, boxes1, boxes2)?);
+}
+#[pyfunction]
+fn diou_distance_f32(
+    _py: Python,
+    boxes1: &PyArray2<f32>,
+    boxes2: &PyArray2<f32>,
+) -> PyResult<Py<PyArray2<f64>>> {
+    return Ok(diou_distance_generic(_py, boxes1, boxes2)?);
 }
 
 // IoU

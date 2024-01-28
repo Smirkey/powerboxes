@@ -8,6 +8,7 @@ from ._boxes import (
     _dtype_to_func_box_convert,
     _dtype_to_func_remove_small_boxes,
 )
+from ._diou import _dtype_to_func_diou_distance
 from ._giou import (
     _dtype_to_func_giou_distance,
     _dtype_to_func_parallel_giou_distance,
@@ -52,6 +53,38 @@ T = TypeVar(
         np.uint64,
     ],
 )
+
+
+def diou_distance(
+    boxes1: npt.NDArray[Union[np.float32, np.float64]],
+    boxes2: npt.NDArray[Union[np.float32, np.float64]],
+) -> npt.NDArray[np.float64]:
+    """Compute pairwise box diou distances.
+
+    DIoU distance is defined in https://arxiv.org/pdf/1911.08287.pdf
+
+    Args:
+        boxes1: 2d array of boxes in xyxy format
+        boxes2: 2d array of boxes in xyxy format
+
+    Raises:
+        TypeError: if boxes1 or boxes2 are not numpy arrays
+        ValueError: if boxes1 and boxes2 have different dtypes
+
+    Returns:
+        np.ndarray: 2d matrix of pairwise distances
+    """
+    if not isinstance(boxes1, np.ndarray) or not isinstance(boxes2, np.ndarray):
+        raise TypeError(_BOXES_NOT_NP_ARRAY)
+    if boxes1.dtype == boxes2.dtype:
+        try:
+            return _dtype_to_func_diou_distance[boxes1.dtype](boxes1, boxes2)
+        except KeyError:
+            raise TypeError(
+                f"Box dtype: {boxes1.dtype} not in supported dtypes np.float32, np.float64"
+            )
+    else:
+        raise ValueError(_BOXES_NOT_SAME_TYPE)
 
 
 def iou_distance(
@@ -450,6 +483,7 @@ def rtree_nms(
 
 
 __all__ = [
+    "diou_distance",
     "iou_distance",
     "parallel_iou_distance",
     "remove_small_boxes",
