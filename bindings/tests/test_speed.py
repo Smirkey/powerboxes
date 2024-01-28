@@ -80,6 +80,14 @@ def test_parallel_giou_distance(benchmark, dtype):
     benchmark(parallel_giou_distance, boxes1, boxes2)
 
 
+@pytest.mark.benchmark(group="diou_distance")
+@pytest.mark.parametrize("dtype", [np.float32, np.float64])
+def test_diou_distance(benchmark, dtype):
+    boxes1 = np.random.random((100, 4)).astype(dtype)
+    boxes2 = np.random.random((100, 4)).astype(dtype)
+    benchmark(iou_distance, boxes1, boxes2)
+
+
 @pytest.mark.benchmark(group="iou_distance")
 @pytest.mark.parametrize("dtype", supported_dtypes)
 def test_iou_distance(benchmark, dtype):

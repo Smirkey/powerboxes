@@ -1,10 +1,10 @@
-use crate::{
-    utils, boxes,
-};
-use ndarray::{Array2};
-use num_traits::{Num, ToPrimitive, Float, real::Real};
+use crate::{boxes, utils};
+use ndarray::Array2;
+use num_traits::{real::Real, Float, Num, ToPrimitive};
 
-/// Calculates the intersection over union (IoU) distance between two sets of bounding boxes.
+/// Calculates the intersection over union (DIoU) distance between two sets of bounding boxes.
+/// https://arxiv.org/pdf/1911.08287.pdf
+///
 ///
 /// # Arguments
 ///
@@ -13,20 +13,9 @@ use num_traits::{Num, ToPrimitive, Float, real::Real};
 ///
 /// # Returns
 ///
-/// A 2D array of shape (N, M) representing the IoU distance between each pair of bounding boxes.
-///
-/// # Examples
-///
+/// A 2D array of shape (N, M) representing the DIoU distance between each pair of bounding boxes
 /// ```
-/// use ndarray::array;
-/// use powerboxesrs::iou::iou_distance;
-///
-/// let boxes1 = array![[0.0, 0.0, 1.0, 1.0], [2.0, 2.0, 3.0, 3.0]];
-/// let boxes2 = array![[0.5, 0.5, 1.5, 1.5], [2.5, 2.5, 3.5, 3.5]];
-/// let iou = iou_distance(&boxes1, &boxes2);
-/// assert_eq!(iou, array![[0.8571428571428572, 1.],[1., 0.8571428571428572]]);
-/// ```
-pub fn iou_distance<N>(boxes1: &Array2<N>, boxes2: &Array2<N>) -> Array2<f64>
+pub fn diou_distance<N>(boxes1: &Array2<N>, boxes2: &Array2<N>) -> Array2<f64>
 where
     N: Num + PartialOrd + ToPrimitive + Copy + Float + Real,
 {
@@ -65,17 +54,18 @@ where
             let center_box1 = [(a1_x1 + a1_x2) / two, (a1_y1 + a1_y2) / two];
             let center_box2 = [(a2_x1 + a2_x2) / two, (a2_y1 + a2_y2) / two];
 
-            let d = Float::sqrt(Float::powf(center_box1[0] - center_box2[0], two) + Float::powf(center_box1[1] - center_box2[1], two));
-            let c = Float::sqrt(Float::powf(x2 - x1, N::from(2).unwrap()) + Float::powf(y2 - y1, N::from(2).unwrap()));
+            let d = Float::sqrt(
+                Float::powf(center_box1[0] - center_box2[0], two)
+                    + Float::powf(center_box1[1] - center_box2[1], two),
+            );
+            let c = Float::sqrt(Float::powf(x2 - x1, two) + Float::powf(y2 - y1, two));
             let diou_penalty = Float::powf(d, two) / Float::powf(c, two);
-            diou_matrix[[i, j]] = iou - diou_penalty.to_f64().unwrap();
-            
+            diou_matrix[[i, j]] = utils::ONE - (iou - diou_penalty.to_f64().unwrap());
         }
     }
 
     diou_matrix
 }
-
 
 #[cfg(test)]
 mod tests {
@@ -85,6 +75,42 @@ mod tests {
 
     #[test]
     fn test_diou_distance() {
+        let boxes1 = arr2(&[[0.0, 0.0, 2.0, 2.0]]);
+        let boxes2 = arr2(&[[1.0, 1.0, 3.0, 3.0]]);
+        let diou_distance_result = diou_distance(&boxes1, &boxes2);
+
+        assert_eq!(diou_distance_result, arr2(&[[1.8571428571428572]]));
     }
 
+    #[test]
+    fn test_diou_distance_distance2() {
+        let boxes1 = arr2(&[[0.0, 0.0, 2.0, 2.0]]);
+        let boxes2 = arr2(&[[3.0, 3.0, 4.0, 4.0]]);
+        let diou_distance_result = diou_distance(&boxes1, &boxes2);
+        assert_eq!(diou_distance_result, arr2(&[[1.0]]));
+    }
+
+    #[test]
+    fn test_diou_distance_distance3() {
+        let boxes1 = arr2(&[[2.5, 2.5, 3.0, 3.0]]);
+        let boxes2 = arr2(&[[1.0, 1.0, 3.0, 3.0]]);
+        let diou_distance_result = diou_distance(&boxes1, &boxes2);
+        assert_eq!(diou_distance_result, arr2(&[[3.187499999999999]]));
+    }
+
+    #[test]
+    fn test_diou_distance_distance4() {
+        let boxes1 = arr2(&[[0.0, 0.0, 2.0, 2.0]]);
+        let boxes2 = arr2(&[[0.0, 0.0, 2.0, 2.0]]);
+        let diou_distance_result = diou_distance(&boxes1, &boxes2);
+        assert_eq!(diou_distance_result, arr2(&[[0.0]]));
+    }
+
+    #[test]
+    fn test_diou_distance_distance5() {
+        let boxes1 = arr2(&[[0.0, 0.0, 2.0, 2.0]]);
+        let boxes2 = arr2(&[[3.0, 3.0, 4.0, 4.0]]);
+        let diou_distance_result = diou_distance(&boxes1, &boxes2);
+        assert_eq!(diou_distance_result, arr2(&[[1.0]]));
+    }
 }
