@@ -150,7 +150,7 @@ def parallel_giou_distance(
 ) -> npt.NDArray[np.float64]:
     """Compute pairwise box giou distances, in parallel.
 
-    see https://giou.stanford.edu/
+    see [here](https://giou.stanford.edu/) for giou distance definition
 
     Args:
         boxes1: 2d array of boxes in xyxy format
@@ -181,7 +181,7 @@ def giou_distance(
 ) -> npt.NDArray[np.float64]:
     """Compute pairwise box giou distances.
 
-    see: https://giou.stanford.edu/
+    see [here](https://giou.stanford.edu/) for giou distance definition
 
     Args:
         boxes1: 2d array of boxes in xyxy format
@@ -212,7 +212,7 @@ def tiou_distance(
 ) -> npt.NDArray[np.float64]:
     """Compute pairwise box tiou (tracking iou)  distances.
 
-    see https://arxiv.org/pdf/2310.05171.pdf for tiou definition
+    see [here](https://arxiv.org/pdf/2310.05171.pdf) for tiou definition
 
     Args:
         boxes1: 2d array of boxes in xyxy format
@@ -303,7 +303,7 @@ def rotated_tiou_distance(
 ) -> npt.NDArray[np.float64]:
     """Compute pairwise box tiou (tracking iou)  distances.
 
-    see https://arxiv.org/pdf/2310.05171.pdf for tiou definition
+    see [here](https://arxiv.org/pdf/2310.05171.pdf) for tiou definition
 
     Boxes should be in (cx, cy, w, h, a) format
     where cx and cy are center coordinates, w and h
@@ -330,7 +330,7 @@ def rotated_tiou_distance(
         )
 
 
-def remove_small_boxes(boxes: npt.NDArray[T], min_size) -> npt.NDArray[T]:
+def remove_small_boxes(boxes: npt.NDArray[T], min_size: float) -> npt.NDArray[T]:
     """Remove boxes with area less than min_area.
 
     Args:
