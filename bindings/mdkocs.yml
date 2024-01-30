@@ -1,0 +1,18 @@
+site_name: Powerboxes documentation
+theme:
+  name: material
+
+nav:
+  - Home:
+      - "index.md"
+  - Box metrics:
+      - "metrics.md"
+plugins:
+  - search
+  - mkdocstrings:
+      default_handler: python
+      handlers:
+        python:
+          path: [python]
+          options:
+            show_source: false
