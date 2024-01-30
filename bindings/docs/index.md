@@ -13,7 +13,7 @@ It shows a significant speedup over the equivalent numpy implementations in Pyth
 See source code [here](https://github.com/Smirkey/powerboxes)
 
 ### Installation
-```bash
+```console
 pip install powerboxes
 ```
 
@@ -32,3 +32,7 @@ area = pb.box_areas(box)
 # Compute the intersection of the box with itself
 intersection = pb.iou_distance(box, box)
 ```
+
+!!! note "supported dtypes by most functions"
+
+    ::: powerboxes.supported_dtypes

@@ -330,7 +330,7 @@ def rotated_tiou_distance(
         )
 
 
-def remove_small_boxes(boxes: npt.NDArray[T], min_size) -> npt.NDArray[T]:
+def remove_small_boxes(boxes: npt.NDArray[T], min_size: float) -> npt.NDArray[T]:
     """Remove boxes with area less than min_area.
 
     Args:

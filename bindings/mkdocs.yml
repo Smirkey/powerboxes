@@ -1,0 +1,32 @@
+site_name: Powerboxes documentation
+theme:
+  name: material
+  features:
+    - content.code.copy
+nav:
+  - Home: "index.md"
+  - Box metrics: "metrics.md"
+  - Box operations: "box_ops.md"
+  - Box filtering: "box_filtering.md"
+  - Rotated box operations: "rotated_box.md"
+plugins:
+  - search
+  - mkdocstrings:
+      enable_inventory: true
+      default_handler: python
+      handlers:
+        python:
+          path: [python]
+          options:
+            show_source: false
+            show_root_heading: true
+
+markdown_extensions:
+  - admonition
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
