@@ -3,6 +3,7 @@ import pytest
 from powerboxes import (
     box_convert,
     boxes_areas,
+    diou_distance,
     giou_distance,
     iou_distance,
     masks_to_boxes,
@@ -85,7 +86,7 @@ def test_parallel_giou_distance(benchmark, dtype):
 def test_diou_distance(benchmark, dtype):
     boxes1 = np.random.random((100, 4)).astype(dtype)
     boxes2 = np.random.random((100, 4)).astype(dtype)
-    benchmark(iou_distance, boxes1, boxes2)
+    benchmark(diou_distance, boxes1, boxes2)
 
 
 @pytest.mark.benchmark(group="iou_distance")
