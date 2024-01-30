@@ -26,4 +26,4 @@ jobs:
           restore-keys: |
             mkdocs-material-
       - run: pip install -r bindings/docs/requirements-doc.txt && pip install bindings/.
-      - run: mkdocs gh-deploy --force
+      - run: cd bindings && mkdocs gh-deploy --force
