@@ -4,3 +4,4 @@ numpy
 pytest-cov
 pillow
 maturin
+pre-commit
