@@ -13,7 +13,7 @@ It shows a significant speedup over the equivalent numpy implementations in Pyth
 **🦀 Rust [documentation](https://docs.rs/powerboxesrs)**
 
 
-**🐍 Python [documentation]("https://smirkey.github.io/powerboxes/")**
+**🐍 Python [documentation](https://smirkey.github.io/powerboxes/)**
 
 ## Installation
 

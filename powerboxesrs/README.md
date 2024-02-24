@@ -44,4 +44,3 @@ let boxes = array![[1., 2., 3., 4.], [0., 0., 10., 10.]];
 let areas = box_areas(&boxes);
 assert_eq!(areas, array![4., 100.]);
 ```
-
