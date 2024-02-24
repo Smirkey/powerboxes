@@ -3,6 +3,7 @@ import numpy as np
 import os
 from PIL import Image
 
+
 def test_masks_box():
     expected = np.array(
         [
@@ -15,7 +16,9 @@ def test_masks_box():
             [108, 148, 152, 213],
         ],
     )
-    assets_directory = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets")
+    assets_directory = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)), "assets"
+    )
     mask_path = os.path.join(assets_directory, "masks.tiff")
     image = Image.open(mask_path)
     masks = np.zeros((image.n_frames, image.height, image.width))
