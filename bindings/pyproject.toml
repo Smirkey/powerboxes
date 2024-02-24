@@ -25,6 +25,8 @@ license = "MIT"
 readme = "README.md"
 authors = [{name = "Buillaume", email = "guillaume.bertrand@edhec.com"}]
 description = "Utility functions to manipulate and compute metrics on boxes"
+homepage = "https://smirkey.github.io/powerboxes/"
+documentation = "https://smirkey.github.io/powerboxes/"
 repository = "https://github.com/Smirkey/powerboxes"
 version = "0.2.1"
 dependencies = ["numpy"]
