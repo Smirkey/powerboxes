@@ -2,7 +2,7 @@
 use std::cmp::Ordering;
 
 use crate::{boxes, utils};
-use ndarray::{Array1, Array2, Axis};
+use ndarray::{Array1, Array2, ArrayView1, ArrayView2, Axis};
 use num_traits::{Num, ToPrimitive};
 use rstar::{RTree, RTreeNum, AABB};
 
@@ -29,17 +29,22 @@ use rstar::{RTree, RTreeNum, AABB};
 /// let keep = nms(&boxes, &scores, 0.8, 0.0);
 /// assert_eq!(keep, Array1::from(vec![0, 1]));
 /// ```
-pub fn nms<N>(
-    boxes: &Array2<N>,
-    scores: &Array1<f64>,
+pub fn nms<'a, N, BA, S, SA>(
+    boxes: BA,
+    scores: SA,
     iou_threshold: f64,
-    score_threshold: f64,
+    score_threshold: S,
 ) -> Array1<usize>
 where
-    N: Num + PartialOrd + ToPrimitive + Copy,
+    N: Num + PartialOrd + ToPrimitive + Copy + 'a,
+    BA: Into<ArrayView2<'a, N>>,
+    S: Num + PartialOrd + ToPrimitive + Copy + 'a,
+    SA: Into<ArrayView1<'a, S>>,
 {
+    let boxes = boxes.into();
+    let scores = scores.into();
     let mut above_score_threshold: Vec<usize> = (0..scores.len()).collect();
-    if score_threshold > utils::EPS {
+    if score_threshold > S::zero() {
         // filter out boxes lower than score threshold
         above_score_threshold = scores
             .iter()
