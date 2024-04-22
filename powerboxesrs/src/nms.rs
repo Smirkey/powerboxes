@@ -27,14 +27,14 @@ use rstar::{RTree, RTreeNum, AABB};
 /// let boxes = arr2(&[[0.0, 0.0, 2.0, 2.0], [1.0, 1.0, 3.0, 3.0]]);
 /// let scores = Array1::from(vec![1.0, 1.0]);
 /// let keep = nms(&boxes, &scores, 0.8, 0.0);
-/// assert_eq!(keep, Array1::from(vec![0, 1]));
+/// assert_eq!(keep, vec![0, 1]);
 /// ```
 pub fn nms<'a, N, BA, S, SA>(
     boxes: BA,
     scores: SA,
     iou_threshold: f64,
     score_threshold: S,
-) -> Array1<usize>
+) -> Vec<usize>
 where
     N: Num + PartialOrd + ToPrimitive + Copy + 'a,
     BA: Into<ArrayView2<'a, N>>,
@@ -96,7 +96,7 @@ where
             }
         }
     }
-    return Array1::from(keep);
+    keep
 }
 
 /// Performs non-maximum suppression (NMS) on a set of bounding using their score and IoU.
@@ -124,14 +124,14 @@ where
 /// let boxes = arr2(&[[0.0, 0.0, 2.0, 2.0], [1.0, 1.0, 3.0, 3.0]]);
 /// let scores = Array1::from(vec![1.0, 1.0]);
 /// let keep = rtree_nms(&boxes, &scores, 0.8, 0.0);
-/// assert_eq!(keep, Array1::from(vec![0, 1]));
+/// assert_eq!(keep, vec![0, 1]);
 /// ```
 pub fn rtree_nms<N>(
     boxes: &Array2<N>,
     scores: &Array1<f64>,
     iou_threshold: f64,
     score_threshold: f64,
-) -> Array1<usize>
+) -> Vec<usize>
 where
     N: RTreeNum + ToPrimitive + Send + Sync,
 {
@@ -206,7 +206,7 @@ where
             }
         }
     }
-    return Array1::from(keep);
+    keep
 }
 
 #[cfg(test)]
@@ -229,7 +229,7 @@ mod tests {
         let keep = nms(&boxes, &scores, 0.5, 0.0);
         let keep_rtree = rtree_nms(&boxes, &scores, 0.5, 0.0);
 
-        assert_eq!(keep, Array1::from(vec![0, 2, 4]));
+        assert_eq!(keep, vec![0, 2, 4]);
         assert_eq!(keep_rtree, keep);
     }
 
@@ -241,7 +241,7 @@ mod tests {
         let keep = nms(&boxes, &scores, 0.5, 1.0);
         let keep_rtree = rtree_nms(&boxes, &scores, 0.5, 1.0);
 
-        assert_eq!(keep, Array1::from(vec![]));
+        assert_eq!(keep, vec![]);
         assert_eq!(keep, keep_rtree)
     }
 
@@ -252,7 +252,7 @@ mod tests {
         let scores = Array1::from(vec![0.0, 1.0]);
         let keep = nms(&boxes, &scores, 0.5, 0.5);
         let keep_rtree = rtree_nms(&boxes, &scores, 0.5, 0.5);
-        assert_eq!(keep, Array1::from(vec![1]));
+        assert_eq!(keep, vec![1]);
         assert_eq!(keep, keep_rtree)
     }
 
@@ -263,7 +263,7 @@ mod tests {
         let scores = Array1::from(vec![1.0, 1.0]);
         let keep = nms(&boxes, &scores, 0.8, 0.0);
         let keep_rtree = rtree_nms(&boxes, &scores, 0.8, 0.0);
-        assert_eq!(keep, Array1::from(vec![0, 1]));
+        assert_eq!(keep, vec![0, 1]);
         assert_eq!(keep, keep_rtree)
     }
 }
