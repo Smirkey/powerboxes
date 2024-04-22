@@ -192,12 +192,12 @@ where
             (BoxFormat::CXCYWH, BoxFormat::XYXY) => {
                 let cx = bx[0];
                 let cy = bx[1];
-                let w = bx[2];
-                let h = bx[3];
-                bx[0] = cx - w / (N::one() + N::one());
-                bx[1] = cy - h / (N::one() + N::one());
-                bx[2] = cx + w / (N::one() + N::one());
-                bx[3] = cy + h / (N::one() + N::one());
+                let wd2 = bx[2] / (N::one() + N::one());
+                let hd2 = bx[3] / (N::one() + N::one());
+                bx[0] = cx - wd2;
+                bx[1] = cy - hd2;
+                bx[2] = cx + wd2;
+                bx[3] = cy + hd2;
             }
             (BoxFormat::CXCYWH, BoxFormat::XYWH) => {
                 let w = bx[2];
