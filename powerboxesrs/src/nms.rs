@@ -3,8 +3,17 @@ use std::cmp::Ordering;
 
 use crate::{boxes, utils};
 use ndarray::{Array1, Array2, ArrayView1, ArrayView2, Axis};
-use num_traits::{Num, ToPrimitive};
+use num_traits::real::Real;
+use num_traits::ToPrimitive;
 use rstar::{RTree, RTreeNum, AABB};
+
+#[inline(always)]
+pub fn area<N>(bx: N, by: N, bxx: N, byy: N) -> N
+where
+    N: Real,
+{
+    (bxx - bx) * (byy - by)
+}
 
 /// Performs non-maximum suppression (NMS) on a set of bounding boxes using their scores and IoU.
 /// # Arguments
@@ -32,65 +41,76 @@ use rstar::{RTree, RTreeNum, AABB};
 pub fn nms<'a, N, BA, S, SA>(
     boxes: BA,
     scores: SA,
-    iou_threshold: f64,
+    iou_threshold: N,
     score_threshold: S,
 ) -> Vec<usize>
 where
-    N: Num + PartialOrd + ToPrimitive + Copy + 'a,
+    N: Real + 'a,
     BA: Into<ArrayView2<'a, N>>,
-    S: Num + PartialOrd + ToPrimitive + Copy + 'a,
+    S: Real + 'a,
     SA: Into<ArrayView1<'a, S>>,
 {
     let boxes = boxes.into();
     let scores = scores.into();
-    let mut above_score_threshold: Vec<usize> = (0..scores.len()).collect();
-    if score_threshold > S::zero() {
-        // filter out boxes lower than score threshold
-        above_score_threshold = scores
-            .iter()
-            .enumerate()
-            .filter(|(_, &score)| score >= score_threshold)
-            .map(|(idx, _)| idx)
-            .collect();
-    }
+    assert_eq!(boxes.nrows(), scores.len_of(Axis(0)));
 
-    let filtered_boxes = boxes.select(Axis(0), &above_score_threshold);
-    // Compute areas once
-    let areas = boxes::box_areas(&filtered_boxes);
-    // sort box indices by scores
-    above_score_threshold
-        .sort_unstable_by(|&a, &b| scores[b].partial_cmp(&scores[a]).unwrap_or(Ordering::Equal));
-    let order = Array1::from(above_score_threshold);
+    let order: Vec<usize> = {
+        let mut indices: Vec<_> = if score_threshold > S::zero() {
+            // filter out boxes lower than score threshold
+            scores
+                .iter()
+                .enumerate()
+                .filter(|(_, &score)| score >= score_threshold)
+                .map(|(idx, _)| idx)
+                .collect()
+        } else {
+            (0..scores.len()).collect()
+        };
+        // sort box indices by scores
+        indices.sort_unstable_by(|&a, &b| {
+            scores[b].partial_cmp(&scores[a]).unwrap_or(Ordering::Equal)
+        });
+        indices
+    };
+
     let mut keep: Vec<usize> = Vec::new();
-    let mut suppress = Array1::from_elem(order.len(), false);
+    let mut suppress = vec![false; order.len()];
 
-    for i in 0..order.len() {
-        let idx = order[i];
+    for (i, &idx) in order.iter().enumerate() {
         if suppress[i] {
             continue;
         }
         keep.push(idx);
-        let area1 = areas[i];
         let box1 = boxes.row(idx);
+        let b1x = box1[0];
+        let b1y = box1[1];
+        let b1xx = box1[2];
+        let b1yy = box1[3];
+        let area1 = area(b1x, b1y, b1xx, b1yy);
         for j in (i + 1)..order.len() {
-            let idx_j = order[j];
             if suppress[j] {
                 continue;
             }
-            let area2 = areas[j];
-            let box2 = boxes.row(idx_j);
+            let box2 = boxes.row(order[j]);
+            let b2x = box2[0];
+            let b2y = box2[1];
+            let b2xx = box2[2];
+            let b2yy = box2[3];
 
-            let mut iou = 0.0;
-            let x1 = utils::max(box1[0], box2[0]);
-            let x2 = utils::min(box1[2], box2[2]);
-            let y1 = utils::max(box1[1], box2[1]);
-            let y2 = utils::min(box1[3], box2[3]);
-            if y2 > y1 && x2 > x1 {
-                let intersection = (x2 - x1) * (y2 - y1);
-                let intersection = intersection.to_f64().unwrap();
-                let intersection = f64::min(intersection, f64::min(area1, area2));
-                iou = intersection / (area1 + area2 - intersection + utils::EPS);
-            }
+            // Intersection-over-union
+            let x = b1x.max(b2x);
+            let y = b1y.max(b2y);
+            let xx = b1xx.min(b2xx);
+            let yy = b1yy.min(b2yy);
+            if x > xx || y > yy {
+                // Boxes are not intersecting at all
+                continue;
+            };
+            // Boxes are intersecting
+            let intersection = area(x, y, xx, yy);
+            let area2 = area(b2x, b2y, b2xx, b2yy);
+            let union = area1 + area2 - intersection;
+            let iou = intersection / union;
             if iou > iou_threshold {
                 suppress[j] = true;
             }
