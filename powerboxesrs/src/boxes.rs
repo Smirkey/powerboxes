@@ -1,5 +1,7 @@
-use ndarray::{Array1, Array2, Array3, Axis, Zip};
+use ndarray::{Array1, Array2, Array3, ArrayView2, ArrayViewMut2, Axis, Zip};
 use num_traits::{Num, ToPrimitive};
+
+#[derive(Copy, Clone)]
 pub enum BoxFormat {
     XYXY,
     XYWH,
@@ -123,6 +125,94 @@ where
     return boxes.select(Axis(0), &keep);
 }
 
+/// Converts a 2D array of boxes from one format to another, in-place.
+/// This works because all box formats use 4 values in their representations.
+///
+/// # Arguments
+///
+/// * `boxes` - A 2D array of boxes in the input format.
+/// * `in_fmt` - The input format of the boxes.
+/// * `out_fmt` - The desired output format of the boxes.
+///
+/// # Example
+///
+/// ```
+/// use ndarray::arr2;
+/// use powerboxesrs::boxes::{BoxFormat, box_convert_inplace};
+///
+/// let mut boxes = arr2(&[
+///     [10.0, 20.0, 30.0, 40.0],
+///     [75.0, 25.0, 100.0, 200.0],
+///     [100.0, 100.0, 101.0, 101.0],
+/// ]);
+/// let expected_output = arr2(&[
+///     [20.0, 30.0, 20.0, 20.0],
+///     [87.5, 112.5, 25.0, 175.0],
+///     [100.5, 100.5, 1.0, 1.0],
+/// ]);
+/// box_convert_inplace(&mut boxes, BoxFormat::XYXY, BoxFormat::CXCYWH);
+/// assert_eq!(boxes, expected_output);
+/// ```
+pub fn box_convert_inplace<'a, N, BA>(boxes: BA, in_fmt: BoxFormat, out_fmt: BoxFormat)
+where
+    N: Num + PartialEq + ToPrimitive + Clone + Copy + 'a,
+    BA: Into<ArrayViewMut2<'a, N>>,
+{
+    boxes
+        .into()
+        .rows_mut()
+        .into_iter()
+        .for_each(|mut bx| match (in_fmt, out_fmt) {
+            (BoxFormat::XYXY, BoxFormat::XYWH) => {
+                bx[2] = bx[2] - bx[0];
+                bx[3] = bx[3] - bx[1];
+            }
+            (BoxFormat::XYXY, BoxFormat::CXCYWH) => {
+                let x1 = bx[0];
+                let y1 = bx[1];
+                let x2 = bx[2];
+                let y2 = bx[3];
+                bx[0] = (x1 + x2) / (N::one() + N::one());
+                bx[1] = (y1 + y2) / (N::one() + N::one());
+                bx[2] = x2 - x1;
+                bx[3] = y2 - y1;
+            }
+            (BoxFormat::XYWH, BoxFormat::XYXY) => {
+                bx[2] = bx[0] + bx[2];
+                bx[3] = bx[1] + bx[3];
+            }
+            (BoxFormat::XYWH, BoxFormat::CXCYWH) => {
+                let w = bx[2];
+                let h = bx[3];
+                bx[0] = bx[0] + w / (N::one() + N::one());
+                bx[1] = bx[1] + h / (N::one() + N::one());
+                bx[2] = w;
+                bx[3] = h;
+            }
+            (BoxFormat::CXCYWH, BoxFormat::XYXY) => {
+                let cx = bx[0];
+                let cy = bx[1];
+                let wd2 = bx[2] / (N::one() + N::one());
+                let hd2 = bx[3] / (N::one() + N::one());
+                bx[0] = cx - wd2;
+                bx[1] = cy - hd2;
+                bx[2] = cx + wd2;
+                bx[3] = cy + hd2;
+            }
+            (BoxFormat::CXCYWH, BoxFormat::XYWH) => {
+                let w = bx[2];
+                let h = bx[3];
+                bx[0] = bx[0] - w / (N::one() + N::one());
+                bx[1] = bx[1] - h / (N::one() + N::one());
+                bx[2] = w;
+                bx[3] = h;
+            }
+            (BoxFormat::XYXY, BoxFormat::XYXY) => (),
+            (BoxFormat::XYWH, BoxFormat::XYWH) => (),
+            (BoxFormat::CXCYWH, BoxFormat::CXCYWH) => (),
+        });
+}
+
 /// Converts a 2D array of boxes from one format to another.
 ///
 /// # Arguments
@@ -146,93 +236,24 @@ where
 ///     [75.0, 25.0, 100.0, 200.0],
 ///     [100.0, 100.0, 101.0, 101.0],
 /// ]);
-/// let in_fmt = BoxFormat::XYXY;
-/// let out_fmt = BoxFormat::CXCYWH;
 /// let expected_output = arr2(&[
 ///     [20.0, 30.0, 20.0, 20.0],
 ///     [87.5, 112.5, 25.0, 175.0],
 ///     [100.5, 100.5, 1.0, 1.0],
 /// ]);
-/// let output = box_convert(&boxes, &in_fmt, &out_fmt);
+/// let output = box_convert(&boxes, BoxFormat::XYXY, BoxFormat::CXCYWH);
 /// assert_eq!(output, expected_output);
 /// ```
-pub fn box_convert<N>(boxes: &Array2<N>, in_fmt: &BoxFormat, out_fmt: &BoxFormat) -> Array2<N>
+pub fn box_convert<'a, N, BA>(boxes: BA, in_fmt: BoxFormat, out_fmt: BoxFormat) -> Array2<N>
 where
-    N: Num + PartialEq + ToPrimitive + Clone + Copy,
+    N: Num + PartialEq + ToPrimitive + Clone + Copy + 'a,
+    BA: Into<ArrayView2<'a, N>>,
 {
-    let num_boxes: usize = boxes.nrows();
-    let mut converted_boxes = Array2::<N>::zeros((num_boxes, 4));
-
-    Zip::indexed(converted_boxes.rows_mut()).for_each(|i, mut box1| {
-        let box2 = boxes.row(i);
-        match (in_fmt, out_fmt) {
-            (BoxFormat::XYXY, BoxFormat::XYWH) => {
-                let x1 = box2[0];
-                let y1 = box2[1];
-                let x2 = box2[2];
-                let y2 = box2[3];
-                box1[0] = x1;
-                box1[1] = y1;
-                box1[2] = x2 - x1;
-                box1[3] = y2 - y1;
-            }
-            (BoxFormat::XYXY, BoxFormat::CXCYWH) => {
-                let x1 = box2[0];
-                let y1 = box2[1];
-                let x2 = box2[2];
-                let y2 = box2[3];
-                box1[0] = (x1 + x2) / (N::one() + N::one());
-                box1[1] = (y1 + y2) / (N::one() + N::one());
-                box1[2] = x2 - x1;
-                box1[3] = y2 - y1;
-            }
-            (BoxFormat::XYWH, BoxFormat::XYXY) => {
-                let x1 = box2[0];
-                let y1 = box2[1];
-                let w = box2[2];
-                let h = box2[3];
-                box1[0] = x1;
-                box1[1] = y1;
-                box1[2] = x1 + w;
-                box1[3] = y1 + h;
-            }
-            (BoxFormat::XYWH, BoxFormat::CXCYWH) => {
-                let x1 = box2[0];
-                let y1 = box2[1];
-                let w = box2[2];
-                let h = box2[3];
-                box1[0] = x1 + w / (N::one() + N::one());
-                box1[1] = y1 + h / (N::one() + N::one());
-                box1[2] = w;
-                box1[3] = h;
-            }
-            (BoxFormat::CXCYWH, BoxFormat::XYXY) => {
-                let cx = box2[0];
-                let cy = box2[1];
-                let w = box2[2];
-                let h = box2[3];
-                box1[0] = cx - w / (N::one() + N::one());
-                box1[1] = cy - h / (N::one() + N::one());
-                box1[2] = cx + w / (N::one() + N::one());
-                box1[3] = cy + h / (N::one() + N::one());
-            }
-            (BoxFormat::CXCYWH, BoxFormat::XYWH) => {
-                let cx = box2[0];
-                let cy = box2[1];
-                let w = box2[2];
-                let h = box2[3];
-                box1[0] = cx - w / (N::one() + N::one());
-                box1[1] = cy - h / (N::one() + N::one());
-                box1[2] = w;
-                box1[3] = h;
-            }
-            (BoxFormat::XYXY, BoxFormat::XYXY) => (),
-            (BoxFormat::XYWH, BoxFormat::XYWH) => (),
-            (BoxFormat::CXCYWH, BoxFormat::CXCYWH) => (),
-        }
-    });
-    return converted_boxes;
+    let mut converted_boxes = boxes.into().to_owned();
+    box_convert_inplace(&mut converted_boxes, in_fmt, out_fmt);
+    converted_boxes
 }
+
 /// Converts a 2D array of boxes from one format to another, in parallel.
 /// This function is only faster than `box_convert` for large arrays
 ///
@@ -257,20 +278,18 @@ where
 ///     [75.0, 25.0, 100.0, 200.0],
 ///     [100.0, 100.0, 101.0, 101.0],
 /// ]);
-/// let in_fmt = BoxFormat::XYXY;
-/// let out_fmt = BoxFormat::CXCYWH;
 /// let expected_output = arr2(&[
 ///     [20.0, 30.0, 20.0, 20.0],
 ///     [87.5, 112.5, 25.0, 175.0],
 ///     [100.5, 100.5, 1.0, 1.0],
 /// ]);
-/// let output = parallel_box_convert(&boxes, &in_fmt, &out_fmt);
+/// let output = parallel_box_convert(&boxes, BoxFormat::XYXY, BoxFormat::CXCYWH);
 /// assert_eq!(expected_output, output);
 /// ```
 pub fn parallel_box_convert<N>(
     boxes: &Array2<N>,
-    in_fmt: &BoxFormat,
-    out_fmt: &BoxFormat,
+    in_fmt: BoxFormat,
+    out_fmt: BoxFormat,
 ) -> Array2<N>
 where
     N: Num + PartialEq + ToPrimitive + Clone + Sync + Send + Copy,
@@ -445,8 +464,8 @@ mod tests {
             [75.0, 25.0, 25.0, 175.0],
             [100.0, 100.0, 1.0, 1.0],
         ]);
-        let output = box_convert(&boxes, &in_fmt, &out_fmt);
-        let parallel_output = parallel_box_convert(&boxes, &in_fmt, &out_fmt);
+        let output = box_convert(&boxes, in_fmt, out_fmt);
+        let parallel_output = parallel_box_convert(&boxes, in_fmt, out_fmt);
         assert_eq!(output, expected_output);
         assert_eq!(output, parallel_output);
     }
@@ -465,8 +484,8 @@ mod tests {
             [87.5, 112.5, 25.0, 175.0],
             [100.5, 100.5, 1.0, 1.0],
         ]);
-        let output = box_convert(&boxes, &in_fmt, &out_fmt);
-        let parallel_output = parallel_box_convert(&boxes, &in_fmt, &out_fmt);
+        let output = box_convert(&boxes, in_fmt, out_fmt);
+        let parallel_output = parallel_box_convert(&boxes, in_fmt, out_fmt);
         assert_eq!(output, expected_output);
         assert_eq!(output, parallel_output);
     }
@@ -485,8 +504,8 @@ mod tests {
             [75.0, 25.0, 100.0, 200.0],
             [100.0, 100.0, 101.0, 101.0],
         ]);
-        let output = box_convert(&boxes, &in_fmt, &out_fmt);
-        let parallel_output = parallel_box_convert(&boxes, &in_fmt, &out_fmt);
+        let output = box_convert(&boxes, in_fmt, out_fmt);
+        let parallel_output = parallel_box_convert(&boxes, in_fmt, out_fmt);
         assert_eq!(output, expected_output);
         assert_eq!(output, parallel_output);
     }
@@ -505,8 +524,8 @@ mod tests {
             [87.5, 112.5, 25.0, 175.0],
             [100.5, 100.5, 1.0, 1.0],
         ]);
-        let output = box_convert(&boxes, &in_fmt, &out_fmt);
-        let parallel_output = parallel_box_convert(&boxes, &in_fmt, &out_fmt);
+        let output = box_convert(&boxes, in_fmt, out_fmt);
+        let parallel_output = parallel_box_convert(&boxes, in_fmt, out_fmt);
         assert_eq!(output, expected_output);
         assert_eq!(output, parallel_output);
     }
@@ -525,8 +544,8 @@ mod tests {
             [75., 25., 100., 200.],
             [100., 100., 101., 101.],
         ]);
-        let output = box_convert(&boxes, &in_fmt, &out_fmt);
-        let parallel_output = parallel_box_convert(&boxes, &in_fmt, &out_fmt);
+        let output = box_convert(&boxes, in_fmt, out_fmt);
+        let parallel_output = parallel_box_convert(&boxes, in_fmt, out_fmt);
         assert_eq!(output, expected_output);
         assert_eq!(output, parallel_output);
     }
@@ -545,8 +564,8 @@ mod tests {
             [75.0, 25.0, 25.0, 175.0],
             [100.0, 100.0, 1.0, 1.0],
         ]);
-        let output = box_convert(&boxes, &in_fmt, &out_fmt);
-        let parallel_output = parallel_box_convert(&boxes, &in_fmt, &out_fmt);
+        let output = box_convert(&boxes, in_fmt, out_fmt);
+        let parallel_output = parallel_box_convert(&boxes, in_fmt, out_fmt);
         assert_eq!(output, expected_output);
         assert_eq!(output, parallel_output);
     }
@@ -558,14 +577,14 @@ mod tests {
             [75., 25., 100., 200.],
             [100., 100., 101., 101.],
         ]);
-        let xywh = parallel_box_convert(&boxes, &BoxFormat::XYXY, &BoxFormat::XYWH);
-        let cxcywh = parallel_box_convert(&xywh, &BoxFormat::XYWH, &BoxFormat::CXCYWH);
+        let xywh = parallel_box_convert(&boxes, BoxFormat::XYXY, BoxFormat::XYWH);
+        let cxcywh = parallel_box_convert(&xywh, BoxFormat::XYWH, BoxFormat::CXCYWH);
         assert_eq!(
-            parallel_box_convert(&cxcywh, &BoxFormat::CXCYWH, &BoxFormat::XYXY),
+            parallel_box_convert(&cxcywh, BoxFormat::CXCYWH, BoxFormat::XYXY),
             boxes
         );
         assert_eq!(
-            parallel_box_convert(&xywh, &BoxFormat::XYWH, &BoxFormat::XYXY),
+            parallel_box_convert(&xywh, BoxFormat::XYWH, BoxFormat::XYXY),
             boxes
         );
     }
