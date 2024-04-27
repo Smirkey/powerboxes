@@ -1,5 +1,5 @@
-use ndarray::{Array1, Array2, Array3, ArrayView2, ArrayViewMut2, Axis, Zip};
-use num_traits::{Num, ToPrimitive};
+use ndarray::{Array1, Array2, ArrayView2, ArrayView3, ArrayViewMut2, Axis, Zip};
+use num_traits::{real::Real, Num, ToPrimitive};
 
 #[derive(Copy, Clone)]
 pub enum BoxFormat {
@@ -12,7 +12,7 @@ pub enum BoxFormat {
 ///
 /// # Arguments
 ///
-/// * `boxes` - A 2D array of boxes represented as an `Array2<f64>` in xyxy format.
+/// * `boxes` - A 2D array of boxes represented as an `ArrayView2<N>` in xyxy format.
 ///
 /// # Returns
 ///
@@ -30,13 +30,14 @@ pub enum BoxFormat {
 ///
 /// assert_eq!(areas, array![4., 100.]);
 /// ```
-pub fn box_areas<N>(boxes: &Array2<N>) -> Array1<f64>
+pub fn box_areas<'a, N, BA>(boxes: BA) -> Array1<f64>
 where
-    N: Num + PartialEq + ToPrimitive + Copy,
+    N: Real + 'a,
+    BA: Into<ArrayView2<'a, N>>,
 {
+    let boxes = boxes.into();
     let num_boxes = boxes.nrows();
     let mut areas = Array1::<f64>::zeros(num_boxes);
-
     Zip::indexed(&mut areas).for_each(|i, area| {
         let box1 = boxes.row(i);
         let area_ = (box1[2] - box1[0]) * (box1[3] - box1[1]);
@@ -69,10 +70,12 @@ where
 ///
 /// assert_eq!(areas, array![4., 100.]);
 /// ```
-pub fn parallel_box_areas<N>(boxes: &Array2<N>) -> Array1<f64>
+pub fn parallel_box_areas<'a, N, BA>(boxes: BA) -> Array1<f64>
 where
-    N: Num + PartialEq + ToPrimitive + Clone + Send + Sync + Copy,
+    N: Real + Send + Sync + 'a,
+    BA: Into<ArrayView2<'a, N>>,
 {
+    let boxes = boxes.into();
     let num_boxes = boxes.nrows();
     let mut areas = Array1::<f64>::zeros(num_boxes);
 
@@ -112,10 +115,12 @@ where
 ///
 /// assert_eq!(result, array![[0., 0., 10., 10.]]);
 /// ```
-pub fn remove_small_boxes<N>(boxes: &Array2<N>, min_size: f64) -> Array2<N>
+pub fn remove_small_boxes<'a, N, BA>(boxes: BA, min_size: f64) -> Array2<N>
 where
-    N: Num + PartialEq + ToPrimitive + Clone + Copy,
+    N: Real + 'a,
+    BA: Into<ArrayView2<'a, N>>,
 {
+    let boxes = boxes.into();
     let areas = box_areas(boxes);
     let keep: Vec<usize> = areas
         .indexed_iter()
@@ -380,7 +385,11 @@ where
 /// ]);
 /// let boxes = masks_to_boxes(&masks);
 /// assert_eq!(boxes, array![[0, 0, 2, 0], [0, 1, 2, 1], [2, 1, 2, 1]]);
-pub fn masks_to_boxes(masks: &Array3<bool>) -> Array2<usize> {
+pub fn masks_to_boxes<'a, MA>(masks: MA) -> Array2<usize>
+where
+    MA: Into<ArrayView3<'a, bool>>,
+{
+    let masks = masks.into();
     let num_masks = masks.shape()[0];
     let height = masks.shape()[1];
     let width = masks.shape()[2];
@@ -434,7 +443,11 @@ pub fn masks_to_boxes(masks: &Array3<bool>) -> Array2<usize> {
 ///
 /// A 1D array containing the computed areas of each rotated box.
 ///
-pub fn rotated_box_areas(boxes: &Array2<f64>) -> Array1<f64> {
+pub fn rotated_box_areas<'a, BA>(boxes: BA) -> Array1<f64>
+where
+    BA: Into<ArrayView2<'a, f64>>,
+{
+    let boxes = boxes.into();
     let n_boxes = boxes.nrows();
 
     let mut areas = Array1::zeros(n_boxes);
@@ -449,7 +462,7 @@ pub fn rotated_box_areas(boxes: &Array2<f64>) -> Array1<f64> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use ndarray::{arr2, arr3, array};
+    use ndarray::{arr2, arr3, array, Array3};
     #[test]
     fn test_box_convert_xyxy_to_xywh() {
         let boxes = arr2(&[

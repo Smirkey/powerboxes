@@ -1,5 +1,5 @@
-use ndarray::{Array2, Zip};
-use num_traits::{Num, ToPrimitive};
+use ndarray::{Array2, ArrayView2, Zip};
+use num_traits::{real::Real, ToPrimitive};
 use rstar::RTree;
 
 use crate::{
@@ -31,10 +31,13 @@ use crate::{
 /// assert_eq!(giou.shape(), &[2, 3]);
 /// assert_eq!(giou, array![[0., 1.6800000000000002, 1.7777777777777777], [1.7777777777777777, 1.0793650793650793, 0.]]);
 /// ```
-pub fn giou_distance<N>(boxes1: &Array2<N>, boxes2: &Array2<N>) -> Array2<f64>
+pub fn giou_distance<'a, N, BA>(boxes1: BA, boxes2: BA) -> Array2<f64>
 where
-    N: Num + PartialOrd + ToPrimitive + Copy,
+    N: Real + 'a,
+    BA: Into<ArrayView2<'a, N>>,
 {
+    let boxes1 = boxes1.into();
+    let boxes2 = boxes2.into();
     let num_boxes1 = boxes1.nrows();
     let num_boxes2 = boxes2.nrows();
 
@@ -110,16 +113,19 @@ where
 /// assert_eq!(giou.shape(), &[2, 3]);
 /// assert_eq!(giou, array![[0., 1.6800000000000002, 1.7777777777777777], [1.7777777777777777, 1.0793650793650793, 0.]]);
 /// ```
-pub fn parallel_giou_distance<N>(boxes1: &Array2<N>, boxes2: &Array2<N>) -> Array2<f64>
+pub fn parallel_giou_distance<'a, N, BA>(boxes1: BA, boxes2: BA) -> Array2<f64>
 where
-    N: Num + PartialOrd + ToPrimitive + Copy + Sync + Send,
+    N: Real + Sync + Send + 'a,
+    BA: Into<ArrayView2<'a, N>>,
 {
+    let boxes1 = boxes1.into();
+    let boxes2 = boxes2.into();
     let num_boxes1 = boxes1.nrows();
     let num_boxes2 = boxes2.nrows();
 
     let mut giou_matrix = Array2::<f64>::zeros((num_boxes1, num_boxes2));
-    let areas_boxes1 = boxes::parallel_box_areas(&boxes1);
-    let areas_boxes2 = boxes::parallel_box_areas(&boxes2);
+    let areas_boxes1 = boxes::parallel_box_areas(boxes1);
+    let areas_boxes2 = boxes::parallel_box_areas(boxes2);
     Zip::indexed(giou_matrix.rows_mut()).par_for_each(|i, mut row| {
         let a1 = boxes1.row(i);
         let a1_x1 = a1[0];
@@ -187,7 +193,12 @@ where
 /// The element at position (i, j) in the matrix represents the rotated Giou distance between the i-th box in `boxes1` and
 /// the j-th box in `boxes2`.
 ///
-pub fn rotated_giou_distance(boxes1: &Array2<f64>, boxes2: &Array2<f64>) -> Array2<f64> {
+pub fn rotated_giou_distance<'a, BA>(boxes1: BA, boxes2: BA) -> Array2<f64>
+where
+    BA: Into<ArrayView2<'a, f64>>,
+{
+    let boxes1 = boxes1.into();
+    let boxes2 = boxes2.into();
     let num_boxes1 = boxes1.nrows();
     let num_boxes2 = boxes2.nrows();
 
