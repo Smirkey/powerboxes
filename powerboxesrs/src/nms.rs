@@ -4,7 +4,6 @@ use std::cmp::Ordering;
 use crate::{boxes, utils};
 use ndarray::{Array1, Array2, ArrayView1, ArrayView2, Axis};
 use num_traits::real::Real;
-use num_traits::ToPrimitive;
 use rstar::{RTree, RTreeNum, AABB};
 
 #[inline(always)]
@@ -153,7 +152,7 @@ pub fn rtree_nms<N>(
     score_threshold: f64,
 ) -> Vec<usize>
 where
-    N: RTreeNum + ToPrimitive + Send + Sync,
+    N: RTreeNum + Real + Send + Sync,
 {
     let mut above_score_threshold: Vec<usize> = (0..scores.len()).collect();
     if score_threshold > utils::EPS {
@@ -166,7 +165,7 @@ where
             .collect();
     }
     // Compute areas once
-    let areas = boxes::box_areas(&boxes);
+    let areas = boxes::box_areas(boxes);
     // sort box indices by scores
     above_score_threshold
         .sort_unstable_by(|&a, &b| scores[b].partial_cmp(&scores[a]).unwrap_or(Ordering::Equal));
