@@ -29,7 +29,7 @@ where
     T: numpy::Element + 'a,
     D: ndarray::Dimension,
 {
-    let numpy_array = array.to_pyarray(py);
+    let numpy_array = array.to_owned().to_pyarray(py);
 
     return Ok(numpy_array);
 }
