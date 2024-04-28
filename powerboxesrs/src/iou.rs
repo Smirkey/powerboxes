@@ -34,15 +34,16 @@ where
     N: Num + PartialEq + PartialOrd + ToPrimitive + Copy + 'a,
     BA: Into<ArrayView2<'a, N>>,
 {
-    let boxes1 = boxes1.into();
-    let boxes2 = boxes2.into();
-
+    let boxes1: ArrayView2<N> = boxes1.into();
+    let boxes2: ArrayView2<N> = boxes2.into();
+    let boxes1 = boxes1.to_owned();
+    let boxes2 = boxes2.to_owned();
     let num_boxes1 = boxes1.nrows();
     let num_boxes2 = boxes2.nrows();
 
     let mut iou_matrix = Array2::<f64>::zeros((num_boxes1, num_boxes2));
-    let areas_boxes1 = boxes::box_areas(boxes1);
-    let areas_boxes2 = boxes::box_areas(boxes2);
+    let areas_boxes1 = boxes::box_areas(&boxes1);
+    let areas_boxes2 = boxes::box_areas(&boxes2);
     for (i, a1) in boxes1.outer_iter().enumerate() {
         let a1_x1 = a1[0];
         let a1_y1 = a1[1];
