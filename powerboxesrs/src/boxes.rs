@@ -32,7 +32,7 @@ pub enum BoxFormat {
 /// ```
 pub fn box_areas<'a, N, BA>(boxes: BA) -> Array1<f64>
 where
-    N: Real + 'a,
+    N: Num + PartialEq + PartialOrd + ToPrimitive + Copy + 'a,
     BA: Into<ArrayView2<'a, N>>,
 {
     let boxes = boxes.into();
@@ -81,10 +81,10 @@ where
 
     Zip::indexed(&mut areas).par_for_each(|i, area| {
         let box1 = boxes.row(i);
-        let x1 = box1[0];
-        let y1 = box1[1];
-        let x2 = box1[2];
-        let y2 = box1[3];
+        let x1: N = box1[0];
+        let y1: N = box1[1];
+        let x2: N = box1[2];
+        let y2: N = box1[3];
         let _area = (x2 - x1) * (y2 - y1);
         *area = _area.to_f64().unwrap();
     });
@@ -117,7 +117,7 @@ where
 /// ```
 pub fn remove_small_boxes<'a, N, BA>(boxes: BA, min_size: f64) -> Array2<N>
 where
-    N: Real + 'a,
+    N: Num + PartialEq + Clone + PartialOrd + ToPrimitive + Copy + 'a,
     BA: Into<ArrayView2<'a, N>>,
 {
     let boxes = boxes.into();
@@ -160,7 +160,7 @@ where
 /// ```
 pub fn box_convert_inplace<'a, N, BA>(boxes: BA, in_fmt: BoxFormat, out_fmt: BoxFormat)
 where
-    N: Num + PartialEq + ToPrimitive + Clone + Copy + 'a,
+    N: Num + PartialEq + PartialOrd + ToPrimitive + Clone + Copy + 'a,
     BA: Into<ArrayViewMut2<'a, N>>,
 {
     boxes
@@ -251,7 +251,7 @@ where
 /// ```
 pub fn box_convert<'a, N, BA>(boxes: BA, in_fmt: BoxFormat, out_fmt: BoxFormat) -> Array2<N>
 where
-    N: Num + PartialEq + ToPrimitive + Clone + Copy + 'a,
+    N: Num + PartialEq + PartialOrd + ToPrimitive + Clone + Copy + 'a,
     BA: Into<ArrayView2<'a, N>>,
 {
     let mut converted_boxes = boxes.into().to_owned();
@@ -297,7 +297,7 @@ pub fn parallel_box_convert<N>(
     out_fmt: BoxFormat,
 ) -> Array2<N>
 where
-    N: Num + PartialEq + ToPrimitive + Clone + Sync + Send + Copy,
+    N: Num + PartialEq + PartialOrd + ToPrimitive + Clone + Sync + Send + Copy,
 {
     let mut converted_boxes = boxes.clone();
 

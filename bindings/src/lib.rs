@@ -2,6 +2,7 @@ mod utils;
 
 use std::fmt::Debug;
 
+use ndarray::Array1;
 use num_traits::{Bounded, Float, Num, Signed, ToPrimitive};
 use numpy::{PyArray1, PyArray2, PyArray3};
 use powerboxesrs::{boxes, diou, giou, iou, nms, tiou};
@@ -123,8 +124,8 @@ fn _powerboxes(_py: Python, m: &PyModule) -> PyResult<()> {
 #[pyfunction]
 fn masks_to_boxes(_py: Python, masks: &PyArray3<bool>) -> PyResult<Py<PyArray2<usize>>> {
     let masks = preprocess_array3(masks);
-    let boxes = boxes::masks_to_boxes(&masks);
-    let boxes_as_numpy = utils::array_to_numpy(_py, boxes).unwrap();
+    let boxes = boxes::masks_to_boxes(masks);
+    let boxes_as_numpy = utils::array_to_numpy(_py, boxes.view()).unwrap();
     return Ok(boxes_as_numpy.to_owned());
 }
 
@@ -139,7 +140,7 @@ fn rotated_iou_distance(
     let boxes1 = preprocess_rotated_boxes(boxes1).unwrap();
     let boxes2 = preprocess_rotated_boxes(boxes2).unwrap();
     let iou = iou::rotated_iou_distance(&boxes1, &boxes2);
-    let iou_as_numpy = utils::array_to_numpy(_py, iou).unwrap();
+    let iou_as_numpy = utils::array_to_numpy(_py, iou.view()).unwrap();
     return Ok(iou_as_numpy.to_owned());
 }
 
@@ -154,7 +155,7 @@ fn rotated_giou_distance(
     let boxes1 = preprocess_rotated_boxes(boxes1).unwrap();
     let boxes2 = preprocess_rotated_boxes(boxes2).unwrap();
     let iou = giou::rotated_giou_distance(&boxes1, &boxes2);
-    let iou_as_numpy = utils::array_to_numpy(_py, iou).unwrap();
+    let iou_as_numpy = utils::array_to_numpy(_py, iou.view()).unwrap();
     return Ok(iou_as_numpy.to_owned());
 }
 
@@ -169,7 +170,7 @@ fn rotated_tiou_distance(
     let boxes1 = preprocess_rotated_boxes(boxes1).unwrap();
     let boxes2 = preprocess_rotated_boxes(boxes2).unwrap();
     let iou = tiou::rotated_tiou_distance(&boxes1, &boxes2);
-    let iou_as_numpy = utils::array_to_numpy(_py, iou).unwrap();
+    let iou_as_numpy = utils::array_to_numpy(_py, iou.view()).unwrap();
     return Ok(iou_as_numpy.to_owned());
 }
 // DIoU
@@ -179,12 +180,12 @@ fn diou_distance_generic<T>(
     boxes2: &PyArray2<T>,
 ) -> PyResult<Py<PyArray2<f64>>>
 where
-    T: Float + numpy::Element,
+    T: Num + Float + numpy::Element,
 {
     let boxes1 = preprocess_boxes(boxes1).unwrap();
     let boxes2 = preprocess_boxes(boxes2).unwrap();
     let iou = diou::diou_distance(&boxes1, &boxes2);
-    let iou_as_numpy = utils::array_to_numpy(_py, iou).unwrap();
+    let iou_as_numpy = utils::array_to_numpy(_py, iou.view()).unwrap();
     return Ok(iou_as_numpy.to_owned());
 }
 
@@ -216,8 +217,8 @@ where
 {
     let boxes1 = preprocess_boxes(boxes1).unwrap();
     let boxes2 = preprocess_boxes(boxes2).unwrap();
-    let iou = iou::iou_distance(&boxes1, &boxes2);
-    let iou_as_numpy = utils::array_to_numpy(_py, iou).unwrap();
+    let iou = iou::iou_distance(boxes1, boxes2);
+    let iou_as_numpy = utils::array_to_numpy(_py, iou.view()).unwrap();
     return Ok(iou_as_numpy.to_owned());
 }
 
@@ -305,7 +306,7 @@ where
     let boxes1 = preprocess_boxes(boxes1).unwrap();
     let boxes2 = preprocess_boxes(boxes2).unwrap();
     let iou = iou::parallel_iou_distance(&boxes1, &boxes2);
-    let iou_as_numpy = utils::array_to_numpy(_py, iou).unwrap();
+    let iou_as_numpy = utils::array_to_numpy(_py, iou.view()).unwrap();
     return Ok(iou_as_numpy.to_owned());
 }
 #[pyfunction]
@@ -392,7 +393,7 @@ where
     let boxes1 = preprocess_boxes(boxes1).unwrap();
     let boxes2 = preprocess_boxes(boxes2).unwrap();
     let tiou = tiou::tiou_distance(&boxes1, &boxes2);
-    let tiou_as_numpy = utils::array_to_numpy(_py, tiou).unwrap();
+    let tiou_as_numpy = utils::array_to_numpy(_py, tiou.view()).unwrap();
     return Ok(tiou_as_numpy.to_owned());
 }
 
@@ -480,7 +481,7 @@ where
     let boxes1 = preprocess_boxes(boxes1).unwrap();
     let boxes2 = preprocess_boxes(boxes2).unwrap();
     let iou = giou::giou_distance(&boxes1, &boxes2);
-    let iou_as_numpy = utils::array_to_numpy(_py, iou).unwrap();
+    let iou_as_numpy = utils::array_to_numpy(_py, iou.view()).unwrap();
     return Ok(iou_as_numpy.to_owned());
 }
 #[pyfunction]
@@ -567,7 +568,7 @@ where
     let boxes1 = preprocess_boxes(boxes1).unwrap();
     let boxes2 = preprocess_boxes(boxes2).unwrap();
     let iou = giou::giou_distance(&boxes1, &boxes2);
-    let iou_as_numpy = utils::array_to_numpy(_py, iou).unwrap();
+    let iou_as_numpy = utils::array_to_numpy(_py, iou.view()).unwrap();
     return Ok(iou_as_numpy.to_owned());
 }
 #[pyfunction]
@@ -653,7 +654,7 @@ where
 {
     let boxes = preprocess_boxes(boxes).unwrap();
     let filtered_boxes = boxes::remove_small_boxes(&boxes, min_size);
-    let filtered_boxes_as_numpy = utils::array_to_numpy(_py, filtered_boxes).unwrap();
+    let filtered_boxes_as_numpy = utils::array_to_numpy(_py, filtered_boxes.view()).unwrap();
     return Ok(filtered_boxes_as_numpy.to_owned());
 }
 #[pyfunction]
@@ -735,7 +736,7 @@ where
 {
     let boxes = preprocess_boxes(boxes).unwrap();
     let areas = boxes::box_areas(&boxes);
-    let areas_as_numpy = utils::array_to_numpy(_py, areas).unwrap();
+    let areas_as_numpy = utils::array_to_numpy(_py, areas.view()).unwrap();
     return Ok(areas_as_numpy.to_owned());
 }
 
@@ -806,8 +807,8 @@ where
             ))
         }
     };
-    let converted_boxes = boxes::box_convert(&boxes, &in_fmt, &out_fmt);
-    let converted_boxes_as_numpy = utils::array_to_numpy(_py, converted_boxes).unwrap();
+    let converted_boxes = boxes::box_convert(&boxes, in_fmt, out_fmt);
+    let converted_boxes_as_numpy = utils::array_to_numpy(_py, converted_boxes.view()).unwrap();
     return Ok(converted_boxes_as_numpy.to_owned());
 }
 
@@ -894,20 +895,22 @@ fn box_convert_u8(
 }
 
 // nms
-fn nms_generic<T>(
+fn nms_generic<S, T>(
     _py: Python,
     boxes: &PyArray2<T>,
-    scores: &PyArray1<f64>,
-    iou_threshold: f64,
-    score_threshold: f64,
+    scores: &PyArray1<S>,
+    iou_threshold: T,
+    score_threshold: S,
 ) -> PyResult<Py<PyArray1<usize>>>
 where
-    T: Num + numpy::Element + PartialOrd + ToPrimitive + Copy,
+    T: numpy::Element + Num + PartialEq + PartialOrd + ToPrimitive + Copy,
+    S: numpy::Element + Num + PartialEq + PartialOrd + ToPrimitive + Copy,
 {
     let boxes = preprocess_boxes(boxes).unwrap();
     let scores = preprocess_array1(scores);
     let keep = nms::nms(&boxes, &scores, iou_threshold, score_threshold);
-    let keep_as_numpy = utils::array_to_numpy(_py, keep).unwrap();
+    let keep_as_ndarray = Array1::from(keep);
+    let keep_as_numpy = utils::array_to_numpy(_py, keep_as_ndarray.view()).unwrap();
     return Ok(keep_as_numpy.to_owned());
 }
 #[pyfunction]
@@ -931,7 +934,7 @@ fn nms_f32(
     _py: Python,
     boxes: &PyArray2<f32>,
     scores: &PyArray1<f64>,
-    iou_threshold: f64,
+    iou_threshold: f32,
     score_threshold: f64,
 ) -> PyResult<Py<PyArray1<usize>>> {
     return Ok(nms_generic(
@@ -947,7 +950,7 @@ fn nms_i64(
     _py: Python,
     boxes: &PyArray2<i64>,
     scores: &PyArray1<f64>,
-    iou_threshold: f64,
+    iou_threshold: i64,
     score_threshold: f64,
 ) -> PyResult<Py<PyArray1<usize>>> {
     return Ok(nms_generic(
@@ -963,7 +966,7 @@ fn nms_i32(
     _py: Python,
     boxes: &PyArray2<i32>,
     scores: &PyArray1<f64>,
-    iou_threshold: f64,
+    iou_threshold: i32,
     score_threshold: f64,
 ) -> PyResult<Py<PyArray1<usize>>> {
     return Ok(nms_generic(
@@ -979,7 +982,7 @@ fn nms_i16(
     _py: Python,
     boxes: &PyArray2<i16>,
     scores: &PyArray1<f64>,
-    iou_threshold: f64,
+    iou_threshold: i16,
     score_threshold: f64,
 ) -> PyResult<Py<PyArray1<usize>>> {
     return Ok(nms_generic(
@@ -995,7 +998,7 @@ fn nms_u64(
     _py: Python,
     boxes: &PyArray2<u64>,
     scores: &PyArray1<f64>,
-    iou_threshold: f64,
+    iou_threshold: u64,
     score_threshold: f64,
 ) -> PyResult<Py<PyArray1<usize>>> {
     return Ok(nms_generic(
@@ -1011,7 +1014,7 @@ fn nms_u32(
     _py: Python,
     boxes: &PyArray2<u32>,
     scores: &PyArray1<f64>,
-    iou_threshold: f64,
+    iou_threshold: u32,
     score_threshold: f64,
 ) -> PyResult<Py<PyArray1<usize>>> {
     return Ok(nms_generic(
@@ -1027,7 +1030,7 @@ fn nms_u16(
     _py: Python,
     boxes: &PyArray2<u16>,
     scores: &PyArray1<f64>,
-    iou_threshold: f64,
+    iou_threshold: u16,
     score_threshold: f64,
 ) -> PyResult<Py<PyArray1<usize>>> {
     return Ok(nms_generic(
@@ -1043,7 +1046,7 @@ fn nms_u8(
     _py: Python,
     boxes: &PyArray2<u8>,
     scores: &PyArray1<f64>,
-    iou_threshold: f64,
+    iou_threshold: u8,
     score_threshold: f64,
 ) -> PyResult<Py<PyArray1<usize>>> {
     return Ok(nms_generic(
@@ -1056,29 +1059,32 @@ fn nms_u8(
 }
 
 // rtree nms
-fn rtree_nms_generic<T>(
+fn rtree_nms_generic<S, T>(
     _py: Python,
     boxes: &PyArray2<T>,
-    scores: &PyArray1<f64>,
-    iou_threshold: f64,
-    score_threshold: f64,
+    scores: &PyArray1<S>,
+    iou_threshold: T,
+    score_threshold: S,
 ) -> PyResult<Py<PyArray1<usize>>>
 where
-    T: Num
-        + numpy::Element
-        + PartialOrd
-        + ToPrimitive
-        + Copy
+    T: numpy::Element
+        + Num
         + Signed
         + Bounded
         + Debug
+        + PartialEq
+        + PartialOrd
+        + ToPrimitive
+        + Copy
         + Sync
         + Send,
+    S: numpy::Element + Num + PartialEq + PartialOrd + ToPrimitive + Copy + Sync + Send,
 {
     let boxes = preprocess_boxes(boxes).unwrap();
     let scores = preprocess_array1(scores);
     let keep = nms::rtree_nms(&boxes, &scores, iou_threshold, score_threshold);
-    let keep_as_numpy = utils::array_to_numpy(_py, keep).unwrap();
+    let keep_as_ndarray = Array1::from(keep);
+    let keep_as_numpy = utils::array_to_numpy(_py, keep_as_ndarray.view()).unwrap();
     return Ok(keep_as_numpy.to_owned());
 }
 #[pyfunction]
@@ -1102,7 +1108,7 @@ fn rtree_nms_f32(
     _py: Python,
     boxes: &PyArray2<f32>,
     scores: &PyArray1<f64>,
-    iou_threshold: f64,
+    iou_threshold: f32,
     score_threshold: f64,
 ) -> PyResult<Py<PyArray1<usize>>> {
     return Ok(rtree_nms_generic(
@@ -1118,7 +1124,7 @@ fn rtree_nms_i64(
     _py: Python,
     boxes: &PyArray2<i64>,
     scores: &PyArray1<f64>,
-    iou_threshold: f64,
+    iou_threshold: i64,
     score_threshold: f64,
 ) -> PyResult<Py<PyArray1<usize>>> {
     return Ok(rtree_nms_generic(
@@ -1134,7 +1140,7 @@ fn rtree_nms_i32(
     _py: Python,
     boxes: &PyArray2<i32>,
     scores: &PyArray1<f64>,
-    iou_threshold: f64,
+    iou_threshold: i32,
     score_threshold: f64,
 ) -> PyResult<Py<PyArray1<usize>>> {
     return Ok(rtree_nms_generic(
@@ -1150,7 +1156,7 @@ fn rtree_nms_i16(
     _py: Python,
     boxes: &PyArray2<i16>,
     scores: &PyArray1<f64>,
-    iou_threshold: f64,
+    iou_threshold: i16,
     score_threshold: f64,
 ) -> PyResult<Py<PyArray1<usize>>> {
     return Ok(rtree_nms_generic(

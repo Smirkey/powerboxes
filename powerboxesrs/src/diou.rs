@@ -1,6 +1,6 @@
 use crate::{boxes, utils};
 use ndarray::{Array2, ArrayView2};
-use num_traits::{Float, Num};
+use num_traits::{Float, Num, ToPrimitive};
 
 /// Calculates the intersection over union (DIoU) distance between two sets of bounding boxes.
 /// https://arxiv.org/pdf/1911.08287.pdf
@@ -17,14 +17,14 @@ use num_traits::{Float, Num};
 /// ```
 pub fn diou_distance<'a, BA, N>(boxes1: BA, boxes2: BA) -> Array2<f64>
 where
-    N: Num + Float + 'a,
+    N: Num + PartialOrd + ToPrimitive + Float + 'a,
     BA: Into<ArrayView2<'a, N>>,
 {
     let boxes1 = boxes1.into();
     let boxes2 = boxes2.into();
     let num_boxes1 = boxes1.nrows();
     let num_boxes2 = boxes2.nrows();
-    let two = N::from(2).unwrap();
+    let two = N::one() + N::one();
     let mut diou_matrix = Array2::<f64>::zeros((num_boxes1, num_boxes2));
     let areas_boxes1 = boxes::box_areas(&boxes1);
     let areas_boxes2 = boxes::box_areas(&boxes2);

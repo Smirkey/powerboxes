@@ -2,14 +2,14 @@
 use std::cmp::Ordering;
 
 use crate::{boxes, utils};
-use ndarray::{Array1, Array2, ArrayView1, ArrayView2, Axis};
-use num_traits::real::Real;
+use ndarray::{Array1, ArrayView1, ArrayView2, Axis};
+use num_traits::{Num, ToPrimitive};
 use rstar::{RTree, RTreeNum, AABB};
 
 #[inline(always)]
 pub fn area<N>(bx: N, by: N, bxx: N, byy: N) -> N
 where
-    N: Real,
+    N: Num + PartialEq + PartialOrd + ToPrimitive,
 {
     (bxx - bx) * (byy - by)
 }
@@ -44,9 +44,9 @@ pub fn nms<'a, N, BA, S, SA>(
     score_threshold: S,
 ) -> Vec<usize>
 where
-    N: Real + 'a,
+    N: Num + PartialEq + PartialOrd + ToPrimitive + Copy + PartialEq + 'a,
     BA: Into<ArrayView2<'a, N>>,
-    S: Real + 'a,
+    S: Num + PartialEq + PartialOrd + ToPrimitive + Copy + 'a,
     SA: Into<ArrayView1<'a, S>>,
 {
     let boxes = boxes.into();
@@ -97,10 +97,10 @@ where
             let b2yy = box2[3];
 
             // Intersection-over-union
-            let x = b1x.max(b2x);
-            let y = b1y.max(b2y);
-            let xx = b1xx.min(b2xx);
-            let yy = b1yy.min(b2yy);
+            let x = utils::max(b1x, b2x);
+            let y = utils::max(b1y, b2y);
+            let xx = utils::min(b1xx, b2xx);
+            let yy = utils::min(b1yy, b2yy);
             if x > xx || y > yy {
                 // Boxes are not intersecting at all
                 continue;
@@ -145,17 +145,23 @@ where
 /// let keep = rtree_nms(&boxes, &scores, 0.8, 0.0);
 /// assert_eq!(keep, vec![0, 1]);
 /// ```
-pub fn rtree_nms<N>(
-    boxes: &Array2<N>,
-    scores: &Array1<f64>,
-    iou_threshold: f64,
-    score_threshold: f64,
+pub fn rtree_nms<'a, N, BA, S, SA>(
+    boxes: BA,
+    scores: SA,
+    iou_threshold: N,
+    score_threshold: S,
 ) -> Vec<usize>
 where
-    N: RTreeNum + Real + Send + Sync,
+    N: RTreeNum + PartialEq + PartialOrd + ToPrimitive + Copy + PartialEq + Send + Sync + 'a,
+    BA: Into<ArrayView2<'a, N>>,
+    S: Num + PartialEq + PartialOrd + ToPrimitive + Copy + 'a,
+    SA: Into<ArrayView1<'a, S>>,
 {
+    let scores = scores.into();
+    let boxes = boxes.into();
+    let iou_threshold_f64 = iou_threshold.to_f64().unwrap();
     let mut above_score_threshold: Vec<usize> = (0..scores.len()).collect();
-    if score_threshold > utils::EPS {
+    if score_threshold > S::zero() {
         // filter out boxes lower than score threshold
         above_score_threshold = scores
             .iter()
@@ -220,7 +226,7 @@ where
                 let intersection = f64::min(intersection, f64::min(area1, area2));
                 iou = intersection / (area1 + area2 - intersection + utils::EPS);
             }
-            if iou > iou_threshold {
+            if iou > iou_threshold_f64 {
                 suppress[idx_j] = true;
             }
         }

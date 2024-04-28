@@ -4,7 +4,7 @@ use crate::{
     utils,
 };
 use ndarray::{Array2, ArrayView2, Zip};
-use num_traits::real::Real;
+use num_traits::{Num, ToPrimitive};
 use rstar::RTree;
 
 /// Calculates the intersection over union (IoU) distance between two sets of bounding boxes.
@@ -31,7 +31,7 @@ use rstar::RTree;
 /// ```
 pub fn iou_distance<'a, N, BA>(boxes1: BA, boxes2: BA) -> Array2<f64>
 where
-    N: Real + 'a,
+    N: Num + PartialEq + PartialOrd + ToPrimitive + Copy + 'a,
     BA: Into<ArrayView2<'a, N>>,
 {
     let boxes1 = boxes1.into();
@@ -101,7 +101,7 @@ where
 /// ```
 pub fn parallel_iou_distance<'a, N, BA>(boxes1: BA, boxes2: BA) -> Array2<f64>
 where
-    N: Real + Send + Sync + 'a,
+    N: Num + PartialEq + PartialOrd + ToPrimitive + Send + Sync + Copy + 'a,
     BA: Into<ArrayView2<'a, N>>,
 {
     let boxes1 = boxes1.into();

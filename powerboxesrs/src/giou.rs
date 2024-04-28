@@ -1,5 +1,5 @@
 use ndarray::{Array2, ArrayView2, Zip};
-use num_traits::{real::Real, ToPrimitive};
+use num_traits::{real::Real, Num, ToPrimitive};
 use rstar::RTree;
 
 use crate::{
@@ -33,7 +33,7 @@ use crate::{
 /// ```
 pub fn giou_distance<'a, N, BA>(boxes1: BA, boxes2: BA) -> Array2<f64>
 where
-    N: Real + 'a,
+    N: Num + PartialEq + PartialOrd + ToPrimitive + Copy + 'a,
     BA: Into<ArrayView2<'a, N>>,
 {
     let boxes1 = boxes1.into();

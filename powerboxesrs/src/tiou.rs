@@ -1,5 +1,5 @@
 use ndarray::{Array2, ArrayView2};
-use num_traits::{real::Real, ToPrimitive};
+use num_traits::{Num, ToPrimitive};
 
 use crate::{
     boxes::{self, rotated_box_areas},
@@ -33,7 +33,7 @@ use crate::{
 /// ```
 pub fn tiou_distance<'a, N, BA>(boxes1: BA, boxes2: BA) -> Array2<f64>
 where
-    N: Real + 'a,
+    N: Num + PartialEq + PartialOrd + ToPrimitive + Copy + 'a,
     BA: Into<ArrayView2<'a, N>>,
 {
     let boxes1 = boxes1.into();
