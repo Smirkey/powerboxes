@@ -57,7 +57,6 @@ where
         }
     }
 
-    let array = array.into_shape((array_shape[0], array_shape[1])).unwrap();
     return Ok(array);
 }
 
@@ -84,7 +83,6 @@ where
         }
     }
 
-    let array = array.into_shape((array_shape[0], array_shape[1])).unwrap();
     return Ok(array);
 }
 
