@@ -125,7 +125,7 @@ fn _powerboxes(_py: Python, m: &PyModule) -> PyResult<()> {
 fn masks_to_boxes(_py: Python, masks: &PyArray3<bool>) -> PyResult<Py<PyArray2<usize>>> {
     let masks = preprocess_array3(masks);
     let boxes = boxes::masks_to_boxes(masks);
-    let boxes_as_numpy = utils::array_to_numpy(_py, boxes.view()).unwrap();
+    let boxes_as_numpy = utils::array_to_numpy(_py, boxes).unwrap();
     return Ok(boxes_as_numpy.to_owned());
 }
 
@@ -140,7 +140,7 @@ fn rotated_iou_distance(
     let boxes1 = preprocess_rotated_boxes(boxes1).unwrap();
     let boxes2 = preprocess_rotated_boxes(boxes2).unwrap();
     let iou = iou::rotated_iou_distance(&boxes1, &boxes2);
-    let iou_as_numpy = utils::array_to_numpy(_py, iou.view()).unwrap();
+    let iou_as_numpy = utils::array_to_numpy(_py, iou).unwrap();
     return Ok(iou_as_numpy.to_owned());
 }
 
@@ -155,7 +155,7 @@ fn rotated_giou_distance(
     let boxes1 = preprocess_rotated_boxes(boxes1).unwrap();
     let boxes2 = preprocess_rotated_boxes(boxes2).unwrap();
     let iou = giou::rotated_giou_distance(&boxes1, &boxes2);
-    let iou_as_numpy = utils::array_to_numpy(_py, iou.view()).unwrap();
+    let iou_as_numpy = utils::array_to_numpy(_py, iou).unwrap();
     return Ok(iou_as_numpy.to_owned());
 }
 
@@ -170,7 +170,7 @@ fn rotated_tiou_distance(
     let boxes1 = preprocess_rotated_boxes(boxes1).unwrap();
     let boxes2 = preprocess_rotated_boxes(boxes2).unwrap();
     let iou = tiou::rotated_tiou_distance(&boxes1, &boxes2);
-    let iou_as_numpy = utils::array_to_numpy(_py, iou.view()).unwrap();
+    let iou_as_numpy = utils::array_to_numpy(_py, iou).unwrap();
     return Ok(iou_as_numpy.to_owned());
 }
 // DIoU
@@ -185,7 +185,7 @@ where
     let boxes1 = preprocess_boxes(boxes1).unwrap();
     let boxes2 = preprocess_boxes(boxes2).unwrap();
     let iou = diou::diou_distance(&boxes1, &boxes2);
-    let iou_as_numpy = utils::array_to_numpy(_py, iou.view()).unwrap();
+    let iou_as_numpy = utils::array_to_numpy(_py, iou).unwrap();
     return Ok(iou_as_numpy.to_owned());
 }
 
@@ -218,7 +218,7 @@ where
     let boxes1 = preprocess_boxes(boxes1).unwrap();
     let boxes2 = preprocess_boxes(boxes2).unwrap();
     let iou = iou::iou_distance(boxes1, boxes2);
-    let iou_as_numpy = utils::array_to_numpy(_py, iou.view()).unwrap();
+    let iou_as_numpy = utils::array_to_numpy(_py, iou).unwrap();
     return Ok(iou_as_numpy.to_owned());
 }
 
@@ -306,7 +306,7 @@ where
     let boxes1 = preprocess_boxes(boxes1).unwrap();
     let boxes2 = preprocess_boxes(boxes2).unwrap();
     let iou = iou::parallel_iou_distance(&boxes1, &boxes2);
-    let iou_as_numpy = utils::array_to_numpy(_py, iou.view()).unwrap();
+    let iou_as_numpy = utils::array_to_numpy(_py, iou).unwrap();
     return Ok(iou_as_numpy.to_owned());
 }
 #[pyfunction]
@@ -393,7 +393,7 @@ where
     let boxes1 = preprocess_boxes(boxes1).unwrap();
     let boxes2 = preprocess_boxes(boxes2).unwrap();
     let tiou = tiou::tiou_distance(&boxes1, &boxes2);
-    let tiou_as_numpy = utils::array_to_numpy(_py, tiou.view()).unwrap();
+    let tiou_as_numpy = utils::array_to_numpy(_py, tiou).unwrap();
     return Ok(tiou_as_numpy.to_owned());
 }
 
@@ -481,7 +481,7 @@ where
     let boxes1 = preprocess_boxes(boxes1).unwrap();
     let boxes2 = preprocess_boxes(boxes2).unwrap();
     let iou = giou::giou_distance(&boxes1, &boxes2);
-    let iou_as_numpy = utils::array_to_numpy(_py, iou.view()).unwrap();
+    let iou_as_numpy = utils::array_to_numpy(_py, iou).unwrap();
     return Ok(iou_as_numpy.to_owned());
 }
 #[pyfunction]
@@ -568,7 +568,7 @@ where
     let boxes1 = preprocess_boxes(boxes1).unwrap();
     let boxes2 = preprocess_boxes(boxes2).unwrap();
     let iou = giou::giou_distance(&boxes1, &boxes2);
-    let iou_as_numpy = utils::array_to_numpy(_py, iou.view()).unwrap();
+    let iou_as_numpy = utils::array_to_numpy(_py, iou).unwrap();
     return Ok(iou_as_numpy.to_owned());
 }
 #[pyfunction]
@@ -654,7 +654,7 @@ where
 {
     let boxes = preprocess_boxes(boxes).unwrap();
     let filtered_boxes = boxes::remove_small_boxes(&boxes, min_size);
-    let filtered_boxes_as_numpy = utils::array_to_numpy(_py, filtered_boxes.view()).unwrap();
+    let filtered_boxes_as_numpy = utils::array_to_numpy(_py, filtered_boxes).unwrap();
     return Ok(filtered_boxes_as_numpy.to_owned());
 }
 #[pyfunction]
@@ -736,7 +736,7 @@ where
 {
     let boxes = preprocess_boxes(boxes).unwrap();
     let areas = boxes::box_areas(&boxes);
-    let areas_as_numpy = utils::array_to_numpy(_py, areas.view()).unwrap();
+    let areas_as_numpy = utils::array_to_numpy(_py, areas).unwrap();
     return Ok(areas_as_numpy.to_owned());
 }
 
@@ -808,7 +808,7 @@ where
         }
     };
     let converted_boxes = boxes::box_convert(&boxes, in_fmt, out_fmt);
-    let converted_boxes_as_numpy = utils::array_to_numpy(_py, converted_boxes.view()).unwrap();
+    let converted_boxes_as_numpy = utils::array_to_numpy(_py, converted_boxes).unwrap();
     return Ok(converted_boxes_as_numpy.to_owned());
 }
 
@@ -909,7 +909,7 @@ where
     let scores = preprocess_array1(scores);
     let keep = nms::nms(&boxes, &scores, iou_threshold, score_threshold);
     let keep_as_ndarray = Array1::from(keep);
-    let keep_as_numpy = utils::array_to_numpy(_py, keep_as_ndarray.view()).unwrap();
+    let keep_as_numpy = utils::array_to_numpy(_py, keep_as_ndarray).unwrap();
     return Ok(keep_as_numpy.to_owned());
 }
 #[pyfunction]
@@ -1082,7 +1082,7 @@ where
     let scores = preprocess_array1(scores);
     let keep = nms::rtree_nms(&boxes, &scores, iou_threshold, score_threshold);
     let keep_as_ndarray = Array1::from(keep);
-    let keep_as_numpy = utils::array_to_numpy(_py, keep_as_ndarray.view()).unwrap();
+    let keep_as_numpy = utils::array_to_numpy(_py, keep_as_ndarray).unwrap();
     return Ok(keep_as_numpy.to_owned());
 }
 #[pyfunction]

@@ -1,4 +1,4 @@
-use ndarray::{ArrayBase, Dim, ViewRepr};
+use ndarray::{ArrayBase, Dim, OwnedRepr, ViewRepr};
 use num_traits::Num;
 use numpy::{PyArray, PyArray1, PyArray2, PyArray3, ToPyArray};
 use pyo3::prelude::*;
@@ -23,13 +23,13 @@ use pyo3::prelude::*;
 /// ```
 pub fn array_to_numpy<'a, T, D>(
     py: Python<'a>,
-    array: ArrayBase<ViewRepr<&T>, D>,
+    array: ArrayBase<OwnedRepr<T>, D>,
 ) -> PyResult<&'a PyArray<T, D>>
 where
     T: numpy::Element + 'a,
     D: ndarray::Dimension,
 {
-    let numpy_array = array.to_owned().to_pyarray(py);
+    let numpy_array = array.to_pyarray(py);
 
     return Ok(numpy_array);
 }
@@ -112,7 +112,7 @@ mod tests {
     fn test_array_to_numpy() {
         let array = Array1::from(vec![1., 2., 3., 4.]);
         Python::with_gil(|py| {
-            let result = array_to_numpy(py, array.view()).unwrap();
+            let result = array_to_numpy(py, array).unwrap();
             assert_eq!(result.readonly().shape(), &[4]);
         });
     }
