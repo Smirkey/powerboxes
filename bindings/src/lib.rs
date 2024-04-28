@@ -895,16 +895,15 @@ fn box_convert_u8(
 }
 
 // nms
-fn nms_generic<S, T>(
+fn nms_generic<T>(
     _py: Python,
     boxes: &PyArray2<T>,
-    scores: &PyArray1<S>,
-    iou_threshold: T,
-    score_threshold: S,
+    scores: &PyArray1<f64>,
+    iou_threshold: f64,
+    score_threshold: f64,
 ) -> PyResult<Py<PyArray1<usize>>>
 where
     T: numpy::Element + Num + PartialEq + PartialOrd + ToPrimitive + Copy,
-    S: numpy::Element + Num + PartialEq + PartialOrd + ToPrimitive + Copy,
 {
     let boxes = preprocess_boxes(boxes).unwrap();
     let scores = preprocess_array1(scores);
@@ -934,7 +933,7 @@ fn nms_f32(
     _py: Python,
     boxes: &PyArray2<f32>,
     scores: &PyArray1<f64>,
-    iou_threshold: f32,
+    iou_threshold: f64,
     score_threshold: f64,
 ) -> PyResult<Py<PyArray1<usize>>> {
     return Ok(nms_generic(
@@ -950,7 +949,7 @@ fn nms_i64(
     _py: Python,
     boxes: &PyArray2<i64>,
     scores: &PyArray1<f64>,
-    iou_threshold: i64,
+    iou_threshold: f64,
     score_threshold: f64,
 ) -> PyResult<Py<PyArray1<usize>>> {
     return Ok(nms_generic(
@@ -966,7 +965,7 @@ fn nms_i32(
     _py: Python,
     boxes: &PyArray2<i32>,
     scores: &PyArray1<f64>,
-    iou_threshold: i32,
+    iou_threshold: f64,
     score_threshold: f64,
 ) -> PyResult<Py<PyArray1<usize>>> {
     return Ok(nms_generic(
@@ -982,7 +981,7 @@ fn nms_i16(
     _py: Python,
     boxes: &PyArray2<i16>,
     scores: &PyArray1<f64>,
-    iou_threshold: i16,
+    iou_threshold: f64,
     score_threshold: f64,
 ) -> PyResult<Py<PyArray1<usize>>> {
     return Ok(nms_generic(
@@ -998,7 +997,7 @@ fn nms_u64(
     _py: Python,
     boxes: &PyArray2<u64>,
     scores: &PyArray1<f64>,
-    iou_threshold: u64,
+    iou_threshold: f64,
     score_threshold: f64,
 ) -> PyResult<Py<PyArray1<usize>>> {
     return Ok(nms_generic(
@@ -1014,7 +1013,7 @@ fn nms_u32(
     _py: Python,
     boxes: &PyArray2<u32>,
     scores: &PyArray1<f64>,
-    iou_threshold: u32,
+    iou_threshold: f64,
     score_threshold: f64,
 ) -> PyResult<Py<PyArray1<usize>>> {
     return Ok(nms_generic(
@@ -1030,7 +1029,7 @@ fn nms_u16(
     _py: Python,
     boxes: &PyArray2<u16>,
     scores: &PyArray1<f64>,
-    iou_threshold: u16,
+    iou_threshold: f64,
     score_threshold: f64,
 ) -> PyResult<Py<PyArray1<usize>>> {
     return Ok(nms_generic(
@@ -1046,7 +1045,7 @@ fn nms_u8(
     _py: Python,
     boxes: &PyArray2<u8>,
     scores: &PyArray1<f64>,
-    iou_threshold: u8,
+    iou_threshold: f64,
     score_threshold: f64,
 ) -> PyResult<Py<PyArray1<usize>>> {
     return Ok(nms_generic(
@@ -1059,12 +1058,12 @@ fn nms_u8(
 }
 
 // rtree nms
-fn rtree_nms_generic<S, T>(
+fn rtree_nms_generic<T>(
     _py: Python,
     boxes: &PyArray2<T>,
-    scores: &PyArray1<S>,
-    iou_threshold: T,
-    score_threshold: S,
+    scores: &PyArray1<f64>,
+    iou_threshold: f64,
+    score_threshold: f64,
 ) -> PyResult<Py<PyArray1<usize>>>
 where
     T: numpy::Element
@@ -1078,7 +1077,6 @@ where
         + Copy
         + Sync
         + Send,
-    S: numpy::Element + Num + PartialEq + PartialOrd + ToPrimitive + Copy + Sync + Send,
 {
     let boxes = preprocess_boxes(boxes).unwrap();
     let scores = preprocess_array1(scores);
@@ -1108,7 +1106,7 @@ fn rtree_nms_f32(
     _py: Python,
     boxes: &PyArray2<f32>,
     scores: &PyArray1<f64>,
-    iou_threshold: f32,
+    iou_threshold: f64,
     score_threshold: f64,
 ) -> PyResult<Py<PyArray1<usize>>> {
     return Ok(rtree_nms_generic(
@@ -1124,7 +1122,7 @@ fn rtree_nms_i64(
     _py: Python,
     boxes: &PyArray2<i64>,
     scores: &PyArray1<f64>,
-    iou_threshold: i64,
+    iou_threshold: f64,
     score_threshold: f64,
 ) -> PyResult<Py<PyArray1<usize>>> {
     return Ok(rtree_nms_generic(
@@ -1140,7 +1138,7 @@ fn rtree_nms_i32(
     _py: Python,
     boxes: &PyArray2<i32>,
     scores: &PyArray1<f64>,
-    iou_threshold: i32,
+    iou_threshold: f64,
     score_threshold: f64,
 ) -> PyResult<Py<PyArray1<usize>>> {
     return Ok(rtree_nms_generic(
@@ -1156,7 +1154,7 @@ fn rtree_nms_i16(
     _py: Python,
     boxes: &PyArray2<i16>,
     scores: &PyArray1<f64>,
-    iou_threshold: i16,
+    iou_threshold: f64,
     score_threshold: f64,
 ) -> PyResult<Py<PyArray1<usize>>> {
     return Ok(rtree_nms_generic(

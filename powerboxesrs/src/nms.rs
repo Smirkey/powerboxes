@@ -37,24 +37,23 @@ where
 /// let keep = nms(&boxes, &scores, 0.8, 0.0);
 /// assert_eq!(keep, vec![0, 1]);
 /// ```
-pub fn nms<'a, N, BA, S, SA>(
+pub fn nms<'a, N, BA, SA>(
     boxes: BA,
     scores: SA,
-    iou_threshold: N,
-    score_threshold: S,
+    iou_threshold: f64,
+    score_threshold: f64,
 ) -> Vec<usize>
 where
     N: Num + PartialEq + PartialOrd + ToPrimitive + Copy + PartialEq + 'a,
     BA: Into<ArrayView2<'a, N>>,
-    S: Num + PartialEq + PartialOrd + ToPrimitive + Copy + 'a,
-    SA: Into<ArrayView1<'a, S>>,
+    SA: Into<ArrayView1<'a, f64>>,
 {
     let boxes = boxes.into();
     let scores = scores.into();
     assert_eq!(boxes.nrows(), scores.len_of(Axis(0)));
 
     let order: Vec<usize> = {
-        let mut indices: Vec<_> = if score_threshold > S::zero() {
+        let mut indices: Vec<_> = if score_threshold > utils::ZERO {
             // filter out boxes lower than score threshold
             scores
                 .iter()
@@ -106,10 +105,10 @@ where
                 continue;
             };
             // Boxes are intersecting
-            let intersection = area(x, y, xx, yy);
-            let area2 = area(b2x, b2y, b2xx, b2yy);
-            let union = area1 + area2 - intersection;
-            let iou = intersection / union;
+            let intersection: N = area(x, y, xx, yy);
+            let area2: N = area(b2x, b2y, b2xx, b2yy);
+            let union: N = area1 + area2 - intersection;
+            let iou: f64 = intersection.to_f64().unwrap() / (union.to_f64().unwrap() + utils::EPS);
             if iou > iou_threshold {
                 suppress[j] = true;
             }
@@ -145,23 +144,22 @@ where
 /// let keep = rtree_nms(&boxes, &scores, 0.8, 0.0);
 /// assert_eq!(keep, vec![0, 1]);
 /// ```
-pub fn rtree_nms<'a, N, BA, S, SA>(
+pub fn rtree_nms<'a, N, BA, SA>(
     boxes: BA,
     scores: SA,
-    iou_threshold: N,
-    score_threshold: S,
+    iou_threshold: f64,
+    score_threshold: f64,
 ) -> Vec<usize>
 where
     N: RTreeNum + PartialEq + PartialOrd + ToPrimitive + Copy + PartialEq + Send + Sync + 'a,
     BA: Into<ArrayView2<'a, N>>,
-    S: Num + PartialEq + PartialOrd + ToPrimitive + Copy + 'a,
-    SA: Into<ArrayView1<'a, S>>,
+    SA: Into<ArrayView1<'a, f64>>,
 {
     let scores = scores.into();
     let boxes = boxes.into();
     let iou_threshold_f64 = iou_threshold.to_f64().unwrap();
     let mut above_score_threshold: Vec<usize> = (0..scores.len()).collect();
-    if score_threshold > S::zero() {
+    if score_threshold > utils::ZERO {
         // filter out boxes lower than score threshold
         above_score_threshold = scores
             .iter()
