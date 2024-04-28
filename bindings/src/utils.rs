@@ -115,8 +115,7 @@ mod tests {
         let array = Array1::from(vec![1., 2., 3., 4.]);
         Python::with_gil(|py| {
             let result = array_to_numpy(py, array.view()).unwrap();
-            assert_eq!(result.readonly().shape(), &[1, 4]);
-            assert_eq!(result.readonly().shape(), &[1, 4]);
+            assert_eq!(result.readonly().shape(), &[4]);
         });
     }
 
