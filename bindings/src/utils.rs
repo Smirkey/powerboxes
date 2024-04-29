@@ -21,12 +21,12 @@ use pyo3::prelude::*;
 /// let array_2d: Array2<f64> = Array2::ones((3, 3));
 /// let numpy_array_2d = array2_to_numpy(py, array_2d).unwrap();
 /// ```
-pub fn array_to_numpy<'a, T, D>(
-    py: Python<'a>,
+pub fn array_to_numpy<T, D>(
+    py: Python,
     array: ArrayBase<OwnedRepr<T>, D>,
-) -> PyResult<&'a PyArray<T, D>>
+) -> PyResult<&PyArray<T, D>>
 where
-    T: numpy::Element + 'a,
+    T: numpy::Element,
     D: ndarray::Dimension,
 {
     let numpy_array = array.to_pyarray(py);
