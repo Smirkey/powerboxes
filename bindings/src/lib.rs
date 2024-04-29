@@ -217,7 +217,7 @@ where
 {
     let boxes1 = preprocess_boxes(boxes1).unwrap();
     let boxes2 = preprocess_boxes(boxes2).unwrap();
-    let iou = iou::iou_distance(boxes1, boxes2);
+    let iou = iou::iou_distance(boxes1.to_owned(), boxes2.to_owned());
     let iou_as_numpy = utils::array_to_numpy(_py, iou).unwrap();
     return Ok(iou_as_numpy.to_owned());
 }
@@ -1165,3 +1165,4 @@ fn rtree_nms_i16(
         score_threshold,
     )?);
 }
+)
