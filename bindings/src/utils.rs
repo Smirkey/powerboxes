@@ -1,44 +1,19 @@
-use ndarray::{ArrayBase, Dim, OwnedRepr, ViewRepr};
+use ndarray::{Array1, Array2, Array3, ArrayBase, OwnedRepr};
 use num_traits::Num;
 use numpy::{IntoPyArray, PyArray, PyArray1, PyArray2, PyArray3};
 use pyo3::prelude::*;
 
-/// Converts a 2-dimensional Rust ndarray to a NumPy array.
-///
-/// # Arguments
-///
-/// * `py` - The Python interpreter context.
-/// * `array` - The 2-dimensional Rust ndarray to convert.
-///
-/// # Returns
-///
-/// A reference to the converted NumPy array.
-///
-/// # Example
-///
-/// ```rust
-/// let py = Python::acquire_gil().python();
-/// let array_2d: Array2<f64> = Array2::ones((3, 3));
-/// let numpy_array_2d = array2_to_numpy(py, array_2d).unwrap();
-/// ```
-pub fn array_to_numpy<T, D>(
+pub fn array_to_numpy<T: numpy::Element, D: ndarray::Dimension>(
     py: Python,
     array: ArrayBase<OwnedRepr<T>, D>,
-) -> PyResult<&PyArray<T, D>>
-where
-    T: numpy::Element,
-    D: ndarray::Dimension,
-{
-    let numpy_array = array.into_pyarray(py);
-
+) -> PyResult<&PyArray<T, D>> {
+    let numpy_array: &PyArray<T, D> = array.into_pyarray(py);
     return Ok(numpy_array);
 }
 
-pub fn preprocess_boxes<N>(
-    array: &PyArray2<N>,
-) -> Result<ArrayBase<ViewRepr<&N>, Dim<[usize; 2]>>, PyErr>
+pub fn preprocess_boxes<N>(array: &PyArray2<N>) -> Result<Array2<N>, PyErr>
 where
-    N: numpy::Element,
+    N: Num + numpy::Element + Send,
 {
     let array = unsafe { array.as_array() };
     let array_shape = array.shape();
@@ -57,14 +32,16 @@ where
         }
     }
 
+    let array = array
+        .to_owned()
+        .into_shape((array_shape[0], array_shape[1]))
+        .unwrap();
     return Ok(array);
 }
 
-pub fn preprocess_rotated_boxes<'a, N>(
-    array: &PyArray2<N>,
-) -> Result<ArrayBase<ViewRepr<&N>, Dim<[usize; 2]>>, PyErr>
+pub fn preprocess_rotated_boxes<N>(array: &PyArray2<N>) -> Result<Array2<N>, PyErr>
 where
-    N: Num + numpy::Element + Send + 'a,
+    N: Num + numpy::Element + Send,
 {
     let array = unsafe { array.as_array() };
     let array_shape = array.shape();
@@ -83,37 +60,42 @@ where
         }
     }
 
+    let array = array
+        .to_owned()
+        .into_shape((array_shape[0], array_shape[1]))
+        .unwrap();
     return Ok(array);
 }
 
-pub fn preprocess_array3<'a, N>(array: &PyArray3<N>) -> ArrayBase<ViewRepr<&N>, Dim<[usize; 3]>>
+pub fn preprocess_array3<N>(array: &PyArray3<N>) -> Array3<N>
 where
-    N: numpy::Element + 'a,
+    N: numpy::Element,
 {
-    let array = unsafe { array.as_array() };
+    let array = unsafe { array.as_array().to_owned() };
     return array;
 }
 
-pub fn preprocess_array1<'a, N>(array: &PyArray1<N>) -> ArrayBase<ViewRepr<&N>, Dim<[usize; 1]>>
+pub fn preprocess_array1<N>(array: &PyArray1<N>) -> Array1<N>
 where
-    N: numpy::Element + 'a,
+    N: numpy::Element,
 {
-    let array: ArrayBase<ViewRepr<&N>, ndarray::prelude::Dim<[usize; 1]>> =
-        unsafe { array.as_array() };
+    let array = unsafe { array.as_array().to_owned() };
     return array;
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use ndarray::Array1;
+    use ndarray::ArrayBase;
 
     #[test]
     fn test_array_to_numpy() {
-        let array = Array1::from(vec![1., 2., 3., 4.]);
+        let data = vec![1., 2., 3., 4.];
+        let array = ArrayBase::from_shape_vec((1, 4), data).unwrap();
         Python::with_gil(|py| {
             let result = array_to_numpy(py, array).unwrap();
-            assert_eq!(result.readonly().shape(), &[4]);
+            assert_eq!(result.readonly().shape(), &[1, 4]);
+            assert_eq!(result.readonly().shape(), &[1, 4]);
         });
     }
 
