@@ -1,6 +1,6 @@
 use ndarray::{ArrayBase, Dim, OwnedRepr, ViewRepr};
 use num_traits::Num;
-use numpy::{IntoPyArray, PyArray, PyArray1, PyArray2, PyArray3, ToPyArray};
+use numpy::{IntoPyArray, PyArray, PyArray1, PyArray2, PyArray3};
 use pyo3::prelude::*;
 
 /// Converts a 2-dimensional Rust ndarray to a NumPy array.

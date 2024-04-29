@@ -1,7 +1,7 @@
 // Largely inspired by lsnms: https://github.com/remydubois/lsnms
 use std::cmp::Ordering;
 
-use crate::{boxes, utils};
+use crate::utils;
 use ndarray::{Array1, ArrayView1, ArrayView2, Axis};
 use num_traits::{Num, ToPrimitive};
 use rstar::{RTree, RTreeNum, AABB};
@@ -168,8 +168,6 @@ where
             .map(|(idx, _)| idx)
             .collect();
     }
-    // Compute areas once
-    let areas = boxes::box_areas(boxes);
     // sort box indices by scores
     above_score_threshold
         .sort_unstable_by(|&a, &b| scores[b].partial_cmp(&scores[a]).unwrap_or(Ordering::Equal));
@@ -199,31 +197,39 @@ where
             continue;
         }
         keep.push(idx);
-        let area1 = areas[i];
         let box1 = boxes.row(idx);
-
-        for bbox in rtree.locate_in_envelope_intersecting(&AABB::from_corners(
-            [box1[0], box1[1]],
-            [box1[2], box1[3]],
-        )) {
+        let b1x = box1[0];
+        let b1y = box1[1];
+        let b1xx = box1[2];
+        let b1yy = box1[3];
+        let area1 = area(b1x, b1y, b1xx, b1yy);
+        for bbox in
+            rtree.locate_in_envelope_intersecting(&AABB::from_corners([b1x, b1y], [b1xx, b1yy]))
+        {
             let idx_j = bbox.index;
             if suppress[idx_j] {
                 continue;
             }
-            let area2 = areas[idx_j];
             let box2 = boxes.row(idx_j);
+            let b2x = box2[0];
+            let b2y = box2[1];
+            let b2xx = box2[2];
+            let b2yy = box2[3];
 
-            let mut iou = 0.0;
-            let x1 = utils::max(box1[0], box2[0]);
-            let x2 = utils::min(box1[2], box2[2]);
-            let y1 = utils::max(box1[1], box2[1]);
-            let y2 = utils::min(box1[3], box2[3]);
-            if y2 > y1 && x2 > x1 {
-                let intersection = (x2 - x1) * (y2 - y1);
-                let intersection = intersection.to_f64().unwrap();
-                let intersection = f64::min(intersection, f64::min(area1, area2));
-                iou = intersection / (area1 + area2 - intersection + utils::EPS);
-            }
+            // Intersection-over-union
+            let x = utils::max(b1x, b2x);
+            let y = utils::max(b1y, b2y);
+            let xx = utils::min(b1xx, b2xx);
+            let yy = utils::min(b1yy, b2yy);
+            if x > xx || y > yy {
+                // Boxes are not intersecting at all
+                continue;
+            };
+            // Boxes are intersecting
+            let intersection: N = area(x, y, xx, yy);
+            let area2: N = area(b2x, b2y, b2xx, b2yy);
+            let union: N = area1 + area2 - intersection;
+            let iou: f64 = intersection.to_f64().unwrap() / (union.to_f64().unwrap() + utils::EPS);
             if iou > iou_threshold_f64 {
                 suppress[idx_j] = true;
             }

@@ -3,7 +3,7 @@ use crate::{
     rotation::{intersection_area, minimal_bounding_rect, Rect},
     utils,
 };
-use ndarray::{Array2, ArrayView2, CowArray, Dim, Zip};
+use ndarray::{Array2, ArrayView2, Zip};
 use num_traits::{Num, ToPrimitive};
 use rstar::RTree;
 
@@ -32,7 +32,7 @@ use rstar::RTree;
 pub fn iou_distance<'a, N, BA>(boxes1: BA, boxes2: BA) -> Array2<f64>
 where
     N: Num + PartialEq + PartialOrd + ToPrimitive + Copy + 'a,
-    BA: Into<CowArray<'a, N, Dim<[usize; 2]>>>,
+    BA: Into<ArrayView2<'a, N>>,
 {
     let boxes1 = boxes1.into();
     let boxes2 = boxes2.into();
