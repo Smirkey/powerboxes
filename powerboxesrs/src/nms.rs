@@ -234,7 +234,7 @@ where
             let area2: N = area(b2x, b2y, b2xx, b2yy);
             let union: N = area1 + area2 - intersection;
             let iou: f64 = intersection.to_f64().unwrap() / union.to_f64().unwrap();
-            if iou > iou_threshold_f64 {
+            if iou > iou_threshold {
                 suppress[idx_j] = true;
             }
         }
