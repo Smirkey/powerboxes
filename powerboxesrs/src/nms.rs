@@ -157,25 +157,29 @@ where
 {
     let scores = scores.into();
     let boxes = boxes.into();
-    let iou_threshold_f64 = iou_threshold.to_f64().unwrap();
-    let mut above_score_threshold: Vec<usize> = (0..scores.len()).collect();
-    if score_threshold > utils::ZERO {
-        // filter out boxes lower than score threshold
-        above_score_threshold = scores
-            .iter()
-            .enumerate()
-            .filter(|(_, &score)| score >= score_threshold)
-            .map(|(idx, _)| idx)
-            .collect();
-    }
-    // sort box indices by scores
-    above_score_threshold
-        .sort_unstable_by(|&a, &b| scores[b].partial_cmp(&scores[a]).unwrap_or(Ordering::Equal));
-    let order = Array1::from(above_score_threshold);
+    let order: Vec<usize> = {
+        let mut indices: Vec<_> = if score_threshold > utils::ZERO {
+            // filter out boxes lower than score threshold
+            scores
+                .iter()
+                .enumerate()
+                .filter(|(_, &score)| score >= score_threshold)
+                .map(|(idx, _)| idx)
+                .collect()
+        } else {
+            (0..scores.len()).collect()
+        };
+        // sort box indices by scores
+        indices.sort_unstable_by(|&a, &b| {
+            scores[b].partial_cmp(&scores[a]).unwrap_or(Ordering::Equal)
+        });
+        indices
+    };
+
     let mut keep: Vec<usize> = Vec::new();
     let mut suppress = Array1::from_elem(scores.len(), false);
-    // build rtree
 
+    // build rtree
     let rtree: RTree<utils::Bbox<N>> = RTree::bulk_load(
         order
             .iter()
