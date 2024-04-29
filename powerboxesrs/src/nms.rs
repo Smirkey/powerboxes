@@ -108,7 +108,7 @@ where
             let intersection: N = area(x, y, xx, yy);
             let area2: N = area(b2x, b2y, b2xx, b2yy);
             let union: N = area1 + area2 - intersection;
-            let iou: f64 = intersection.to_f64().unwrap() / (union.to_f64().unwrap() + utils::EPS);
+            let iou: f64 = intersection.to_f64().unwrap() / union.to_f64().unwrap();
             if iou > iou_threshold {
                 suppress[j] = true;
             }
@@ -229,7 +229,7 @@ where
             let intersection: N = area(x, y, xx, yy);
             let area2: N = area(b2x, b2y, b2xx, b2yy);
             let union: N = area1 + area2 - intersection;
-            let iou: f64 = intersection.to_f64().unwrap() / (union.to_f64().unwrap() + utils::EPS);
+            let iou: f64 = intersection.to_f64().unwrap() / union.to_f64().unwrap();
             if iou > iou_threshold_f64 {
                 suppress[idx_j] = true;
             }
