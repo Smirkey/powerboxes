@@ -66,8 +66,7 @@ where
             let intersection = (x2 - x1) * (y2 - y1);
             let intersection = intersection.to_f64().unwrap();
             let intersection = utils::min(intersection, utils::min(area1, area2));
-            iou_matrix[[i, j]] =
-                utils::ONE - (intersection / (area1 + area2 - intersection + utils::EPS));
+            iou_matrix[[i, j]] = utils::ONE - (intersection / (area1 + area2 - intersection));
         }
     }
 
@@ -137,7 +136,7 @@ where
                     let intersection = (x2 - x1) * (y2 - y1);
                     let intersection = intersection.to_f64().unwrap();
                     let intersection = utils::min(intersection, utils::min(area1, area2));
-                    *d = 1. - (intersection / (area1 + area2 - intersection + utils::EPS));
+                    *d = 1. - (intersection / (area1 + area2 - intersection));
                 }
             });
     });
@@ -217,7 +216,7 @@ where
         let area1 = areas1[box1.index];
         let area2 = areas2[box2.index];
         let intersection = intersection_area(&boxes1_rects[box1.index], &boxes2_rects[box2.index]);
-        let union = area1 + area2 - intersection + utils::EPS;
+        let union = area1 + area2 - intersection;
         iou_matrix[[box1.index, box2.index]] = utils::ONE - intersection / union;
     }
 

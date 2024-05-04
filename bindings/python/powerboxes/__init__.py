@@ -136,7 +136,7 @@ def parallel_iou_distance(
         raise TypeError(_BOXES_NOT_NP_ARRAY)
     if boxes1.dtype == boxes2.dtype:
         try:
-            return _dtype_to_func_parallel_iou_distance[boxes1.dtype](boxes1, boxes2)
+            return _dtype_to_func_parallel_iou_distance[boxes1.dtype](boxes1, boxes2) # type: ignore
         except KeyError:
             raise TypeError(
                 f"Box dtype: {boxes1.dtype} not in supported dtypes {supported_dtypes}"
@@ -167,7 +167,7 @@ def parallel_giou_distance(
         raise TypeError(_BOXES_NOT_NP_ARRAY)
     if boxes1.dtype == boxes2.dtype:
         try:
-            return _dtype_to_func_parallel_giou_distance[boxes1.dtype](boxes1, boxes2)
+            return _dtype_to_func_parallel_giou_distance[boxes1.dtype](boxes1, boxes2) # type: ignore
         except KeyError:
             raise TypeError(
                 f"Box dtype: {boxes1.dtype} not in supported dtypes {supported_dtypes}"
@@ -198,7 +198,7 @@ def giou_distance(
         raise TypeError(_BOXES_NOT_NP_ARRAY)
     if boxes1.dtype == boxes2.dtype:
         try:
-            return _dtype_to_func_giou_distance[boxes1.dtype](boxes1, boxes2)
+            return _dtype_to_func_giou_distance[boxes1.dtype](boxes1, boxes2) # type: ignore
         except KeyError:
             raise TypeError(
                 f"Box dtype: {boxes1.dtype} not in supported dtypes {supported_dtypes}"
@@ -229,7 +229,7 @@ def tiou_distance(
         raise TypeError(_BOXES_NOT_NP_ARRAY)
     if boxes1.dtype == boxes2.dtype:
         try:
-            return _dtype_to_func_tiou_distance[boxes1.dtype](boxes1, boxes2)
+            return _dtype_to_func_tiou_distance[boxes1.dtype](boxes1, boxes2) # type: ignore
         except KeyError:
             raise TypeError(
                 f"Box dtype: {boxes1.dtype} not in supported dtypes {supported_dtypes}"
@@ -346,7 +346,7 @@ def remove_small_boxes(boxes: npt.NDArray[T], min_size: float) -> npt.NDArray[T]
     if not isinstance(boxes, np.ndarray):
         raise TypeError(_BOXES_NOT_NP_ARRAY)
     try:
-        return _dtype_to_func_remove_small_boxes[boxes.dtype](boxes, min_size)
+        return _dtype_to_func_remove_small_boxes[boxes.dtype](boxes, min_size) # type: ignore
     except KeyError:
         raise TypeError(
             f"Box dtype: {boxes.dtype} not in supported dtypes {supported_dtypes}"
@@ -365,7 +365,7 @@ def boxes_areas(boxes: npt.NDArray[T]) -> npt.NDArray[np.float64]:
     if not isinstance(boxes, np.ndarray):
         raise TypeError(_BOXES_NOT_NP_ARRAY)
     try:
-        return _dtype_to_func_box_areas[boxes.dtype](boxes)
+        return _dtype_to_func_box_areas[boxes.dtype](boxes) # type: ignore
     except KeyError:
         raise TypeError(
             f"Box dtype: {boxes.dtype} not in supported dtypes {supported_dtypes}"
@@ -391,7 +391,7 @@ def box_convert(boxes: npt.NDArray[T], in_fmt: str, out_fmt: str) -> npt.NDArray
     if not isinstance(boxes, np.ndarray):
         raise TypeError(_BOXES_NOT_NP_ARRAY)
     try:
-        return _dtype_to_func_box_convert[boxes.dtype](boxes, in_fmt, out_fmt)
+        return _dtype_to_func_box_convert[boxes.dtype](boxes, in_fmt, out_fmt) # type: ignore
     except KeyError:
         raise TypeError(
             f"Box dtype: {boxes.dtype} not in supported dtypes {supported_dtypes}"
@@ -438,7 +438,7 @@ def nms(
     if not isinstance(boxes, np.ndarray) or not isinstance(scores, np.ndarray):
         raise TypeError("Boxes and scores must be numpy arrays")
     try:
-        return _dtype_to_func_nms[boxes.dtype](
+        return _dtype_to_func_nms[boxes.dtype]( # type: ignore
             boxes, scores, iou_threshold, score_threshold
         )
     except KeyError:
@@ -473,7 +473,7 @@ def rtree_nms(
     if not isinstance(boxes, np.ndarray) or not isinstance(scores, np.ndarray):
         raise TypeError("Boxes and scores must be numpy arrays")
     try:
-        return _dtype_to_func_rtree_nms[boxes.dtype](
+        return _dtype_to_func_rtree_nms[boxes.dtype]( # type: ignore
             boxes, scores, iou_threshold, score_threshold
         )
     except KeyError:

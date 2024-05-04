@@ -1,7 +1,8 @@
-from powerboxes import masks_to_boxes
-import numpy as np
 import os
+
+import numpy as np
 from PIL import Image
+from powerboxes import masks_to_boxes
 
 
 def test_masks_box():

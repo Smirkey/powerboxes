@@ -52,7 +52,7 @@ where
             let intersection = (x2 - x1) * (y2 - y1);
             let intersection = intersection.to_f64().unwrap();
             let intersection = utils::min(intersection, utils::min(area1, area2));
-            let iou = intersection / (area1 + area2 - intersection + utils::EPS);
+            let iou = intersection / (area1 + area2 - intersection);
 
             let center_box1 = [(a1_x1 + a1_x2) / two, (a1_y1 + a1_y2) / two];
             let center_box2 = [(a2_x1 + a2_x2) / two, (a2_y1 + a2_y2) / two];
