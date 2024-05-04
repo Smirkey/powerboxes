@@ -1,7 +1,6 @@
 use num_traits::{Num, ToPrimitive};
 use rstar::{RStarInsertionStrategy, RTreeNum, RTreeObject, RTreeParams, AABB};
 
-pub const EPS: f64 = 1e-16;
 pub const ONE: f64 = 1.0;
 pub const ZERO: f64 = 0.0;
 

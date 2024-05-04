@@ -69,7 +69,7 @@ where
                 let intersection = (x2 - x1) * (y2 - y1);
                 let intersection = intersection.to_f64().unwrap();
                 let intersection = utils::min(intersection, utils::min(area1, area2));
-                let union = area1 + area2 - intersection + utils::EPS;
+                let union = area1 + area2 - intersection;
                 (intersection / union, union)
             };
             // Calculate the enclosing box (C) coordinates
@@ -152,7 +152,7 @@ where
                     let intersection = (x2 - x1) * (y2 - y1);
                     let intersection = intersection.to_f64().unwrap();
                     let intersection = utils::min(intersection, utils::min(area1, area2));
-                    let union = area1 + area2 - intersection + utils::EPS;
+                    let union = area1 + area2 - intersection;
                     (intersection / union, union)
                 };
                 // Calculate the enclosing box (C) coordinates
@@ -254,7 +254,7 @@ where
         let rect1 = boxes1_rects[box1.index];
         let rect2 = boxes2_rects[box2.index];
         let intersection = intersection_area(&rect1, &rect2);
-        let union = area1 + area2 - intersection + utils::EPS;
+        let union = area1 + area2 - intersection;
         // Calculate the enclosing box (C) coordinates
         let c_x1 = utils::min(box1.x1, box2.x1);
         let c_y1 = utils::min(box1.y1, box2.y1);

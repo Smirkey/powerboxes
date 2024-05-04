@@ -32,7 +32,7 @@ pub enum BoxFormat {
 /// ```
 pub fn box_areas<'a, N, BA>(boxes: BA) -> Array1<f64>
 where
-    N: Num + PartialEq + PartialOrd + ToPrimitive + Copy + 'a,
+    N: Num + PartialEq + ToPrimitive + Copy + 'a,
     BA: Into<ArrayView2<'a, N>>,
 {
     let boxes = boxes.into();
