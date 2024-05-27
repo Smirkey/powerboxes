@@ -1,4 +1,4 @@
-use ndarray::Array2;
+use ndarray::{Array2, ArrayView2};
 use num_traits::{Num, ToPrimitive};
 
 use crate::{
@@ -31,16 +31,19 @@ use crate::{
 /// assert_eq!(tiou.shape(), &[2, 3]);
 /// assert_eq!(tiou, array![[0., 0.84, 0.8888888888888888], [0.8888888888888888, 0.5555555555555556, 0.]]);
 /// ```
-pub fn tiou_distance<N>(boxes1: &Array2<N>, boxes2: &Array2<N>) -> Array2<f64>
+pub fn tiou_distance<'a, N, BA>(boxes1: BA, boxes2: BA) -> Array2<f64>
 where
-    N: Num + PartialOrd + ToPrimitive + Copy,
+    N: Num + PartialEq + PartialOrd + ToPrimitive + Copy + 'a,
+    BA: Into<ArrayView2<'a, N>>,
 {
+    let boxes1 = boxes1.into();
+    let boxes2 = boxes2.into();
     let num_boxes1 = boxes1.nrows();
     let num_boxes2 = boxes2.nrows();
 
     let mut tiou_matrix = Array2::<f64>::zeros((num_boxes1, num_boxes2));
-    let areas_boxes1 = boxes::box_areas(&boxes1);
-    let areas_boxes2 = boxes::box_areas(&boxes2);
+    let areas_boxes1 = boxes::box_areas(boxes1);
+    let areas_boxes2 = boxes::box_areas(boxes2);
     let boxes1_vecs: Vec<(N, N, N, N)> = boxes1
         .rows()
         .into_iter()
@@ -95,13 +98,18 @@ where
 /// The element at position (i, j) in the matrix represents the rotated Giou distance between the i-th box in `boxes1` and
 /// the j-th box in `boxes2`.
 ///
-pub fn rotated_tiou_distance(boxes1: &Array2<f64>, boxes2: &Array2<f64>) -> Array2<f64> {
+pub fn rotated_tiou_distance<'a, BA>(boxes1: BA, boxes2: BA) -> Array2<f64>
+where
+    BA: Into<ArrayView2<'a, f64>>,
+{
+    let boxes1 = boxes1.into();
+    let boxes2 = boxes2.into();
     let num_boxes1 = boxes1.nrows();
     let num_boxes2 = boxes2.nrows();
 
     let mut iou_matrix = Array2::<f64>::ones((num_boxes1, num_boxes2));
-    let areas1 = rotated_box_areas(&boxes1);
-    let areas2 = rotated_box_areas(&boxes2);
+    let areas1 = rotated_box_areas(boxes1);
+    let areas2 = rotated_box_areas(boxes2);
 
     let boxes1_rects: Vec<(f64, f64, f64, f64)> = boxes1
         .rows()

@@ -3,7 +3,7 @@ use crate::{
     rotation::{intersection_area, minimal_bounding_rect, Rect},
     utils,
 };
-use ndarray::{Array2, Zip};
+use ndarray::{Array2, ArrayView2, Zip};
 use num_traits::{Num, ToPrimitive};
 use rstar::RTree;
 
@@ -29,10 +29,13 @@ use rstar::RTree;
 /// let iou = iou_distance(&boxes1, &boxes2);
 /// assert_eq!(iou, array![[0.8571428571428572, 1.],[1., 0.8571428571428572]]);
 /// ```
-pub fn iou_distance<N>(boxes1: &Array2<N>, boxes2: &Array2<N>) -> Array2<f64>
+pub fn iou_distance<'a, N, BA>(boxes1: BA, boxes2: BA) -> Array2<f64>
 where
-    N: Num + PartialOrd + ToPrimitive + Copy,
+    N: Num + PartialEq + PartialOrd + ToPrimitive + Copy + 'a,
+    BA: Into<ArrayView2<'a, N>>,
 {
+    let boxes1 = boxes1.into();
+    let boxes2 = boxes2.into();
     let num_boxes1 = boxes1.nrows();
     let num_boxes2 = boxes2.nrows();
 
@@ -63,8 +66,7 @@ where
             let intersection = (x2 - x1) * (y2 - y1);
             let intersection = intersection.to_f64().unwrap();
             let intersection = utils::min(intersection, utils::min(area1, area2));
-            iou_matrix[[i, j]] =
-                utils::ONE - (intersection / (area1 + area2 - intersection + utils::EPS));
+            iou_matrix[[i, j]] = utils::ONE - (intersection / (area1 + area2 - intersection));
         }
     }
 
@@ -95,10 +97,13 @@ where
 /// let iou = parallel_iou_distance(&boxes1, &boxes2);
 /// assert_eq!(iou, array![[0.8571428571428572, 1.],[1., 0.8571428571428572]]);
 /// ```
-pub fn parallel_iou_distance<N>(boxes1: &Array2<N>, boxes2: &Array2<N>) -> Array2<f64>
+pub fn parallel_iou_distance<'a, N, BA>(boxes1: BA, boxes2: BA) -> Array2<f64>
 where
-    N: Num + PartialOrd + ToPrimitive + Copy + Clone + Sync + Send,
+    N: Num + PartialEq + PartialOrd + ToPrimitive + Send + Sync + Copy + 'a,
+    BA: Into<ArrayView2<'a, N>>,
 {
+    let boxes1 = boxes1.into();
+    let boxes2 = boxes2.into();
     let num_boxes1 = boxes1.nrows();
     let num_boxes2 = boxes2.nrows();
 
@@ -131,7 +136,7 @@ where
                     let intersection = (x2 - x1) * (y2 - y1);
                     let intersection = intersection.to_f64().unwrap();
                     let intersection = utils::min(intersection, utils::min(area1, area2));
-                    *d = 1. - (intersection / (area1 + area2 - intersection + utils::EPS));
+                    *d = 1. - (intersection / (area1 + area2 - intersection));
                 }
             });
     });
@@ -151,7 +156,13 @@ where
 /// # Returns
 /// A 2D array containing the Rotated IoU distance matrix. The element at position (i, j) represents
 /// the Rotated IoU distance between the i-th box in `boxes1` and the j-th box in `boxes2`.
-pub fn rotated_iou_distance(boxes1: &Array2<f64>, boxes2: &Array2<f64>) -> Array2<f64> {
+pub fn rotated_iou_distance<'a, BA>(boxes1: BA, boxes2: BA) -> Array2<f64>
+where
+    BA: Into<ArrayView2<'a, f64>>,
+{
+    let boxes1 = boxes1.into();
+    let boxes2 = boxes2.into();
+
     let num_boxes1 = boxes1.nrows();
     let num_boxes2 = boxes2.nrows();
 
@@ -205,7 +216,7 @@ pub fn rotated_iou_distance(boxes1: &Array2<f64>, boxes2: &Array2<f64>) -> Array
         let area1 = areas1[box1.index];
         let area2 = areas2[box2.index];
         let intersection = intersection_area(&boxes1_rects[box1.index], &boxes2_rects[box2.index]);
-        let union = area1 + area2 - intersection + utils::EPS;
+        let union = area1 + area2 - intersection;
         iou_matrix[[box1.index, box2.index]] = utils::ONE - intersection / union;
     }
 

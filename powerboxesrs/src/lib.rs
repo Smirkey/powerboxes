@@ -46,10 +46,10 @@
 //! - `rtree_nms`: Non-maximum suppression, returns the indices of the boxes to keep, uses a r-tree internally to avoid quadratic complexity, useful when having many boxes.
 //!
 pub mod boxes;
+pub mod diou;
 pub mod giou;
 pub mod iou;
 pub mod nms;
 pub mod rotation;
 pub mod tiou;
 mod utils;
-pub mod diou;
