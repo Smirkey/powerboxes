@@ -28,7 +28,7 @@ description = "Utility functions to manipulate and compute metrics on boxes"
 homepage = "https://smirkey.github.io/powerboxes/"
 documentation = "https://smirkey.github.io/powerboxes/"
 repository = "https://github.com/Smirkey/powerboxes"
-version = "0.2.2"
+version = "0.2.3"
 dependencies = ["numpy"]
 
 [tool.maturin]

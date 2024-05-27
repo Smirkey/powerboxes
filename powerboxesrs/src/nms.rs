@@ -83,7 +83,7 @@ where
             if y2 > y1 && x2 > x1 {
                 let intersection = (x2 - x1) * (y2 - y1);
                 let intersection = intersection.to_f64().unwrap();
-                let intersection = f64::min(intersection, f64::min(area1, area2));
+                let intersection = utils::min(intersection, utils::min(area1, area2));
                 iou = intersection / (area1 + area2 - intersection + utils::EPS);
             }
             if iou > iou_threshold {
