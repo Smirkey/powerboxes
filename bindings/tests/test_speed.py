@@ -180,7 +180,6 @@ def test_nms(benchmark, dtype, generate_boxes):
 def test_rtree_nms(benchmark, dtype, generate_boxes):
     boxes = generate_boxes
     boxes = boxes.astype(dtype)
-    print(dtype)
     benchmark(rtree_nms, boxes, SCORES, 0.5, 0.5)
 
 
