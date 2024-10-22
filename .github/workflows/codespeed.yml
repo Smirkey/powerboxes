@@ -36,11 +36,12 @@ jobs:
       - name: Install project
         run: pip install bindings/.
 
-      - name: Build the benchmark target(s)
-        run: cd powerboxesrs && cargo codspeed build
+      # - name: Build the benchmark target(s)
+      #   run: cd powerboxesrs && cargo codspeed build
 
       - name: Run benchmarks
         uses: CodSpeedHQ/action@v2
         with:
           token: ${{ secrets.CODSPEED_TOKEN }}
-          run: pytest bindings/tests/ --codspeed && cd powerboxesrs && cargo codspeed run
+          # run: pytest bindings/tests/ --codspeed && cd powerboxesrs && cargo codspeed run
+          run: pytest bindings/tests/ --codspeed
