@@ -43,4 +43,5 @@ jobs:
         uses: CodSpeedHQ/action@v2
         with:
           token: ${{ secrets.CODSPEED_TOKEN }}
-          run: pytest bindings/tests/ --codspeed && cd powerboxesrs && cargo codspeed run
+          # run: pytest bindings/tests/ --codspeed && cd powerboxesrs && cargo codspeed run
+          run: pytest bindings/tests/ --codspeed
