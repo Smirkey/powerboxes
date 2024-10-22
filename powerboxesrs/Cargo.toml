@@ -1,6 +1,6 @@
 [package]
 name = "powerboxesrs"
-version = "0.2.2"
+version = "0.2.3"
 edition = "2021"
 license = "MIT"
 readme = "README.md"
@@ -15,10 +15,9 @@ name = "powerboxesrs"
 crate-type = ["lib"]
 
 [dependencies]
-ndarray = { version = "0.15.6", features = ["rayon"] }
-num-traits = "0.2.17"
-rayon = "1.8.0"
-rstar = "0.11.0"
+nalgebra = "0.32.6"
+num-traits = "0.2.19"
+rstar = "0.12.0"
 
 [dev-dependencies]
 codspeed-criterion-compat = "2.3.1"
