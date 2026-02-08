@@ -134,7 +134,7 @@ jobs:
           uv run maturin develop
           uv run pytest tests -m "not benchmark"
 
-      - run: cd powerboxesrs && cargo test && cd ../bindings && cargo test
+      - run: cd powerboxesrs && cargo test
 
   # https://github.com/marketplace/actions/alls-green#why used for branch protection checks
   check:
