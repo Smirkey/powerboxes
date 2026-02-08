@@ -1,8 +1,10 @@
 import os
 
 import numpy as np
-from PIL import Image
+import pytest
 from powerboxes import masks_to_boxes
+
+PIL = pytest.importorskip("PIL.Image")
 
 
 def test_masks_box():
@@ -21,7 +23,7 @@ def test_masks_box():
         os.path.dirname(os.path.abspath(__file__)), "assets"
     )
     mask_path = os.path.join(assets_directory, "masks.tiff")
-    image = Image.open(mask_path)
+    image = PIL.open(mask_path)
     masks = np.zeros((image.n_frames, image.height, image.width))
     for index in range(image.n_frames):
         image.seek(index)
