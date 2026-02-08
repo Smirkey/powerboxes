@@ -11,19 +11,18 @@
 //!
 //! ```toml
 //! [dependencies]
-//! powerboxesrs = "0.2.3"
+//! powerboxesrs = "0.3.0"
 //! ```
 //!
 //! ## Usage
 //!
 //! ```rust
-//! use ndarray::array;
-//! use powerboxesrs::iou::iou_distance;
+//! use powerboxesrs::iou::iou_distance_slice;
 //!
-//! let boxes1 = array![[0.0, 0.0, 1.0, 1.0], [2.0, 2.0, 3.0, 3.0]];
-//! let boxes2 = array![[0.5, 0.5, 1.5, 1.5], [2.5, 2.5, 3.5, 3.5]];
-//! let iou = iou_distance(&boxes1, &boxes2);
-//! assert_eq!(iou, array![[0.8571428571428572, 1.],[1., 0.8571428571428572]]);
+//! let boxes1 = vec![0.0, 0.0, 1.0, 1.0, 2.0, 2.0, 3.0, 3.0];
+//! let boxes2 = vec![0.5, 0.5, 1.5, 1.5, 2.5, 2.5, 3.5, 3.5];
+//! let iou = iou_distance_slice(&boxes1, &boxes2, 2, 2);
+//! assert_eq!(iou, vec![0.8571428571428572, 1., 1., 0.8571428571428572]);
 //! ```
 //!
 //! ### Functions available
@@ -47,9 +46,10 @@
 //!
 pub mod boxes;
 pub mod diou;
+pub mod draw;
 pub mod giou;
 pub mod iou;
 pub mod nms;
 pub mod rotation;
 pub mod tiou;
-mod utils;
+pub(crate) mod utils;

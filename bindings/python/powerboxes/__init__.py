@@ -22,6 +22,7 @@ from ._powerboxes import masks_to_boxes as _masks_to_boxes
 from ._powerboxes import rotated_giou_distance as _rotated_giou_distance
 from ._powerboxes import rotated_iou_distance as _rotated_iou_distance
 from ._powerboxes import rotated_tiou_distance as _rotated_tiou_distance
+from ._powerboxes import draw_boxes as _draw_boxes
 from ._tiou import _dtype_to_func_tiou_distance
 
 _BOXES_NOT_SAME_TYPE = "boxes1 and boxes2 must have the same dtype"
@@ -37,7 +38,7 @@ supported_dtypes = [
     "uint32",
     "uint64",
 ]
-__version__ = "0.2.3"
+__version__ = "0.3.0"
 
 T = TypeVar(
     "T",
@@ -482,6 +483,32 @@ def rtree_nms(
         )
 
 
+def draw_boxes(
+    image: npt.NDArray[np.uint8],
+    boxes: npt.NDArray[np.float64],
+    colors: npt.NDArray[np.uint8] = None,
+    thickness: int = 2,
+) -> npt.NDArray[np.uint8]:
+    """Draw bounding boxes on an image.
+
+    Args:
+        image: 3d array of shape (3, H, W) in CHW format, uint8
+        boxes: 2d array of boxes in xyxy format, float64
+        colors: optional 2d array of shape (N, 3) with RGB colors per box, uint8
+        thickness: line thickness in pixels (default 2)
+
+    Raises:
+        TypeError: if image or boxes are not numpy arrays
+        ValueError: if image shape is not (3, H, W) or boxes shape is not (N, 4)
+
+    Returns:
+        np.ndarray: 3d array of shape (3, H, W) with boxes drawn
+    """
+    if not isinstance(image, np.ndarray) or not isinstance(boxes, np.ndarray):
+        raise TypeError("image and boxes must be numpy arrays")
+    return _draw_boxes(image, boxes, colors, thickness)
+
+
 __all__ = [
     "diou_distance",
     "iou_distance",
@@ -499,5 +526,6 @@ __all__ = [
     "rotated_giou_distance",
     "rotated_tiou_distance",
     "rtree_nms",
+    "draw_boxes",
     "__version__",
 ]
