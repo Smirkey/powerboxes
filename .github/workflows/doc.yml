@@ -11,19 +11,26 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
       - name: Configure Git Credentials
         run: |
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-      - uses: actions/setup-python@v4
+      - uses: actions/setup-python@v5
         with:
-          python-version: 3.12
+          python-version: "3.12"
+      - name: install rust stable
+        uses: dtolnay/rust-toolchain@stable
       - run: echo "cache_id=$(date --utc '+%V')" >> $GITHUB_ENV
-      - uses: actions/cache@v3
+      - uses: actions/cache@v4
         with:
           key: mkdocs-material-${{ env.cache_id }}
           path: .cache
           restore-keys: |
             mkdocs-material-
-      - run: pip install -r bindings/docs/requirements-doc.txt && pip install bindings/.
-      - run: cd bindings && mkdocs gh-deploy --force
+      - name: Install and deploy docs
+        run: |
+          cd bindings
+          uv sync --group docs
+          uv run maturin develop
+          uv run mkdocs gh-deploy --force

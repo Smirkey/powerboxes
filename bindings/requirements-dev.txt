@@ -1,7 +1,0 @@
-pytest==7.4.3
-pytest-codspeed>=2.0.0
-numpy
-pytest-cov
-pillow
-maturin
-pre-commit

@@ -18,13 +18,11 @@ jobs:
   benchmarks:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-python@v3
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-
-      - name: Install dependencies
-        run: pip install -r bindings/requirements-dev.txt
 
       - name: Setup rust toolchain, cache and cargo-codspeed binary
         uses: moonrepo/setup-rust@v0
@@ -34,13 +32,16 @@ jobs:
           bins: cargo-codspeed
 
       - name: Install project
-        run: pip install bindings/.
+        run: |
+          cd bindings
+          uv sync --group dev
+          uv run maturin develop --release
 
       - name: Build the benchmark target(s)
         run: cd powerboxesrs && cargo codspeed build
 
       - name: Run benchmarks
-        uses: CodSpeedHQ/action@v2
+        uses: CodSpeedHQ/action@v3
         with:
           token: ${{ secrets.CODSPEED_TOKEN }}
-          run: pytest bindings/tests/ --codspeed && cd powerboxesrs && cargo codspeed run
+          run: cd bindings && uv run pytest tests/ --codspeed && cd ../powerboxesrs && cargo codspeed run

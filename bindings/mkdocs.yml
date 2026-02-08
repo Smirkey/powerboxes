@@ -9,6 +9,7 @@ nav:
   - Box operations: "box_ops.md"
   - Box filtering: "box_filtering.md"
   - Rotated box operations: "rotated_box.md"
+  - Drawing: "drawing.md"
 plugins:
   - search
   - mkdocstrings:

@@ -1,5 +1,10 @@
+#[cfg(feature = "ndarray")]
 use ndarray::{Array1, Array2, ArrayView2, ArrayView3, ArrayViewMut2, Axis, Zip};
-use num_traits::{real::Real, Num, ToPrimitive};
+#[cfg(feature = "ndarray")]
+use num_traits::real::Real;
+use num_traits::{Num, ToPrimitive};
+
+use crate::utils;
 
 #[derive(Copy, Clone)]
 pub enum BoxFormat {
@@ -7,6 +12,216 @@ pub enum BoxFormat {
     XYWH,
     CXCYWH,
 }
+
+// ─── Slice-based core functions ───
+
+/// Calculates the areas of bounding boxes stored in a flat slice.
+///
+/// # Arguments
+///
+/// * `boxes` - A flat slice of length `n * 4` containing bounding boxes in xyxy format (row-major).
+/// * `n` - The number of bounding boxes.
+///
+/// # Returns
+///
+/// A `Vec<f64>` of length `n` containing the area of each box.
+#[inline]
+pub fn box_areas_slice<N>(boxes: &[N], n: usize) -> Vec<f64>
+where
+    N: Num + PartialEq + ToPrimitive + Copy,
+{
+    let mut areas = vec![0.0f64; n];
+    for i in 0..n {
+        let (x1, y1, x2, y2) = utils::row4(boxes, i);
+        let area = (x2 - x1) * (y2 - y1);
+        areas[i] = area.to_f64().unwrap();
+    }
+    areas
+}
+
+/// Removes all boxes that have an area smaller than `min_size`.
+///
+/// # Arguments
+///
+/// * `boxes` - A flat slice of length `n * 4` containing bounding boxes in xyxy format (row-major).
+/// * `n` - The number of bounding boxes.
+/// * `min_size` - The minimum area threshold. Boxes with area less than this value are removed.
+///
+/// # Returns
+///
+/// A flat `Vec<N>` containing the remaining boxes (row-major, 4 columns per box).
+pub fn remove_small_boxes_slice<N>(boxes: &[N], n: usize, min_size: f64) -> Vec<N>
+where
+    N: Num + PartialEq + Clone + PartialOrd + ToPrimitive + Copy,
+{
+    let areas = box_areas_slice(boxes, n);
+    let mut result = Vec::new();
+    for i in 0..n {
+        if areas[i] >= min_size {
+            let base = i * 4;
+            result.extend_from_slice(&boxes[base..base + 4]);
+        }
+    }
+    result
+}
+
+/// Converts bounding boxes in-place from one format to another.
+///
+/// This works because all box formats use 4 values in their representations.
+///
+/// # Arguments
+///
+/// * `boxes` - A mutable flat slice of length `n * 4` containing the boxes to convert.
+/// * `n` - The number of bounding boxes.
+/// * `in_fmt` - The input format of the boxes.
+/// * `out_fmt` - The desired output format of the boxes.
+pub fn box_convert_inplace_slice<N>(boxes: &mut [N], n: usize, in_fmt: BoxFormat, out_fmt: BoxFormat)
+where
+    N: Num + PartialEq + PartialOrd + ToPrimitive + Clone + Copy,
+{
+    let two = N::one() + N::one();
+    for i in 0..n {
+        let base = i * 4;
+        match (in_fmt, out_fmt) {
+            (BoxFormat::XYXY, BoxFormat::XYWH) => {
+                boxes[base + 2] = boxes[base + 2] - boxes[base];
+                boxes[base + 3] = boxes[base + 3] - boxes[base + 1];
+            }
+            (BoxFormat::XYXY, BoxFormat::CXCYWH) => {
+                let x1 = boxes[base];
+                let y1 = boxes[base + 1];
+                let x2 = boxes[base + 2];
+                let y2 = boxes[base + 3];
+                boxes[base] = (x1 + x2) / two;
+                boxes[base + 1] = (y1 + y2) / two;
+                boxes[base + 2] = x2 - x1;
+                boxes[base + 3] = y2 - y1;
+            }
+            (BoxFormat::XYWH, BoxFormat::XYXY) => {
+                boxes[base + 2] = boxes[base] + boxes[base + 2];
+                boxes[base + 3] = boxes[base + 1] + boxes[base + 3];
+            }
+            (BoxFormat::XYWH, BoxFormat::CXCYWH) => {
+                let w = boxes[base + 2];
+                let h = boxes[base + 3];
+                boxes[base] = boxes[base] + w / two;
+                boxes[base + 1] = boxes[base + 1] + h / two;
+            }
+            (BoxFormat::CXCYWH, BoxFormat::XYXY) => {
+                let cx = boxes[base];
+                let cy = boxes[base + 1];
+                let wd2 = boxes[base + 2] / two;
+                let hd2 = boxes[base + 3] / two;
+                boxes[base] = cx - wd2;
+                boxes[base + 1] = cy - hd2;
+                boxes[base + 2] = cx + wd2;
+                boxes[base + 3] = cy + hd2;
+            }
+            (BoxFormat::CXCYWH, BoxFormat::XYWH) => {
+                let w = boxes[base + 2];
+                let h = boxes[base + 3];
+                boxes[base] = boxes[base] - w / two;
+                boxes[base + 1] = boxes[base + 1] - h / two;
+            }
+            (BoxFormat::XYXY, BoxFormat::XYXY) => (),
+            (BoxFormat::XYWH, BoxFormat::XYWH) => (),
+            (BoxFormat::CXCYWH, BoxFormat::CXCYWH) => (),
+        }
+    }
+}
+
+/// Converts bounding boxes from one format to another, returning a new `Vec`.
+///
+/// # Arguments
+///
+/// * `boxes` - A flat slice of length `n * 4` containing the boxes in the input format.
+/// * `n` - The number of bounding boxes.
+/// * `in_fmt` - The input format of the boxes.
+/// * `out_fmt` - The desired output format of the boxes.
+///
+/// # Returns
+///
+/// A flat `Vec<N>` of length `n * 4` containing the boxes in the output format.
+pub fn box_convert_slice<N>(boxes: &[N], n: usize, in_fmt: BoxFormat, out_fmt: BoxFormat) -> Vec<N>
+where
+    N: Num + PartialEq + PartialOrd + ToPrimitive + Clone + Copy,
+{
+    let mut result = boxes.to_vec();
+    box_convert_inplace_slice(&mut result, n, in_fmt, out_fmt);
+    result
+}
+
+/// Computes bounding boxes around the provided masks.
+///
+/// # Arguments
+///
+/// * `masks` - A flat slice of length `num_masks * height * width` (row-major, N masks of H rows and W columns).
+/// * `num_masks` - The number of masks (N).
+/// * `height` - The height (H) of each mask.
+/// * `width` - The width (W) of each mask.
+///
+/// # Returns
+///
+/// A flat `Vec<usize>` of length `num_masks * 4` containing bounding boxes in xyxy format.
+pub fn masks_to_boxes_slice(masks: &[bool], num_masks: usize, height: usize, width: usize) -> Vec<usize> {
+    let mut result = vec![0usize; num_masks * 4];
+    for i in 0..num_masks {
+        let mask_offset = i * height * width;
+        let mut x1 = width;
+        let mut y1 = height;
+        let mut x2 = 0usize;
+        let mut y2 = 0usize;
+        for y in 0..height {
+            for x in 0..width {
+                if masks[mask_offset + y * width + x] {
+                    if x < x1 {
+                        x1 = x;
+                    }
+                    if x > x2 {
+                        x2 = x;
+                    }
+                    if y < y1 {
+                        y1 = y;
+                    }
+                    if y > y2 {
+                        y2 = y;
+                    }
+                }
+            }
+        }
+        let base = i * 4;
+        result[base] = x1;
+        result[base + 1] = y1;
+        result[base + 2] = x2;
+        result[base + 3] = y2;
+    }
+    result
+}
+
+/// Calculates the areas of rotated bounding boxes in the cxcywha format.
+///
+/// Given rotated boxes where each box is represented as
+/// [center_x, center_y, width, height, angle], this function computes
+/// the area (width * height) of each box.
+///
+/// # Arguments
+///
+/// * `boxes` - A flat slice of length `n * 5` containing rotated boxes in cxcywha format.
+/// * `n` - The number of rotated boxes.
+///
+/// # Returns
+///
+/// A `Vec<f64>` of length `n` containing the area of each rotated box.
+pub fn rotated_box_areas_slice(boxes: &[f64], n: usize) -> Vec<f64> {
+    let mut areas = vec![0.0f64; n];
+    for i in 0..n {
+        let base = i * 5;
+        areas[i] = boxes[base + 2] * boxes[base + 3];
+    }
+    areas
+}
+
+// ─── ndarray wrappers ───
 
 /// Calculates the areas of a 2D array of boxes.
 ///
@@ -30,29 +245,24 @@ pub enum BoxFormat {
 ///
 /// assert_eq!(areas, array![4., 100.]);
 /// ```
+#[cfg(feature = "ndarray")]
 pub fn box_areas<'a, N, BA>(boxes: BA) -> Array1<f64>
 where
     N: Num + PartialEq + ToPrimitive + Copy + 'a,
     BA: Into<ArrayView2<'a, N>>,
 {
     let boxes = boxes.into();
-    let num_boxes = boxes.nrows();
-    let mut areas = Array1::<f64>::zeros(num_boxes);
-    Zip::indexed(&mut areas).for_each(|i, area| {
-        let box1 = boxes.row(i);
-        let area_ = (box1[2] - box1[0]) * (box1[3] - box1[1]);
-        *area = area_.to_f64().unwrap();
-    });
-
-    return areas;
+    let n = boxes.nrows();
+    let slice = boxes.as_slice().expect("boxes must be contiguous");
+    Array1::from(box_areas_slice(slice, n))
 }
 
 /// Calculates the areas of a 2D array of boxes in parallel.
-/// This function is only faster than `box_areas` for large arrays
+/// This function is only faster than `box_areas` for large arrays.
 ///
 /// # Arguments
 ///
-/// * `boxes` - A 2D array of boxes represented as an `Array2<f64>` in xyxy format.
+/// * `boxes` - A 2D array of boxes represented as an `ArrayView2<N>` in xyxy format.
 ///
 /// # Returns
 ///
@@ -70,6 +280,7 @@ where
 ///
 /// assert_eq!(areas, array![4., 100.]);
 /// ```
+#[cfg(feature = "ndarray")]
 pub fn parallel_box_areas<'a, N, BA>(boxes: BA) -> Array1<f64>
 where
     N: Real + Send + Sync + 'a,
@@ -89,15 +300,15 @@ where
         *area = _area.to_f64().unwrap();
     });
 
-    return areas;
+    areas
 }
 
-/// Removes all boxes from the input array that have a size smaller than `min_size`.
+/// Removes all boxes from the input array that have an area smaller than `min_size`.
 ///
 /// # Arguments
 ///
-/// * `boxes` - A 2D array of boxes represented as an `Array2<f64>` in xyxy format.
-/// * `min_size` - The minimum size of boxes to keep.
+/// * `boxes` - A 2D array of boxes represented as an `ArrayView2<N>` in xyxy format.
+/// * `min_size` - The minimum area of boxes to keep.
 ///
 /// # Returns
 ///
@@ -115,6 +326,7 @@ where
 ///
 /// assert_eq!(result, array![[0., 0., 10., 10.]]);
 /// ```
+#[cfg(feature = "ndarray")]
 pub fn remove_small_boxes<'a, N, BA>(boxes: BA, min_size: f64) -> Array2<N>
 where
     N: Num + PartialEq + Clone + PartialOrd + ToPrimitive + Copy + 'a,
@@ -127,15 +339,16 @@ where
         .filter(|(_, &area)| area >= min_size)
         .map(|(index, _)| index)
         .collect();
-    return boxes.select(Axis(0), &keep);
+    boxes.select(Axis(0), &keep)
 }
 
 /// Converts a 2D array of boxes from one format to another, in-place.
+///
 /// This works because all box formats use 4 values in their representations.
 ///
 /// # Arguments
 ///
-/// * `boxes` - A 2D array of boxes in the input format.
+/// * `boxes` - A mutable 2D array of boxes in the input format.
 /// * `in_fmt` - The input format of the boxes.
 /// * `out_fmt` - The desired output format of the boxes.
 ///
@@ -158,6 +371,7 @@ where
 /// box_convert_inplace(&mut boxes, BoxFormat::XYXY, BoxFormat::CXCYWH);
 /// assert_eq!(boxes, expected_output);
 /// ```
+#[cfg(feature = "ndarray")]
 pub fn box_convert_inplace<'a, N, BA>(boxes: BA, in_fmt: BoxFormat, out_fmt: BoxFormat)
 where
     N: Num + PartialEq + PartialOrd + ToPrimitive + Clone + Copy + 'a,
@@ -249,6 +463,7 @@ where
 /// let output = box_convert(&boxes, BoxFormat::XYXY, BoxFormat::CXCYWH);
 /// assert_eq!(output, expected_output);
 /// ```
+#[cfg(feature = "ndarray")]
 pub fn box_convert<'a, N, BA>(boxes: BA, in_fmt: BoxFormat, out_fmt: BoxFormat) -> Array2<N>
 where
     N: Num + PartialEq + PartialOrd + ToPrimitive + Clone + Copy + 'a,
@@ -260,7 +475,7 @@ where
 }
 
 /// Converts a 2D array of boxes from one format to another, in parallel.
-/// This function is only faster than `box_convert` for large arrays
+/// This function is only faster than `box_convert` for large arrays.
 ///
 /// # Arguments
 ///
@@ -291,6 +506,7 @@ where
 /// let output = parallel_box_convert(&boxes, BoxFormat::XYXY, BoxFormat::CXCYWH);
 /// assert_eq!(expected_output, output);
 /// ```
+#[cfg(feature = "ndarray")]
 pub fn parallel_box_convert<N>(
     boxes: &Array2<N>,
     in_fmt: BoxFormat,
@@ -361,20 +577,23 @@ where
             (BoxFormat::CXCYWH, BoxFormat::CXCYWH) => (),
         }
     });
-    return converted_boxes;
+    converted_boxes
 }
 
-/// Compute the bounding boxes around the provided masks.
-/// Returns a [N, 4] array containing bounding boxes. The boxes are in xyxy format
+/// Computes the bounding boxes around the provided masks.
+/// Returns a [N, 4] array containing bounding boxes in xyxy format.
 ///
 /// # Arguments
 ///
-/// * `masks` - A [N, H, W] array of masks to transform where N is the number of masks and (H, W) are the spatial dimensions of the image.
+/// * `masks` - A [N, H, W] array of masks where N is the number of masks
+///   and (H, W) are the spatial dimensions.
 ///
 /// # Returns
 ///
 /// A [N, 4] array of boxes in xyxy format.
+///
 /// # Example
+///
 /// ```
 /// use ndarray::{arr3, array};
 /// use powerboxesrs::boxes::masks_to_boxes;
@@ -385,6 +604,8 @@ where
 /// ]);
 /// let boxes = masks_to_boxes(&masks);
 /// assert_eq!(boxes, array![[0, 0, 2, 0], [0, 1, 2, 1], [2, 1, 2, 1]]);
+/// ```
+#[cfg(feature = "ndarray")]
 pub fn masks_to_boxes<'a, MA>(masks: MA) -> Array2<usize>
 where
     MA: Into<ArrayView3<'a, bool>>,
@@ -393,39 +614,14 @@ where
     let num_masks = masks.shape()[0];
     let height = masks.shape()[1];
     let width = masks.shape()[2];
-    let mut boxes = Array2::<usize>::zeros((num_masks, 4));
-
-    for (i, mask) in masks.outer_iter().enumerate() {
-        let mut x1 = width;
-        let mut y1 = height;
-        let mut x2 = 0;
-        let mut y2 = 0;
-
-        // get the indices where the mask is true
-        mask.indexed_iter().for_each(|(index, &value)| {
-            if value {
-                let (y, x) = index;
-                if x < x1 {
-                    x1 = x;
-                }
-                if x > x2 {
-                    x2 = x;
-                }
-                if y < y1 {
-                    y1 = y;
-                }
-                if y > y2 {
-                    y2 = y;
-                }
-            }
-        });
-        boxes[[i, 0]] = x1;
-        boxes[[i, 1]] = y1;
-        boxes[[i, 2]] = x2;
-        boxes[[i, 3]] = y2;
-    }
-
-    return boxes;
+    let flat = if let Some(s) = masks.as_slice() {
+        masks_to_boxes_slice(s, num_masks, height, width)
+    } else {
+        // fallback for non-contiguous
+        let owned: Vec<bool> = masks.iter().copied().collect();
+        masks_to_boxes_slice(&owned, num_masks, height, width)
+    };
+    Array2::from_shape_vec((num_masks, 4), flat).unwrap()
 }
 
 /// Calculates the areas of rotated boxes in the cxcywha format.
@@ -442,27 +638,64 @@ where
 /// # Returns
 ///
 /// A 1D array containing the computed areas of each rotated box.
-///
+#[cfg(feature = "ndarray")]
 pub fn rotated_box_areas<'a, BA>(boxes: BA) -> Array1<f64>
 where
     BA: Into<ArrayView2<'a, f64>>,
 {
     let boxes = boxes.into();
-    let n_boxes = boxes.nrows();
-
-    let mut areas = Array1::zeros(n_boxes);
-
-    for i in 0..n_boxes {
-        areas[i] = boxes[[i, 2]] * boxes[[i, 3]]
-    }
-
-    areas
+    let n = boxes.nrows();
+    let slice = boxes.as_slice().expect("boxes must be contiguous");
+    Array1::from(rotated_box_areas_slice(slice, n))
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[cfg(feature = "ndarray")]
     use ndarray::{arr2, arr3, array, Array3};
+
+    #[test]
+    fn test_box_areas_slice() {
+        let boxes = vec![1.0, 2.0, 3.0, 4.0, 0.0, 0.0, 10.0, 10.0];
+        let areas = box_areas_slice(&boxes, 2);
+        assert_eq!(areas, vec![4.0, 100.0]);
+    }
+
+    #[test]
+    fn test_box_convert_slice_xyxy_to_cxcywh() {
+        let boxes = vec![10.0, 20.0, 30.0, 40.0];
+        let result = box_convert_slice(&boxes, 1, BoxFormat::XYXY, BoxFormat::CXCYWH);
+        assert_eq!(result, vec![20.0, 30.0, 20.0, 20.0]);
+    }
+
+    #[test]
+    fn test_remove_small_boxes_slice() {
+        let boxes = vec![1.0, 2.0, 3.0, 4.0, 0.0, 0.0, 10.0, 10.0];
+        let result = remove_small_boxes_slice(&boxes, 2, 10.0);
+        assert_eq!(result, vec![0.0, 0.0, 10.0, 10.0]);
+    }
+
+    #[test]
+    fn test_masks_to_boxes_slice() {
+        let masks = vec![
+            // mask 0: top row all true
+            true, true, true, false, false, false,
+            // mask 1: bottom row all true
+            false, false, false, true, true, true,
+        ];
+        let boxes = masks_to_boxes_slice(&masks, 2, 2, 3);
+        assert_eq!(boxes, vec![0, 0, 2, 0, 0, 1, 2, 1]);
+    }
+
+    #[test]
+    fn test_rotated_box_areas_slice() {
+        let boxes = vec![1.0, 2.0, 3.0, 4.0, 100.0];
+        let areas = rotated_box_areas_slice(&boxes, 1);
+        assert_eq!(areas, vec![12.0]);
+    }
+
+    #[cfg(feature = "ndarray")]
     #[test]
     fn test_box_convert_xyxy_to_xywh() {
         let boxes = arr2(&[
@@ -483,6 +716,7 @@ mod tests {
         assert_eq!(output, parallel_output);
     }
 
+    #[cfg(feature = "ndarray")]
     #[test]
     fn test_box_convert_xyxy_to_cxcywh() {
         let boxes = arr2(&[
@@ -503,6 +737,7 @@ mod tests {
         assert_eq!(output, parallel_output);
     }
 
+    #[cfg(feature = "ndarray")]
     #[test]
     fn test_box_convert_xywh_to_xyxy() {
         let boxes = arr2(&[
@@ -523,6 +758,7 @@ mod tests {
         assert_eq!(output, parallel_output);
     }
 
+    #[cfg(feature = "ndarray")]
     #[test]
     fn test_box_convert_xywh_to_cxcywh() {
         let boxes = arr2(&[
@@ -543,6 +779,7 @@ mod tests {
         assert_eq!(output, parallel_output);
     }
 
+    #[cfg(feature = "ndarray")]
     #[test]
     fn test_box_convert_cxcywh_to_xyxy() {
         let boxes = arr2(&[
@@ -563,6 +800,7 @@ mod tests {
         assert_eq!(output, parallel_output);
     }
 
+    #[cfg(feature = "ndarray")]
     #[test]
     fn test_box_convert_cxcywh_to_xywh() {
         let boxes = arr2(&[
@@ -583,6 +821,7 @@ mod tests {
         assert_eq!(output, parallel_output);
     }
 
+    #[cfg(feature = "ndarray")]
     #[test]
     fn test_coherence() {
         let boxes = arr2(&[
@@ -601,6 +840,8 @@ mod tests {
             boxes
         );
     }
+
+    #[cfg(feature = "ndarray")]
     #[test]
     fn test_box_areas_single_box() {
         let boxes = array![[1., 2., 3., 4.]];
@@ -610,6 +851,7 @@ mod tests {
         assert_eq!(parallel_areas, areas);
     }
 
+    #[cfg(feature = "ndarray")]
     #[test]
     fn test_box_areas_multiple_boxes() {
         let boxes = array![[1., 2., 3., 4.], [0., 0., 10., 10.]];
@@ -619,6 +861,7 @@ mod tests {
         assert_eq!(parallel_areas, areas);
     }
 
+    #[cfg(feature = "ndarray")]
     #[test]
     fn test_box_areas_zero_area() {
         let boxes = array![[1., 2., 1., 2.]];
@@ -628,6 +871,7 @@ mod tests {
         assert_eq!(parallel_areas, areas);
     }
 
+    #[cfg(feature = "ndarray")]
     #[test]
     fn test_box_areas_negative_coordinates() {
         let boxes = array![[-1., -1., 1., 1.]];
@@ -637,6 +881,7 @@ mod tests {
         assert_eq!(parallel_areas, areas);
     }
 
+    #[cfg(feature = "ndarray")]
     #[test]
     fn test_remove_small_boxes() {
         let boxes = array![[1., 2., 3., 4.], [0., 0., 10., 10.]];
@@ -645,6 +890,7 @@ mod tests {
         assert_eq!(filtered_boxes, array![[0., 0., 10., 10.]]);
     }
 
+    #[cfg(feature = "ndarray")]
     #[test]
     fn test_masks_to_boxes() {
         let masks: Array3<bool> = arr3(&[
@@ -655,6 +901,8 @@ mod tests {
         let boxes = masks_to_boxes(&masks);
         assert_eq!(boxes, array![[0, 0, 2, 0], [0, 1, 2, 1], [2, 1, 2, 1]]);
     }
+
+    #[cfg(feature = "ndarray")]
     #[test]
     fn test_rotated_box_areas_single_box() {
         let boxes = array![[1., 2., 3., 4., 100.]];

@@ -33,14 +33,19 @@ cargo add powerboxesrs
 - `nms`: Non-maximum suppression, returns the indices of the boxes to keep
 - `rtree_nms`: Non-maximum suppression, returns the indices of the boxes to keep, uses a r-tree internally to avoid quadratic complexity, useful when having many boxes.
 
+#### Drawing
+- `draw_boxes`: Draw bounding boxes on a CHW image tensor
+
 
 ## Use it in Rust
 See the [documentation](https://docs.rs/powerboxesrs) for more details.
-Here is a simple example:
+
+All core functions use a slice-based API (`_slice` suffix) operating on flat `&[N]` slices. ndarray wrappers are available behind the `ndarray` feature (enabled by default).
+
 ```rust
-use ndarray::array;
-use powerboxesrs::boxes::box_areas;
-let boxes = array![[1., 2., 3., 4.], [0., 0., 10., 10.]];
-let areas = box_areas(&boxes);
-assert_eq!(areas, array![4., 100.]);
+use powerboxesrs::iou::iou_distance_slice;
+
+let boxes1 = vec![0.0, 0.0, 1.0, 1.0, 2.0, 2.0, 3.0, 3.0];
+let boxes2 = vec![0.5, 0.5, 1.5, 1.5, 2.5, 2.5, 3.5, 3.5];
+let iou = iou_distance_slice(&boxes1, &boxes2, 2, 2);
 ```
