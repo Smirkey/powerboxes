@@ -36,7 +36,7 @@ jobs:
         with:
           key: coverage-cargo-ubuntu
         continue-on-error: true
-      - name: Run coverage
+      - name: Run bindings coverage
         run: |
           cd bindings
           uv sync --group dev
@@ -49,14 +49,16 @@ jobs:
           cargo test
           uv run maturin develop
           uv run pytest tests --cov=powerboxes --cov-report xml -m "not benchmark"
-          cargo llvm-cov --no-run --lcov --output-path coverage-bindings.lcov
-          cd ../powerboxesrs
+          cargo llvm-cov report --lcov --output-path coverage-bindings.lcov
+      - name: Run powerboxesrs coverage
+        run: |
+          cd powerboxesrs
           source <(cargo llvm-cov show-env --export-prefix)
           export CARGO_TARGET_DIR=$CARGO_LLVM_COV_TARGET_DIR
           cargo llvm-cov clean --workspace
           cargo check
           cargo test
-          cargo llvm-cov --no-run --lcov --output-path coverage.lcov
+          cargo llvm-cov report --lcov --output-path coverage.lcov
       - uses: codecov/codecov-action@v4
         env:
           TOKEN: ${{ secrets.CODECOV_TOKEN }}
@@ -75,8 +77,6 @@ jobs:
           - '3.11'
           - '3.12'
           - '3.13'
-          - 'pypy3.9'
-          - 'pypy3.10'
 
     runs-on: ubuntu-latest
 
