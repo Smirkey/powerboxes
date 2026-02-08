@@ -4,8 +4,8 @@ use std::fmt::Debug;
 
 use ndarray::Array1;
 use num_traits::{Bounded, Float, Num, Signed, ToPrimitive};
-use numpy::{PyArray1, PyArray2, PyArray3};
-use powerboxesrs::{boxes, diou, giou, iou, nms, tiou};
+use numpy::{PyArray1, PyArray2, PyArray3, PyArrayMethods};
+use powerboxesrs::{boxes, diou, draw, giou, iou, nms, tiou};
 use pyo3::prelude::*;
 use utils::{preprocess_array1, preprocess_array3, preprocess_boxes, preprocess_rotated_boxes};
 
@@ -118,6 +118,8 @@ fn _powerboxes(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(rotated_giou_distance, m)?)?;
     // Rotated TIoU
     m.add_function(wrap_pyfunction!(rotated_tiou_distance, m)?)?;
+    // Draw
+    m.add_function(wrap_pyfunction!(draw_boxes, m)?)?;
     Ok(())
 }
 // Masks to boxes
@@ -173,6 +175,61 @@ fn rotated_tiou_distance(
     let iou_as_numpy = utils::array_to_numpy(py, iou).unwrap();
     return Ok(iou_as_numpy.unbind());
 }
+// Draw boxes
+#[pyfunction]
+#[pyo3(signature = (image, boxes, colors=None, thickness=2))]
+fn draw_boxes(
+    py: Python,
+    image: &Bound<'_, PyArray3<u8>>,
+    boxes: &Bound<'_, PyArray2<f64>>,
+    colors: Option<&Bound<'_, PyArray2<u8>>>,
+    thickness: usize,
+) -> PyResult<Py<PyArray3<u8>>> {
+    let image_array = preprocess_array3(image);
+    let image_shape = image_array.shape();
+    if image_shape[0] != 3 {
+        return Err(pyo3::exceptions::PyValueError::new_err(
+            "image must have shape (3, H, W)",
+        ));
+    }
+    let height = image_shape[1];
+    let width = image_shape[2];
+
+    let boxes_array = unsafe { boxes.as_array() };
+    let boxes_shape = boxes_array.shape();
+    if boxes_shape.len() != 2 || (boxes_shape[0] > 0 && boxes_shape[1] != 4) {
+        return Err(pyo3::exceptions::PyValueError::new_err(
+            "boxes must have shape (N, 4)",
+        ));
+    }
+    let num_boxes = boxes_shape[0];
+
+    // Flatten image to contiguous slice
+    let image_slice: Vec<u8> = image_array.iter().copied().collect();
+    let boxes_slice: Vec<f64> = boxes_array.iter().copied().collect();
+
+    let colors_vec: Option<Vec<u8>> = colors.map(|c| {
+        let c_array = unsafe { c.as_array() };
+        c_array.iter().copied().collect()
+    });
+
+    let result = draw::draw_boxes_slice(
+        &image_slice,
+        height,
+        width,
+        &boxes_slice,
+        num_boxes,
+        colors_vec.as_deref(),
+        thickness,
+    );
+
+    // Convert back to (3, H, W) numpy array
+    let result_array = ndarray::Array3::from_shape_vec((3, height, width), result)
+        .map_err(|e| pyo3::exceptions::PyValueError::new_err(e.to_string()))?;
+    let numpy_array = utils::array_to_numpy(py, result_array)?;
+    Ok(numpy_array.unbind())
+}
+
 // DIoU
 fn diou_distance_generic<T>(
     py: Python,

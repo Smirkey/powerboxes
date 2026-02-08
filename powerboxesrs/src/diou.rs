@@ -5,11 +5,20 @@ use num_traits::{Float, Num, ToPrimitive};
 
 // ─── Slice-based core ───
 
-/// Calculates the DIoU distance between two sets of bounding boxes (slice-based).
+/// Calculates the Distance Intersection over Union (DIoU) distance between two sets of bounding boxes.
+/// See <https://arxiv.org/pdf/1911.08287.pdf>.
 ///
-/// `boxes1` is a flat slice of length `n1 * 4` (row-major xyxy format).
-/// `boxes2` is a flat slice of length `n2 * 4`.
-/// Returns a flat `Vec<f64>` of length `n1 * n2` (row-major).
+/// # Arguments
+///
+/// * `boxes1` - A flat slice of length `n1 * 4` representing N bounding boxes in xyxy format (row-major).
+/// * `boxes2` - A flat slice of length `n2 * 4` representing M bounding boxes in xyxy format (row-major).
+/// * `n1` - The number of boxes in the first set.
+/// * `n2` - The number of boxes in the second set.
+///
+/// # Returns
+///
+/// A flat `Vec<f64>` of length `n1 * n2` (row-major) representing the DIoU distance
+/// between each pair of bounding boxes.
 pub fn diou_distance_slice<N>(boxes1: &[N], boxes2: &[N], n1: usize, n2: usize) -> Vec<f64>
 where
     N: Num + PartialOrd + ToPrimitive + Float,
@@ -57,6 +66,17 @@ where
 
 // ─── ndarray wrapper ───
 
+/// Calculates the Distance Intersection over Union (DIoU) distance between two sets of bounding boxes.
+/// See <https://arxiv.org/pdf/1911.08287.pdf>.
+///
+/// # Arguments
+///
+/// * `boxes1` - A 2D array of shape (N, 4) representing N bounding boxes in xyxy format.
+/// * `boxes2` - A 2D array of shape (M, 4) representing M bounding boxes in xyxy format.
+///
+/// # Returns
+///
+/// A 2D array of shape (N, M) representing the DIoU distance between each pair of bounding boxes.
 #[cfg(feature = "ndarray")]
 pub fn diou_distance<'a, BA, N>(boxes1: BA, boxes2: BA) -> Array2<f64>
 where

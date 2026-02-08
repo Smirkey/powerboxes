@@ -15,8 +15,16 @@ pub enum BoxFormat {
 
 // ─── Slice-based core functions ───
 
-/// Calculates areas for N boxes stored in a flat xyxy slice of length N*4.
-/// Returns a Vec<f64> of length N.
+/// Calculates the areas of bounding boxes stored in a flat slice.
+///
+/// # Arguments
+///
+/// * `boxes` - A flat slice of length `n * 4` containing bounding boxes in xyxy format (row-major).
+/// * `n` - The number of bounding boxes.
+///
+/// # Returns
+///
+/// A `Vec<f64>` of length `n` containing the area of each box.
 #[inline]
 pub fn box_areas_slice<N>(boxes: &[N], n: usize) -> Vec<f64>
 where
@@ -31,8 +39,17 @@ where
     areas
 }
 
-/// Removes boxes with area < min_size.
-/// Returns a flat Vec<N> containing the remaining boxes (row-major, 4 cols).
+/// Removes all boxes that have an area smaller than `min_size`.
+///
+/// # Arguments
+///
+/// * `boxes` - A flat slice of length `n * 4` containing bounding boxes in xyxy format (row-major).
+/// * `n` - The number of bounding boxes.
+/// * `min_size` - The minimum area threshold. Boxes with area less than this value are removed.
+///
+/// # Returns
+///
+/// A flat `Vec<N>` containing the remaining boxes (row-major, 4 columns per box).
 pub fn remove_small_boxes_slice<N>(boxes: &[N], n: usize, min_size: f64) -> Vec<N>
 where
     N: Num + PartialEq + Clone + PartialOrd + ToPrimitive + Copy,
@@ -48,8 +65,16 @@ where
     result
 }
 
-/// Converts boxes in-place from one format to another.
-/// `boxes` is a mutable flat slice of length N*4.
+/// Converts bounding boxes in-place from one format to another.
+///
+/// This works because all box formats use 4 values in their representations.
+///
+/// # Arguments
+///
+/// * `boxes` - A mutable flat slice of length `n * 4` containing the boxes to convert.
+/// * `n` - The number of bounding boxes.
+/// * `in_fmt` - The input format of the boxes.
+/// * `out_fmt` - The desired output format of the boxes.
 pub fn box_convert_inplace_slice<N>(boxes: &mut [N], n: usize, in_fmt: BoxFormat, out_fmt: BoxFormat)
 where
     N: Num + PartialEq + PartialOrd + ToPrimitive + Clone + Copy,
@@ -105,7 +130,18 @@ where
     }
 }
 
-/// Converts boxes from one format to another, returning a new Vec.
+/// Converts bounding boxes from one format to another, returning a new `Vec`.
+///
+/// # Arguments
+///
+/// * `boxes` - A flat slice of length `n * 4` containing the boxes in the input format.
+/// * `n` - The number of bounding boxes.
+/// * `in_fmt` - The input format of the boxes.
+/// * `out_fmt` - The desired output format of the boxes.
+///
+/// # Returns
+///
+/// A flat `Vec<N>` of length `n * 4` containing the boxes in the output format.
 pub fn box_convert_slice<N>(boxes: &[N], n: usize, in_fmt: BoxFormat, out_fmt: BoxFormat) -> Vec<N>
 where
     N: Num + PartialEq + PartialOrd + ToPrimitive + Clone + Copy,
@@ -115,8 +151,18 @@ where
     result
 }
 
-/// Compute bounding boxes from masks.
-/// `masks` is a flat slice of length N * H * W (row-major, N masks of H rows and W cols).
+/// Computes bounding boxes around the provided masks.
+///
+/// # Arguments
+///
+/// * `masks` - A flat slice of length `num_masks * height * width` (row-major, N masks of H rows and W columns).
+/// * `num_masks` - The number of masks (N).
+/// * `height` - The height (H) of each mask.
+/// * `width` - The width (W) of each mask.
+///
+/// # Returns
+///
+/// A flat `Vec<usize>` of length `num_masks * 4` containing bounding boxes in xyxy format.
 pub fn masks_to_boxes_slice(masks: &[bool], num_masks: usize, height: usize, width: usize) -> Vec<usize> {
     let mut result = vec![0usize; num_masks * 4];
     for i in 0..num_masks {
@@ -152,8 +198,20 @@ pub fn masks_to_boxes_slice(masks: &[bool], num_masks: usize, height: usize, wid
     result
 }
 
-/// Calculates areas of rotated boxes in cxcywha format.
-/// `boxes` is a flat slice of length N*5.
+/// Calculates the areas of rotated bounding boxes in the cxcywha format.
+///
+/// Given rotated boxes where each box is represented as
+/// [center_x, center_y, width, height, angle], this function computes
+/// the area (width * height) of each box.
+///
+/// # Arguments
+///
+/// * `boxes` - A flat slice of length `n * 5` containing rotated boxes in cxcywha format.
+/// * `n` - The number of rotated boxes.
+///
+/// # Returns
+///
+/// A `Vec<f64>` of length `n` containing the area of each rotated box.
 pub fn rotated_box_areas_slice(boxes: &[f64], n: usize) -> Vec<f64> {
     let mut areas = vec![0.0f64; n];
     for i in 0..n {
@@ -165,6 +223,28 @@ pub fn rotated_box_areas_slice(boxes: &[f64], n: usize) -> Vec<f64> {
 
 // ─── ndarray wrappers ───
 
+/// Calculates the areas of a 2D array of boxes.
+///
+/// # Arguments
+///
+/// * `boxes` - A 2D array of boxes represented as an `ArrayView2<N>` in xyxy format.
+///
+/// # Returns
+///
+/// An `Array1<f64>` containing the areas of each box in the same order as the input array.
+///
+/// # Examples
+///
+/// ```
+/// use ndarray::array;
+/// use powerboxesrs::boxes::box_areas;
+///
+/// let boxes = array![[1., 2., 3., 4.], [0., 0., 10., 10.]];
+///
+/// let areas = box_areas(&boxes);
+///
+/// assert_eq!(areas, array![4., 100.]);
+/// ```
 #[cfg(feature = "ndarray")]
 pub fn box_areas<'a, N, BA>(boxes: BA) -> Array1<f64>
 where
@@ -177,6 +257,29 @@ where
     Array1::from(box_areas_slice(slice, n))
 }
 
+/// Calculates the areas of a 2D array of boxes in parallel.
+/// This function is only faster than `box_areas` for large arrays.
+///
+/// # Arguments
+///
+/// * `boxes` - A 2D array of boxes represented as an `ArrayView2<N>` in xyxy format.
+///
+/// # Returns
+///
+/// An `Array1<f64>` containing the areas of each box in the same order as the input array.
+///
+/// # Examples
+///
+/// ```
+/// use ndarray::array;
+/// use powerboxesrs::boxes::parallel_box_areas;
+///
+/// let boxes = array![[1., 2., 3., 4.], [0., 0., 10., 10.]];
+///
+/// let areas = parallel_box_areas(&boxes);
+///
+/// assert_eq!(areas, array![4., 100.]);
+/// ```
 #[cfg(feature = "ndarray")]
 pub fn parallel_box_areas<'a, N, BA>(boxes: BA) -> Array1<f64>
 where
@@ -200,6 +303,29 @@ where
     areas
 }
 
+/// Removes all boxes from the input array that have an area smaller than `min_size`.
+///
+/// # Arguments
+///
+/// * `boxes` - A 2D array of boxes represented as an `ArrayView2<N>` in xyxy format.
+/// * `min_size` - The minimum area of boxes to keep.
+///
+/// # Returns
+///
+/// A new 2D array with all boxes smaller than `min_size` removed.
+///
+/// # Examples
+///
+/// ```
+/// use ndarray::array;
+/// use powerboxesrs::boxes::remove_small_boxes;
+///
+/// let boxes = array![[1., 2., 3., 4.], [0., 0., 10., 10.]];
+/// let min_size = 10.0;
+/// let result = remove_small_boxes(&boxes, min_size);
+///
+/// assert_eq!(result, array![[0., 0., 10., 10.]]);
+/// ```
 #[cfg(feature = "ndarray")]
 pub fn remove_small_boxes<'a, N, BA>(boxes: BA, min_size: f64) -> Array2<N>
 where
@@ -216,6 +342,35 @@ where
     boxes.select(Axis(0), &keep)
 }
 
+/// Converts a 2D array of boxes from one format to another, in-place.
+///
+/// This works because all box formats use 4 values in their representations.
+///
+/// # Arguments
+///
+/// * `boxes` - A mutable 2D array of boxes in the input format.
+/// * `in_fmt` - The input format of the boxes.
+/// * `out_fmt` - The desired output format of the boxes.
+///
+/// # Example
+///
+/// ```
+/// use ndarray::arr2;
+/// use powerboxesrs::boxes::{BoxFormat, box_convert_inplace};
+///
+/// let mut boxes = arr2(&[
+///     [10.0, 20.0, 30.0, 40.0],
+///     [75.0, 25.0, 100.0, 200.0],
+///     [100.0, 100.0, 101.0, 101.0],
+/// ]);
+/// let expected_output = arr2(&[
+///     [20.0, 30.0, 20.0, 20.0],
+///     [87.5, 112.5, 25.0, 175.0],
+///     [100.5, 100.5, 1.0, 1.0],
+/// ]);
+/// box_convert_inplace(&mut boxes, BoxFormat::XYXY, BoxFormat::CXCYWH);
+/// assert_eq!(boxes, expected_output);
+/// ```
 #[cfg(feature = "ndarray")]
 pub fn box_convert_inplace<'a, N, BA>(boxes: BA, in_fmt: BoxFormat, out_fmt: BoxFormat)
 where
@@ -277,6 +432,37 @@ where
         });
 }
 
+/// Converts a 2D array of boxes from one format to another.
+///
+/// # Arguments
+///
+/// * `boxes` - A 2D array of boxes in the input format.
+/// * `in_fmt` - The input format of the boxes.
+/// * `out_fmt` - The desired output format of the boxes.
+///
+/// # Returns
+///
+/// A 2D array of boxes in the output format.
+///
+/// # Example
+///
+/// ```
+/// use ndarray::arr2;
+/// use powerboxesrs::boxes::{BoxFormat, box_convert};
+///
+/// let boxes = arr2(&[
+///     [10.0, 20.0, 30.0, 40.0],
+///     [75.0, 25.0, 100.0, 200.0],
+///     [100.0, 100.0, 101.0, 101.0],
+/// ]);
+/// let expected_output = arr2(&[
+///     [20.0, 30.0, 20.0, 20.0],
+///     [87.5, 112.5, 25.0, 175.0],
+///     [100.5, 100.5, 1.0, 1.0],
+/// ]);
+/// let output = box_convert(&boxes, BoxFormat::XYXY, BoxFormat::CXCYWH);
+/// assert_eq!(output, expected_output);
+/// ```
 #[cfg(feature = "ndarray")]
 pub fn box_convert<'a, N, BA>(boxes: BA, in_fmt: BoxFormat, out_fmt: BoxFormat) -> Array2<N>
 where
@@ -288,6 +474,38 @@ where
     converted_boxes
 }
 
+/// Converts a 2D array of boxes from one format to another, in parallel.
+/// This function is only faster than `box_convert` for large arrays.
+///
+/// # Arguments
+///
+/// * `boxes` - A 2D array of boxes in the input format.
+/// * `in_fmt` - The input format of the boxes.
+/// * `out_fmt` - The desired output format of the boxes.
+///
+/// # Returns
+///
+/// A 2D array of boxes in the output format.
+///
+/// # Example
+///
+/// ```
+/// use ndarray::arr2;
+/// use powerboxesrs::boxes::{BoxFormat, parallel_box_convert};
+///
+/// let boxes = arr2(&[
+///     [10.0, 20.0, 30.0, 40.0],
+///     [75.0, 25.0, 100.0, 200.0],
+///     [100.0, 100.0, 101.0, 101.0],
+/// ]);
+/// let expected_output = arr2(&[
+///     [20.0, 30.0, 20.0, 20.0],
+///     [87.5, 112.5, 25.0, 175.0],
+///     [100.5, 100.5, 1.0, 1.0],
+/// ]);
+/// let output = parallel_box_convert(&boxes, BoxFormat::XYXY, BoxFormat::CXCYWH);
+/// assert_eq!(expected_output, output);
+/// ```
 #[cfg(feature = "ndarray")]
 pub fn parallel_box_convert<N>(
     boxes: &Array2<N>,
@@ -362,6 +580,31 @@ where
     converted_boxes
 }
 
+/// Computes the bounding boxes around the provided masks.
+/// Returns a [N, 4] array containing bounding boxes in xyxy format.
+///
+/// # Arguments
+///
+/// * `masks` - A [N, H, W] array of masks where N is the number of masks
+///   and (H, W) are the spatial dimensions.
+///
+/// # Returns
+///
+/// A [N, 4] array of boxes in xyxy format.
+///
+/// # Example
+///
+/// ```
+/// use ndarray::{arr3, array};
+/// use powerboxesrs::boxes::masks_to_boxes;
+/// let masks = arr3(&[
+///   [[true, true, true], [false, false, false]],
+///   [[false, false, false], [true, true, true]],
+///   [[false, false, false], [false, false, true]],
+/// ]);
+/// let boxes = masks_to_boxes(&masks);
+/// assert_eq!(boxes, array![[0, 0, 2, 0], [0, 1, 2, 1], [2, 1, 2, 1]]);
+/// ```
 #[cfg(feature = "ndarray")]
 pub fn masks_to_boxes<'a, MA>(masks: MA) -> Array2<usize>
 where
@@ -381,6 +624,20 @@ where
     Array2::from_shape_vec((num_masks, 4), flat).unwrap()
 }
 
+/// Calculates the areas of rotated boxes in the cxcywha format.
+///
+/// Given an array of rotated boxes represented in the cxcywha format, where each row
+/// corresponds to a box and the columns represent center-x, center-y, width, height,
+/// and orientation angle, this function computes the area of each box and returns
+/// an array containing the computed areas.
+///
+/// # Arguments
+///
+/// * `boxes` - A 2D array representing rotated boxes in the cxcywha format.
+///
+/// # Returns
+///
+/// A 1D array containing the computed areas of each rotated box.
 #[cfg(feature = "ndarray")]
 pub fn rotated_box_areas<'a, BA>(boxes: BA) -> Array1<f64>
 where

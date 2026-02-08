@@ -21,7 +21,7 @@ classifiers = [
     "Operating System :: MacOS",
 ]
 license = "MIT"
-readme = "README.md"
+readme = "../README.md"
 authors = [{name = "Buillaume", email = "guillaume.bertrand@edhec.com"}]
 description = "Utility functions to manipulate and compute metrics on boxes"
 version = "0.3.0"

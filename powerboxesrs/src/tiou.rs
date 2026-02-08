@@ -10,11 +10,22 @@ use crate::{
 
 // ─── Slice-based core ───
 
-/// Computes the TIoU distance between two sets of bounding boxes (slice-based).
+/// Computes the Tracking Intersection over Union (TIoU) distance between two sets of bounding boxes.
+/// See <https://arxiv.org/pdf/2310.05171.pdf>.
 ///
-/// `boxes1` is a flat slice of length `n1 * 4` (row-major xyxy format).
-/// `boxes2` is a flat slice of length `n2 * 4`.
-/// Returns a flat `Vec<f64>` of length `n1 * n2` (row-major).
+/// # Arguments
+///
+/// * `boxes1` - A flat slice of length `n1 * 4` representing the coordinates in xyxy format
+///   of the first set of bounding boxes (row-major).
+/// * `boxes2` - A flat slice of length `n2 * 4` representing the coordinates in xyxy format
+///   of the second set of bounding boxes (row-major).
+/// * `n1` - The number of boxes in the first set.
+/// * `n2` - The number of boxes in the second set.
+///
+/// # Returns
+///
+/// A flat `Vec<f64>` of length `n1 * n2` (row-major) representing the TIoU distance
+/// between each pair of bounding boxes.
 pub fn tiou_distance_slice<N>(boxes1: &[N], boxes2: &[N], n1: usize, n2: usize) -> Vec<f64>
 where
     N: Num + PartialOrd + ToPrimitive + Copy,
@@ -43,7 +54,24 @@ where
     result
 }
 
-/// Calculates rotated TIoU distance (slice-based).
+/// Calculates the rotated Tracking IoU (TIoU) distance between two sets of rotated bounding boxes.
+///
+/// Given two sets of rotated bounding boxes, this function computes the rotated TIoU distance
+/// matrix between them. The rotated TIoU distance is a measure of dissimilarity between two
+/// rotated bounding boxes, taking into account both their overlap and the encompassing area.
+///
+/// # Arguments
+///
+/// * `boxes1` - A flat slice of length `n1 * 5`. Each box contains
+///   parameters [center_x, center_y, width, height, angle in degrees].
+/// * `boxes2` - A flat slice of length `n2 * 5`. Each box contains
+///   parameters [center_x, center_y, width, height, angle in degrees].
+/// * `n1` - The number of boxes in the first set.
+/// * `n2` - The number of boxes in the second set.
+///
+/// # Returns
+///
+/// A flat `Vec<f64>` of length `n1 * n2` (row-major) representing the rotated TIoU distance matrix.
 pub fn rotated_tiou_distance_slice(boxes1: &[f64], boxes2: &[f64], n1: usize, n2: usize) -> Vec<f64> {
     let mut result = vec![utils::ONE; n1 * n2];
     let areas1 = boxes::rotated_box_areas_slice(boxes1, n1);
@@ -85,6 +113,35 @@ pub fn rotated_tiou_distance_slice(boxes1: &[f64], boxes2: &[f64], n1: usize, n2
 
 // ─── ndarray wrappers ───
 
+/// Computes the Tracking Intersection over Union (TIoU) distance between two sets of bounding boxes.
+/// See <https://arxiv.org/pdf/2310.05171.pdf>.
+///
+/// # Arguments
+///
+/// * `boxes1` - A 2D array of shape `(num_boxes1, 4)` representing the coordinates in xyxy format
+///   of the first set of bounding boxes.
+/// * `boxes2` - A 2D array of shape `(num_boxes2, 4)` representing the coordinates in xyxy format
+///   of the second set of bounding boxes.
+///
+/// # Returns
+///
+/// A 2D array of shape `(num_boxes1, num_boxes2)` representing the TIoU distance between each pair
+/// of bounding boxes.
+///
+/// # Examples
+///
+/// ```
+/// use ndarray::array;
+/// use powerboxesrs::tiou::tiou_distance;
+///
+/// let boxes1 = array![[0., 0., 10., 10.], [20., 20., 30., 30.]];
+/// let boxes2 = array![[0., 0., 10., 10.], [15., 15., 25., 25.], [20., 20., 30., 30.]];
+///
+/// let tiou = tiou_distance(&boxes1, &boxes2);
+///
+/// assert_eq!(tiou.shape(), &[2, 3]);
+/// assert_eq!(tiou, array![[0., 0.84, 0.8888888888888888], [0.8888888888888888, 0.5555555555555556, 0.]]);
+/// ```
 #[cfg(feature = "ndarray")]
 pub fn tiou_distance<'a, N, BA>(boxes1: BA, boxes2: BA) -> Array2<f64>
 where
@@ -101,6 +158,23 @@ where
     Array2::from_shape_vec((n1, n2), result).unwrap()
 }
 
+/// Calculates the rotated Tracking IoU (TIoU) distance between two sets of rotated bounding boxes.
+///
+/// Given two sets of rotated bounding boxes, this function computes the rotated TIoU distance
+/// matrix between them. The rotated TIoU distance is a measure of dissimilarity between two
+/// rotated bounding boxes, taking into account both their overlap and the encompassing area.
+///
+/// # Arguments
+///
+/// * `boxes1` - A 2D array containing the parameters of the first set of rotated bounding boxes.
+///   Each row represents a rotated bounding box with parameters [center_x, center_y, width, height, angle in degrees].
+/// * `boxes2` - A 2D array containing the parameters of the second set of rotated bounding boxes.
+///   Each row represents a rotated bounding box with parameters [center_x, center_y, width, height, angle in degrees].
+///
+/// # Returns
+///
+/// A 2D array representing the rotated TIoU distance matrix. The element at position (i, j)
+/// represents the rotated TIoU distance between the i-th box in `boxes1` and the j-th box in `boxes2`.
 #[cfg(feature = "ndarray")]
 pub fn rotated_tiou_distance<'a, BA>(boxes1: BA, boxes2: BA) -> Array2<f64>
 where

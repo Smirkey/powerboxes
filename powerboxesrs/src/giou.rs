@@ -13,11 +13,21 @@ use crate::{
 
 // ─── Slice-based core ───
 
-/// Computes the GIoU distance between two sets of bounding boxes (slice-based).
+/// Computes the Generalized Intersection over Union (GIoU) distance between two sets of bounding boxes.
 ///
-/// `boxes1` is a flat slice of length `n1 * 4` (row-major xyxy format).
-/// `boxes2` is a flat slice of length `n2 * 4`.
-/// Returns a flat `Vec<f64>` of length `n1 * n2` (row-major).
+/// # Arguments
+///
+/// * `boxes1` - A flat slice of length `n1 * 4` representing the coordinates in xyxy format
+///   of the first set of bounding boxes (row-major).
+/// * `boxes2` - A flat slice of length `n2 * 4` representing the coordinates in xyxy format
+///   of the second set of bounding boxes (row-major).
+/// * `n1` - The number of boxes in the first set.
+/// * `n2` - The number of boxes in the second set.
+///
+/// # Returns
+///
+/// A flat `Vec<f64>` of length `n1 * n2` (row-major) representing the GIoU distance
+/// between each pair of bounding boxes.
 pub fn giou_distance_slice<N>(boxes1: &[N], boxes2: &[N], n1: usize, n2: usize) -> Vec<f64>
 where
     N: Num + PartialOrd + ToPrimitive + Copy,
@@ -61,7 +71,24 @@ where
     result
 }
 
-/// Calculates rotated GIoU distance (slice-based).
+/// Calculates the rotated Generalized IoU (GIoU) distance between two sets of rotated bounding boxes.
+///
+/// Given two sets of rotated bounding boxes, this function computes the rotated GIoU distance
+/// matrix between them. The rotated GIoU distance is a measure of dissimilarity between two
+/// rotated bounding boxes, taking into account both their overlap and the encompassing area.
+///
+/// # Arguments
+///
+/// * `boxes1` - A flat slice of length `n1 * 5`. Each box contains
+///   parameters [center_x, center_y, width, height, angle].
+/// * `boxes2` - A flat slice of length `n2 * 5`. Each box contains
+///   parameters [center_x, center_y, width, height, angle].
+/// * `n1` - The number of boxes in the first set.
+/// * `n2` - The number of boxes in the second set.
+///
+/// # Returns
+///
+/// A flat `Vec<f64>` of length `n1 * n2` (row-major) representing the rotated GIoU distance matrix.
 pub fn rotated_giou_distance_slice(boxes1: &[f64], boxes2: &[f64], n1: usize, n2: usize) -> Vec<f64> {
     let mut result = vec![utils::ONE; n1 * n2];
     let areas1 = boxes::rotated_box_areas_slice(boxes1, n1);
@@ -121,6 +148,34 @@ pub fn rotated_giou_distance_slice(boxes1: &[f64], boxes2: &[f64], n1: usize, n2
 
 // ─── ndarray wrappers ───
 
+/// Computes the Generalized Intersection over Union (GIoU) distance between two sets of bounding boxes.
+///
+/// # Arguments
+///
+/// * `boxes1` - A 2D array of shape `(num_boxes1, 4)` representing the coordinates in xyxy format
+///   of the first set of bounding boxes.
+/// * `boxes2` - A 2D array of shape `(num_boxes2, 4)` representing the coordinates in xyxy format
+///   of the second set of bounding boxes.
+///
+/// # Returns
+///
+/// A 2D array of shape `(num_boxes1, num_boxes2)` representing the GIoU distance between each pair
+/// of bounding boxes.
+///
+/// # Examples
+///
+/// ```
+/// use ndarray::array;
+/// use powerboxesrs::giou::giou_distance;
+///
+/// let boxes1 = array![[0., 0., 10., 10.], [20., 20., 30., 30.]];
+/// let boxes2 = array![[0., 0., 10., 10.], [15., 15., 25., 25.], [20., 20., 30., 30.]];
+///
+/// let giou = giou_distance(&boxes1, &boxes2);
+///
+/// assert_eq!(giou.shape(), &[2, 3]);
+/// assert_eq!(giou, array![[0., 1.6800000000000002, 1.7777777777777777], [1.7777777777777777, 1.0793650793650793, 0.]]);
+/// ```
 #[cfg(feature = "ndarray")]
 pub fn giou_distance<'a, N, BA>(boxes1: BA, boxes2: BA) -> Array2<f64>
 where
@@ -137,6 +192,35 @@ where
     Array2::from_shape_vec((n1, n2), result).unwrap()
 }
 
+/// Computes the parallelized version of the Generalized Intersection over Union (GIoU) distance
+/// between two sets of bounding boxes. Usually better when a high number of bounding boxes is used.
+///
+/// # Arguments
+///
+/// * `boxes1` - A 2D array of shape `(num_boxes1, 4)` representing the coordinates in xyxy format
+///   of the first set of bounding boxes.
+/// * `boxes2` - A 2D array of shape `(num_boxes2, 4)` representing the coordinates in xyxy format
+///   of the second set of bounding boxes.
+///
+/// # Returns
+///
+/// A 2D array of shape `(num_boxes1, num_boxes2)` representing the GIoU distance between each pair
+/// of bounding boxes.
+///
+/// # Examples
+///
+/// ```
+/// use ndarray::array;
+/// use powerboxesrs::giou::parallel_giou_distance;
+///
+/// let boxes1 = array![[0., 0., 10., 10.], [20., 20., 30., 30.]];
+/// let boxes2 = array![[0., 0., 10., 10.], [15., 15., 25., 25.], [20., 20., 30., 30.]];
+///
+/// let giou = parallel_giou_distance(&boxes1, &boxes2);
+///
+/// assert_eq!(giou.shape(), &[2, 3]);
+/// assert_eq!(giou, array![[0., 1.6800000000000002, 1.7777777777777777], [1.7777777777777777, 1.0793650793650793, 0.]]);
+/// ```
 #[cfg(feature = "ndarray")]
 pub fn parallel_giou_distance<'a, N, BA>(boxes1: BA, boxes2: BA) -> Array2<f64>
 where
@@ -195,6 +279,24 @@ where
     giou_matrix
 }
 
+/// Calculates the rotated Generalized IoU (GIoU) distance between two sets of rotated bounding boxes.
+///
+/// Given two sets of rotated bounding boxes represented by `boxes1` and `boxes2`, this function
+/// computes the rotated GIoU distance matrix between them. The rotated GIoU distance is a measure
+/// of dissimilarity between two rotated bounding boxes, taking into account both their overlap
+/// and the encompassing area.
+///
+/// # Arguments
+///
+/// * `boxes1` - A 2D array containing the parameters of the first set of rotated bounding boxes.
+///   Each row represents a rotated bounding box with parameters [center_x, center_y, width, height, angle].
+/// * `boxes2` - A 2D array containing the parameters of the second set of rotated bounding boxes.
+///   Each row represents a rotated bounding box with parameters [center_x, center_y, width, height, angle].
+///
+/// # Returns
+///
+/// A 2D array representing the rotated GIoU distance matrix. The element at position (i, j)
+/// represents the rotated GIoU distance between the i-th box in `boxes1` and the j-th box in `boxes2`.
 #[cfg(feature = "ndarray")]
 pub fn rotated_giou_distance<'a, BA>(boxes1: BA, boxes2: BA) -> Array2<f64>
 where

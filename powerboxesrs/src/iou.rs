@@ -10,11 +10,19 @@ use rstar::RTree;
 
 // ─── Slice-based core ───
 
-/// Calculates the IoU distance between two sets of bounding boxes (slice-based).
+/// Calculates the intersection over union (IoU) distance between two sets of bounding boxes.
 ///
-/// `boxes1` is a flat slice of length `n1 * 4` (row-major xyxy format).
-/// `boxes2` is a flat slice of length `n2 * 4`.
-/// Returns a flat `Vec<f64>` of length `n1 * n2` (row-major).
+/// # Arguments
+///
+/// * `boxes1` - A flat slice of length `n1 * 4` representing N bounding boxes in xyxy format (row-major).
+/// * `boxes2` - A flat slice of length `n2 * 4` representing M bounding boxes in xyxy format (row-major).
+/// * `n1` - The number of boxes in the first set.
+/// * `n2` - The number of boxes in the second set.
+///
+/// # Returns
+///
+/// A flat `Vec<f64>` of length `n1 * n2` (row-major) representing the IoU distance
+/// between each pair of bounding boxes.
 pub fn iou_distance_slice<N>(boxes1: &[N], boxes2: &[N], n1: usize, n2: usize) -> Vec<f64>
 where
     N: Num + PartialOrd + ToPrimitive + Copy,
@@ -48,10 +56,20 @@ where
     result
 }
 
-/// Calculates rotated IoU distance (slice-based).
-/// `boxes1` is a flat slice of length `n1 * 5` (cxcywha format).
-/// `boxes2` is a flat slice of length `n2 * 5`.
-/// Returns a flat `Vec<f64>` of length `n1 * n2` (row-major).
+/// Calculates the Rotated Intersection over Union (IoU) distance between two sets of rotated bounding boxes.
+///
+/// # Arguments
+///
+/// * `boxes1` - A flat slice of length `n1 * 5`. Each box contains
+///   the parameters (center_x, center_y, width, height, angle) of a rotated box.
+/// * `boxes2` - A flat slice of length `n2 * 5`. Each box contains
+///   the parameters (center_x, center_y, width, height, angle) of a rotated box.
+/// * `n1` - The number of boxes in the first set.
+/// * `n2` - The number of boxes in the second set.
+///
+/// # Returns
+///
+/// A flat `Vec<f64>` of length `n1 * n2` (row-major) containing the Rotated IoU distance matrix.
 pub fn rotated_iou_distance_slice(boxes1: &[f64], boxes2: &[f64], n1: usize, n2: usize) -> Vec<f64> {
     let mut result = vec![utils::ONE; n1 * n2];
     let areas1 = boxes::rotated_box_areas_slice(boxes1, n1);
@@ -115,6 +133,28 @@ pub fn rotated_iou_distance_slice(boxes1: &[f64], boxes2: &[f64], n1: usize, n2:
 
 // ─── ndarray wrappers ───
 
+/// Calculates the intersection over union (IoU) distance between two sets of bounding boxes.
+///
+/// # Arguments
+///
+/// * `boxes1` - A 2D array of shape (N, 4) representing N bounding boxes in xyxy format.
+/// * `boxes2` - A 2D array of shape (M, 4) representing M bounding boxes in xyxy format.
+///
+/// # Returns
+///
+/// A 2D array of shape (N, M) representing the IoU distance between each pair of bounding boxes.
+///
+/// # Examples
+///
+/// ```
+/// use ndarray::array;
+/// use powerboxesrs::iou::iou_distance;
+///
+/// let boxes1 = array![[0.0, 0.0, 1.0, 1.0], [2.0, 2.0, 3.0, 3.0]];
+/// let boxes2 = array![[0.5, 0.5, 1.5, 1.5], [2.5, 2.5, 3.5, 3.5]];
+/// let iou = iou_distance(&boxes1, &boxes2);
+/// assert_eq!(iou, array![[0.8571428571428572, 1.],[1., 0.8571428571428572]]);
+/// ```
 #[cfg(feature = "ndarray")]
 pub fn iou_distance<'a, N, BA>(boxes1: BA, boxes2: BA) -> Array2<f64>
 where
@@ -131,6 +171,30 @@ where
     Array2::from_shape_vec((n1, n2), result).unwrap()
 }
 
+/// Calculates the intersection over union (IoU) distance between two sets of bounding boxes.
+/// This function uses rayon to parallelize the computation, which can be faster than the
+/// non-parallelized version for large numbers of boxes.
+///
+/// # Arguments
+///
+/// * `boxes1` - A 2D array of shape (N, 4) representing N bounding boxes in xyxy format.
+/// * `boxes2` - A 2D array of shape (M, 4) representing M bounding boxes in xyxy format.
+///
+/// # Returns
+///
+/// A 2D array of shape (N, M) representing the IoU distance between each pair of bounding boxes.
+///
+/// # Examples
+///
+/// ```
+/// use ndarray::array;
+/// use powerboxesrs::iou::parallel_iou_distance;
+///
+/// let boxes1 = array![[0.0, 0.0, 1.0, 1.0], [2.0, 2.0, 3.0, 3.0]];
+/// let boxes2 = array![[0.5, 0.5, 1.5, 1.5], [2.5, 2.5, 3.5, 3.5]];
+/// let iou = parallel_iou_distance(&boxes1, &boxes2);
+/// assert_eq!(iou, array![[0.8571428571428572, 1.],[1., 0.8571428571428572]]);
+/// ```
 #[cfg(feature = "ndarray")]
 pub fn parallel_iou_distance<'a, N, BA>(boxes1: BA, boxes2: BA) -> Array2<f64>
 where
@@ -179,6 +243,19 @@ where
     iou_matrix
 }
 
+/// Calculates the Rotated Intersection over Union (IoU) distance matrix between two sets of rotated bounding boxes.
+///
+/// # Arguments
+///
+/// * `boxes1` - A 2D array representing the first set of rotated bounding boxes. Each row contains
+///   the parameters (center_x, center_y, width, height, angle) of a rotated box.
+/// * `boxes2` - A 2D array representing the second set of rotated bounding boxes. Each row contains
+///   the parameters (center_x, center_y, width, height, angle) of a rotated box.
+///
+/// # Returns
+///
+/// A 2D array containing the Rotated IoU distance matrix. The element at position (i, j) represents
+/// the Rotated IoU distance between the i-th box in `boxes1` and the j-th box in `boxes2`.
 #[cfg(feature = "ndarray")]
 pub fn rotated_iou_distance<'a, BA>(boxes1: BA, boxes2: BA) -> Array2<f64>
 where

@@ -233,7 +233,7 @@ checksum = "f59e70c4aef1e55797c2e8fd94a4f2a973fc972cfde0e0b05f683667b0cd39dd"
 
 [[package]]
 name = "powerboxesrs"
-version = "0.2.3"
+version = "0.3.0"
 dependencies = [
  "ndarray",
  "num-traits",

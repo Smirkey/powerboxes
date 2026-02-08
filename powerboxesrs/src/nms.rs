@@ -17,11 +17,20 @@ where
 
 // ─── Slice-based core ───
 
-/// Performs non-maximum suppression (NMS) on flat slices.
+/// Performs non-maximum suppression (NMS) on a set of bounding boxes using their scores and IoU.
 ///
-/// `boxes` is a flat slice of length `n * 4` (row-major xyxy format).
-/// `scores` is a slice of length `n`.
-/// Returns a Vec of indices to keep.
+/// # Arguments
+///
+/// * `boxes` - A flat slice of length `n * 4` representing the coordinates in xyxy format
+///   of the bounding boxes (row-major).
+/// * `scores` - A slice of length `n` representing the scores of the bounding boxes.
+/// * `n` - The number of bounding boxes.
+/// * `iou_threshold` - The IoU threshold to use for filtering.
+/// * `score_threshold` - The score threshold to use for filtering.
+///
+/// # Returns
+///
+/// A `Vec<usize>` representing the indices of the bounding boxes to keep.
 pub fn nms_slice<N>(
     boxes: &[N],
     scores: &[f64],
@@ -84,11 +93,23 @@ where
     keep
 }
 
-/// Performs R-tree accelerated NMS on flat slices.
+/// Performs non-maximum suppression (NMS) on a set of bounding boxes using their scores and IoU.
+/// This function internally uses an R-tree to speed up the computation. It is recommended to use
+/// this function when the number of boxes is large.
+/// The R-tree implementation is based on the rstar crate. It allows queries in O(log n) time.
 ///
-/// `boxes` is a flat slice of length `n * 4` (row-major xyxy format).
-/// `scores` is a slice of length `n`.
-/// Returns a Vec of indices to keep.
+/// # Arguments
+///
+/// * `boxes` - A flat slice of length `n * 4` representing the coordinates in xyxy format
+///   of the bounding boxes (row-major).
+/// * `scores` - A slice of length `n` representing the scores of the bounding boxes.
+/// * `n` - The number of bounding boxes.
+/// * `iou_threshold` - The IoU threshold to use for filtering.
+/// * `score_threshold` - The score threshold to use for filtering.
+///
+/// # Returns
+///
+/// A `Vec<usize>` representing the indices of the bounding boxes to keep.
 pub fn rtree_nms_slice<N>(
     boxes: &[N],
     scores: &[f64],
@@ -172,6 +193,31 @@ where
 
 // ─── ndarray wrappers ───
 
+/// Performs non-maximum suppression (NMS) on a set of bounding boxes using their scores and IoU.
+///
+/// # Arguments
+///
+/// * `boxes` - A 2D array of shape `(num_boxes, 4)` representing the coordinates in xyxy format
+///   of the bounding boxes.
+/// * `scores` - A 1D array of shape `(num_boxes,)` representing the scores of the bounding boxes.
+/// * `iou_threshold` - A float representing the IoU threshold to use for filtering.
+/// * `score_threshold` - A float representing the score threshold to use for filtering.
+///
+/// # Returns
+///
+/// A `Vec<usize>` representing the indices of the bounding boxes to keep.
+///
+/// # Examples
+///
+/// ```
+/// use ndarray::{arr2, Array1};
+/// use powerboxesrs::nms::nms;
+///
+/// let boxes = arr2(&[[0.0, 0.0, 2.0, 2.0], [1.0, 1.0, 3.0, 3.0]]);
+/// let scores = Array1::from(vec![1.0, 1.0]);
+/// let keep = nms(&boxes, &scores, 0.8, 0.0);
+/// assert_eq!(keep, vec![0, 1]);
+/// ```
 #[cfg(feature = "ndarray")]
 pub fn nms<'a, N, BA, SA>(
     boxes: BA,
@@ -193,6 +239,34 @@ where
     nms_slice(boxes_slice, scores_slice, n, iou_threshold, score_threshold)
 }
 
+/// Performs non-maximum suppression (NMS) on a set of bounding boxes using their scores and IoU.
+/// This function internally uses an R-tree to speed up the computation. It is recommended to use
+/// this function when the number of boxes is large.
+/// The R-tree implementation is based on the rstar crate. It allows queries in O(log n) time.
+///
+/// # Arguments
+///
+/// * `boxes` - A 2D array of shape `(num_boxes, 4)` representing the coordinates in xyxy format
+///   of the bounding boxes.
+/// * `scores` - A 1D array of shape `(num_boxes,)` representing the scores of the bounding boxes.
+/// * `iou_threshold` - A float representing the IoU threshold to use for filtering.
+/// * `score_threshold` - A float representing the score threshold to use for filtering.
+///
+/// # Returns
+///
+/// A `Vec<usize>` representing the indices of the bounding boxes to keep.
+///
+/// # Examples
+///
+/// ```
+/// use ndarray::{arr2, Array1};
+/// use powerboxesrs::nms::rtree_nms;
+///
+/// let boxes = arr2(&[[0.0, 0.0, 2.0, 2.0], [1.0, 1.0, 3.0, 3.0]]);
+/// let scores = Array1::from(vec![1.0, 1.0]);
+/// let keep = rtree_nms(&boxes, &scores, 0.8, 0.0);
+/// assert_eq!(keep, vec![0, 1]);
+/// ```
 #[cfg(feature = "ndarray")]
 pub fn rtree_nms<'a, N, BA, SA>(
     boxes: BA,
