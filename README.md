@@ -41,17 +41,24 @@ area = pb.box_areas(box)
 
 # Compute the intersection of the box with itself
 intersection = pb.iou_distance(box, box)
+
+# Draw boxes on an image (CHW format, uint8)
+import numpy as np
+image = np.zeros((3, 100, 100), dtype=np.uint8)
+boxes = np.array([[10.0, 10.0, 50.0, 50.0]])
+result = pb.draw_boxes(image, boxes)
 ```
 
 
 ## Use it in Rust
-Here is a simple example:
+All core functions use a slice-based API. ndarray wrappers are available behind the `ndarray` feature (enabled by default).
+
 ```rust
-use ndarray::array;
-use powerboxesrs::boxes::box_areas;
-let boxes = array![[1., 2., 3., 4.], [0., 0., 10., 10.]];
-let areas = box_areas(&boxes);
-assert_eq!(areas, array![4., 100.]);
+use powerboxesrs::iou::iou_distance_slice;
+
+let boxes1 = vec![0.0, 0.0, 1.0, 1.0, 2.0, 2.0, 3.0, 3.0];
+let boxes2 = vec![0.5, 0.5, 1.5, 1.5, 2.5, 2.5, 3.5, 3.5];
+let iou = iou_distance_slice(&boxes1, &boxes2, 2, 2);
 ```
 
 

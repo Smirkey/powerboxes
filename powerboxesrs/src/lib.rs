@@ -44,6 +44,9 @@
 //! - `nms`: Non-maximum suppression, returns the indices of the boxes to keep
 //! - `rtree_nms`: Non-maximum suppression, returns the indices of the boxes to keep, uses a r-tree internally to avoid quadratic complexity, useful when having many boxes.
 //!
+//! #### Drawing
+//! - `draw_boxes`: Draw bounding boxes on a CHW image tensor
+//!
 pub mod boxes;
 pub mod diou;
 pub mod draw;
