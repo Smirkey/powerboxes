@@ -311,11 +311,15 @@ jobs:
           cd bindings
           uv sync --group dev --no-install-project
           uv pip install powerboxes --no-index --no-deps --find-links pgo-wheel --force-reinstall
-          uv run pytest tests/test_speed.py
+          uv run --no-project pytest tests/test_speed.py
           rustup run stable bash -c 'echo LLVM_PROFDATA=$RUSTUP_HOME/toolchains/$RUSTUP_TOOLCHAIN/lib/rustlib/${{ env.RUST_HOST }}/bin/llvm-profdata >> "$GITHUB_ENV"'
 
       - name: merge pgo data
         run: ${{ env.LLVM_PROFDATA }} merge -o ${{ github.workspace }}/merged.profdata ${{ github.workspace }}/profdata
+
+      - name: clean before pgo-optimized build
+        run: cargo clean --manifest-path bindings/Cargo.toml
+        shell: bash
 
       - name: build pgo-optimized wheel
         uses: PyO3/maturin-action@v1
