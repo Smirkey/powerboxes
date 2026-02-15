@@ -309,7 +309,7 @@ jobs:
       - name: generate pgo data
         run: |
           cd bindings
-          uv sync --group dev
+          uv sync --group dev --no-install-project
           uv pip install powerboxes --no-index --no-deps --find-links pgo-wheel --force-reinstall
           uv run pytest tests/test_speed.py
           rustup run stable bash -c 'echo LLVM_PROFDATA=$RUSTUP_HOME/toolchains/$RUSTUP_TOOLCHAIN/lib/rustlib/${{ env.RUST_HOST }}/bin/llvm-profdata >> "$GITHUB_ENV"'
