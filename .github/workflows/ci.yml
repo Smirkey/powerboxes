@@ -317,10 +317,6 @@ jobs:
       - name: merge pgo data
         run: ${{ env.LLVM_PROFDATA }} merge -o ${{ github.workspace }}/merged.profdata ${{ github.workspace }}/profdata
 
-      - name: clean before pgo-optimized build
-        run: cargo clean --manifest-path bindings/Cargo.toml
-        shell: bash
-
       - name: build pgo-optimized wheel
         uses: PyO3/maturin-action@v1
         with:
@@ -334,6 +330,7 @@ jobs:
           working-directory: bindings
         env:
           RUSTFLAGS: "-Cprofile-use=${{ github.workspace }}/merged.profdata"
+          CARGO_TARGET_DIR: target-pgo
 
       - run: ${{ matrix.ls || 'ls -lh' }} bindings/dist/
 
