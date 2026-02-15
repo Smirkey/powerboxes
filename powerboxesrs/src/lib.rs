@@ -26,23 +26,33 @@
 //! ```
 //!
 //! ### Functions available
-//! warning: **all functions expect the boxes to be in the format `xyxy` (top left and bottom right corners)** (not box conversion functions, of course)
+//! **Note:** all functions expect boxes in `xyxy` format (top left and bottom right corners), except box conversion and rotated box functions.
+//!
+//! All core functions have a `_slice` variant operating on flat `&[N]` slices. ndarray wrappers are available behind the `ndarray` feature (enabled by default).
 //!
 //! #### Box Transformations and utilities
 //! - `box_areas`: Compute the area of list of boxes
-//! - `box_convert`: Convert a box from one format to another. Supported formats are `xyxy`, `xywh`, `cxcywh`.
+//! - `box_convert`: Convert a box from one format to another. Supported formats are `xyxy`, `xywh`, `cxcywh`
 //! - `remove_small_boxes`: Remove boxes with area smaller than a threshold
-//! - `mask_to_boxes`: Convert a mask to a list of boxes
+//! - `masks_to_boxes`: Convert a mask to a list of boxes
 //!
 //! #### Box Metrics
 //! - `iou_distance`: Compute the intersection over union matrix of two sets of boxes
 //! - `parallel_iou_distance`: Compute the intersection over union matrix of two sets of boxes in parallel
 //! - `giou_distance`: Compute the generalized intersection over union matrix of two sets of boxes
 //! - `parallel_giou_distance`: Compute the generalized intersection over union matrix of two sets of boxes in parallel
+//! - `diou_distance`: Compute the distance intersection over union matrix of two sets of boxes
+//! - `tiou_distance`: Compute the tracking intersection over union matrix of two sets of boxes
+//!
+//! #### Rotated Box Metrics
+//! Rotated boxes use `(cx, cy, w, h, angle)` format where angle is in degrees.
+//! - `rotated_iou_distance`: Compute IoU distance for rotated boxes
+//! - `rotated_giou_distance`: Compute GIoU distance for rotated boxes
+//! - `rotated_tiou_distance`: Compute tracking IoU distance for rotated boxes
 //!
 //! #### Box NMS
 //! - `nms`: Non-maximum suppression, returns the indices of the boxes to keep
-//! - `rtree_nms`: Non-maximum suppression, returns the indices of the boxes to keep, uses a r-tree internally to avoid quadratic complexity, useful when having many boxes.
+//! - `rtree_nms`: Non-maximum suppression using an R-tree for sub-quadratic complexity
 //!
 //! #### Drawing
 //! - `draw_boxes`: Draw bounding boxes on a CHW image tensor

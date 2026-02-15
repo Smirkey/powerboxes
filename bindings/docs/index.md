@@ -23,14 +23,23 @@ pip install powerboxes
 import powerboxes as pb
 import numpy as np
 
-# Create a bounding box
-box = np.array([[0, 0, 1, 1]])
+# Create bounding boxes in xyxy format
+boxes = np.array([[0, 0, 1, 1], [2, 2, 3, 3]], dtype=np.float64)
 
-# Compute the area of the box
-area = pb.box_areas(box)
+# Compute areas
+areas = pb.boxes_areas(boxes)
 
-# Compute the intersection of the box with itself
-intersection = pb.iou_distance(box, box)
+# Compute pairwise IoU distance matrix
+iou = pb.iou_distance(boxes, boxes)
+
+# Non-maximum suppression
+scores = np.array([0.9, 0.8])
+keep = pb.nms(boxes, scores, iou_threshold=0.5, score_threshold=0.3)
+
+# Draw boxes on an image (CHW format, uint8)
+image = np.zeros((3, 100, 100), dtype=np.uint8)
+draw_boxes = np.array([[10.0, 10.0, 50.0, 50.0]])
+result = pb.draw_boxes(image, draw_boxes)
 ```
 
 !!! note "supported dtypes by most functions"
