@@ -20,6 +20,7 @@ classifiers = [
     "Operating System :: MacOS",
 ]
 license = "MIT"
+readme = "README.md"
 authors = [{name = "Buillaume", email = "guillaume.bertrand@edhec.com"}]
 description = "Utility functions to manipulate and compute metrics on boxes"
 version = "0.3.0"
@@ -51,4 +52,4 @@ docs = [
 python-source = "python"
 module-name = "powerboxes._powerboxes"
 bindings = "pyo3"
-features = ["pyo3/extension-module"]
+features = ["pyo3/extension-module", "pyo3/generate-import-lib"]
