@@ -45,15 +45,38 @@ Rotated boxes use `(cx, cy, w, h, angle)` format where angle is in degrees.
 - `draw_boxes`: Draw bounding boxes on a CHW image tensor
 
 
-## Use it in Rust
+## Usage
+
 See the [documentation](https://docs.rs/powerboxesrs) for more details.
 
-All core functions use a slice-based API (`_slice` suffix) operating on flat `&[N]` slices. ndarray wrappers are available behind the `ndarray` feature (enabled by default).
+### Slice-based API (no ndarray dependency)
+
+All core functions have a `_slice` variant that operates on flat `&[N]` slices. This avoids coupling to a specific `ndarray` version ([#60](https://github.com/Smirkey/powerboxes/issues/60)).
+
+To use powerboxesrs without ndarray:
+```toml
+[dependencies]
+powerboxesrs = { version = "0.3", default-features = false }
+```
 
 ```rust
 use powerboxesrs::iou::iou_distance_slice;
 
+// Flat slice: [x1, y1, x2, y2, ...] with num_boxes
 let boxes1 = vec![0.0, 0.0, 1.0, 1.0, 2.0, 2.0, 3.0, 3.0];
 let boxes2 = vec![0.5, 0.5, 1.5, 1.5, 2.5, 2.5, 3.5, 3.5];
 let iou = iou_distance_slice(&boxes1, &boxes2, 2, 2);
+```
+
+### ndarray API (default)
+
+With the `ndarray` feature (enabled by default), you get wrappers that accept `ArrayView2` directly. The ndarray dependency is flexible (`>=0.15, <=0.16`) to minimize version conflicts.
+
+```rust
+use powerboxesrs::iou::iou_distance;
+use ndarray::array;
+
+let boxes1 = array![[0.0, 0.0, 1.0, 1.0], [2.0, 2.0, 3.0, 3.0]];
+let boxes2 = array![[0.5, 0.5, 1.5, 1.5], [2.5, 2.5, 3.5, 3.5]];
+let iou = iou_distance(boxes1.view(), boxes2.view());
 ```

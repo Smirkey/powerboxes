@@ -1,34 +1,44 @@
 #![crate_name = "powerboxesrs"]
 
-//! Powerboxes is a package containing utility functions for transforming bounding boxes and computing metrics from them.
 //! # Powerboxesrs
 //!
-//! `powerboxesrs` is a Rust package containing utility functions for transforming bounding boxes and computing metrics from them.
+//! Utility functions for transforming bounding boxes and computing metrics.
 //!
 //! ## Installation
-//!
-//! Add the following to your `Cargo.toml` file:
 //!
 //! ```toml
 //! [dependencies]
 //! powerboxesrs = "0.3.0"
 //! ```
 //!
-//! ## Usage
+//! ## Slice-based API (no ndarray dependency)
+//!
+//! All core functions have a `_slice` variant that operates on flat `&[N]` slices,
+//! avoiding coupling to a specific `ndarray` version.
+//! To opt out of ndarray entirely, disable default features:
+//!
+//! ```toml
+//! [dependencies]
+//! powerboxesrs = { version = "0.3", default-features = false }
+//! ```
 //!
 //! ```rust
 //! use powerboxesrs::iou::iou_distance_slice;
 //!
+//! // Flat slice: [x1, y1, x2, y2, ...] with num_boxes
 //! let boxes1 = vec![0.0, 0.0, 1.0, 1.0, 2.0, 2.0, 3.0, 3.0];
 //! let boxes2 = vec![0.5, 0.5, 1.5, 1.5, 2.5, 2.5, 3.5, 3.5];
 //! let iou = iou_distance_slice(&boxes1, &boxes2, 2, 2);
 //! assert_eq!(iou, vec![0.8571428571428572, 1., 1., 0.8571428571428572]);
 //! ```
 //!
+//! ## ndarray API (default feature)
+//!
+//! With the `ndarray` feature (enabled by default), wrappers accepting `ArrayView2` are available.
+//! The ndarray dependency is flexible (`>=0.15, <=0.16`) to minimize version conflicts.
+//!
 //! ### Functions available
 //! **Note:** all functions expect boxes in `xyxy` format (top left and bottom right corners), except box conversion and rotated box functions.
-//!
-//! All core functions have a `_slice` variant operating on flat `&[N]` slices. ndarray wrappers are available behind the `ndarray` feature (enabled by default).
 //!
 //! #### Box Transformations and utilities
 //! - `box_areas`: Compute the area of list of boxes
