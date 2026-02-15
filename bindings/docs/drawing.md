@@ -2,4 +2,4 @@
 
 ## Example
 
-![draw_boxes example](../../images/antimony_draw.jpg)
+![draw_boxes example](images/antimony_draw.jpg)
