@@ -114,10 +114,16 @@ fn _powerboxes(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(masks_to_boxes, m)?)?;
     // Rotated IoU
     m.add_function(wrap_pyfunction!(rotated_iou_distance, m)?)?;
+    // Parallel Rotated IoU
+    m.add_function(wrap_pyfunction!(parallel_rotated_iou_distance, m)?)?;
     // Rotated GIoU
     m.add_function(wrap_pyfunction!(rotated_giou_distance, m)?)?;
+    // Parallel Rotated GIoU
+    m.add_function(wrap_pyfunction!(parallel_rotated_giou_distance, m)?)?;
     // Rotated TIoU
     m.add_function(wrap_pyfunction!(rotated_tiou_distance, m)?)?;
+    // Parallel Rotated TIoU
+    m.add_function(wrap_pyfunction!(parallel_rotated_tiou_distance, m)?)?;
     // Draw
     m.add_function(wrap_pyfunction!(draw_boxes, m)?)?;
     Ok(())
@@ -146,6 +152,21 @@ fn rotated_iou_distance(
     return Ok(iou_as_numpy.unbind());
 }
 
+// Parallel Rotated box IoU
+
+#[pyfunction]
+fn parallel_rotated_iou_distance(
+    py: Python,
+    boxes1: &Bound<'_, PyArray2<f64>>,
+    boxes2: &Bound<'_, PyArray2<f64>>,
+) -> PyResult<Py<PyArray2<f64>>> {
+    let boxes1 = preprocess_rotated_boxes(boxes1).unwrap();
+    let boxes2 = preprocess_rotated_boxes(boxes2).unwrap();
+    let iou = iou::parallel_rotated_iou_distance(&boxes1, &boxes2);
+    let iou_as_numpy = utils::array_to_numpy(py, iou).unwrap();
+    return Ok(iou_as_numpy.unbind());
+}
+
 // Rotated box GIoU
 
 #[pyfunction]
@@ -157,6 +178,21 @@ fn rotated_giou_distance(
     let boxes1 = preprocess_rotated_boxes(boxes1).unwrap();
     let boxes2 = preprocess_rotated_boxes(boxes2).unwrap();
     let iou = giou::rotated_giou_distance(&boxes1, &boxes2);
+    let iou_as_numpy = utils::array_to_numpy(py, iou).unwrap();
+    return Ok(iou_as_numpy.unbind());
+}
+
+// Parallel Rotated box GIoU
+
+#[pyfunction]
+fn parallel_rotated_giou_distance(
+    py: Python,
+    boxes1: &Bound<'_, PyArray2<f64>>,
+    boxes2: &Bound<'_, PyArray2<f64>>,
+) -> PyResult<Py<PyArray2<f64>>> {
+    let boxes1 = preprocess_rotated_boxes(boxes1).unwrap();
+    let boxes2 = preprocess_rotated_boxes(boxes2).unwrap();
+    let iou = giou::parallel_rotated_giou_distance(&boxes1, &boxes2);
     let iou_as_numpy = utils::array_to_numpy(py, iou).unwrap();
     return Ok(iou_as_numpy.unbind());
 }
@@ -175,6 +211,21 @@ fn rotated_tiou_distance(
     let iou_as_numpy = utils::array_to_numpy(py, iou).unwrap();
     return Ok(iou_as_numpy.unbind());
 }
+// Parallel Rotated box TIoU
+
+#[pyfunction]
+fn parallel_rotated_tiou_distance(
+    py: Python,
+    boxes1: &Bound<'_, PyArray2<f64>>,
+    boxes2: &Bound<'_, PyArray2<f64>>,
+) -> PyResult<Py<PyArray2<f64>>> {
+    let boxes1 = preprocess_rotated_boxes(boxes1).unwrap();
+    let boxes2 = preprocess_rotated_boxes(boxes2).unwrap();
+    let iou = tiou::parallel_rotated_tiou_distance(&boxes1, &boxes2);
+    let iou_as_numpy = utils::array_to_numpy(py, iou).unwrap();
+    return Ok(iou_as_numpy.unbind());
+}
+
 // Draw boxes
 #[pyfunction]
 #[pyo3(signature = (image, boxes, colors=None, thickness=2))]

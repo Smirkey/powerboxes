@@ -57,8 +57,11 @@
 //! #### Rotated Box Metrics
 //! Rotated boxes use `(cx, cy, w, h, angle)` format where angle is in degrees.
 //! - `rotated_iou_distance`: Compute IoU distance for rotated boxes
+//! - `parallel_rotated_iou_distance`: Compute IoU distance for rotated boxes in parallel
 //! - `rotated_giou_distance`: Compute GIoU distance for rotated boxes
+//! - `parallel_rotated_giou_distance`: Compute GIoU distance for rotated boxes in parallel
 //! - `rotated_tiou_distance`: Compute tracking IoU distance for rotated boxes
+//! - `parallel_rotated_tiou_distance`: Compute tracking IoU distance for rotated boxes in parallel
 //!
 //! #### Box NMS
 //! - `nms`: Non-maximum suppression, returns the indices of the boxes to keep
