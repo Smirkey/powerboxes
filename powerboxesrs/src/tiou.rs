@@ -1,3 +1,5 @@
+use rayon::prelude::*;
+
 #[cfg(feature = "ndarray")]
 use ndarray::{Array2, ArrayView2};
 use num_traits::{Num, ToPrimitive};
@@ -111,6 +113,63 @@ pub fn rotated_tiou_distance_slice(boxes1: &[f64], boxes2: &[f64], n1: usize, n2
     result
 }
 
+/// Calculates the rotated TIoU distance in parallel using Rayon.
+///
+/// Each row of the result matrix is computed in a separate thread.
+///
+/// # Arguments
+///
+/// * `boxes1` - A flat slice of length `n1 * 5`. Each box: (cx, cy, w, h, angle).
+/// * `boxes2` - A flat slice of length `n2 * 5`. Each box: (cx, cy, w, h, angle).
+/// * `n1` - The number of boxes in the first set.
+/// * `n2` - The number of boxes in the second set.
+///
+/// # Returns
+///
+/// A flat `Vec<f64>` of length `n1 * n2` (row-major) representing the rotated TIoU distance matrix.
+pub fn parallel_rotated_tiou_distance_slice(
+    boxes1: &[f64],
+    boxes2: &[f64],
+    n1: usize,
+    n2: usize,
+) -> Vec<f64> {
+    let mut result = vec![utils::ONE; n1 * n2];
+    let areas1 = boxes::rotated_box_areas_slice(boxes1, n1);
+    let areas2 = boxes::rotated_box_areas_slice(boxes2, n2);
+
+    let boxes1_rects: Vec<(f64, f64, f64, f64)> = (0..n1)
+        .map(|i| {
+            let (cx, cy, w, h, a) = utils::row5(boxes1, i);
+            minimal_bounding_rect(&Rect::new(cx, cy, w, h, a).points())
+        })
+        .collect();
+    let boxes2_rects: Vec<(f64, f64, f64, f64)> = (0..n2)
+        .map(|i| {
+            let (cx, cy, w, h, a) = utils::row5(boxes2, i);
+            minimal_bounding_rect(&Rect::new(cx, cy, w, h, a).points())
+        })
+        .collect();
+
+    result.par_chunks_mut(n2).enumerate().for_each(|(i, row)| {
+        let area1 = areas1[i];
+        let (x1_r1, y1_r1, x2_r1, y2_r1) = boxes1_rects[i];
+
+        for j in 0..n2 {
+            let area2 = areas2[j];
+            let (x1_r2, y1_r2, x2_r2, y2_r2) = boxes2_rects[j];
+
+            let c_x1 = utils::min(x1_r1, x1_r2);
+            let c_y1 = utils::min(y1_r1, y1_r2);
+            let c_x2 = utils::max(x2_r1, x2_r2);
+            let c_y2 = utils::max(y2_r1, y2_r2);
+            let c_area = (c_x2 - c_x1) * (c_y2 - c_y1);
+            row[j] = utils::ONE - utils::min(area1 / c_area, area2 / c_area);
+        }
+    });
+
+    result
+}
+
 // ─── ndarray wrappers ───
 
 /// Computes the Tracking Intersection over Union (TIoU) distance between two sets of bounding boxes.
@@ -190,6 +249,31 @@ where
     Array2::from_shape_vec((n1, n2), result).unwrap()
 }
 
+/// Calculates the rotated TIoU distance matrix in parallel using Rayon.
+///
+/// # Arguments
+///
+/// * `boxes1` - A 2D array with rows (center_x, center_y, width, height, angle).
+/// * `boxes2` - A 2D array with rows (center_x, center_y, width, height, angle).
+///
+/// # Returns
+///
+/// A 2D array representing the rotated TIoU distance matrix.
+#[cfg(feature = "ndarray")]
+pub fn parallel_rotated_tiou_distance<'a, BA>(boxes1: BA, boxes2: BA) -> Array2<f64>
+where
+    BA: Into<ArrayView2<'a, f64>>,
+{
+    let b1 = boxes1.into();
+    let b2 = boxes2.into();
+    let n1 = b1.nrows();
+    let n2 = b2.nrows();
+    let s1 = b1.as_slice().expect("boxes1 must be contiguous");
+    let s2 = b2.as_slice().expect("boxes2 must be contiguous");
+    let result = parallel_rotated_tiou_distance_slice(s1, s2, n1, n2);
+    Array2::from_shape_vec((n1, n2), result).unwrap()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -222,6 +306,7 @@ mod tests {
             let boxes2 = arr2(&[[2.0, 2.0, 5.0, 5.0, 0.0], [3.0, 3.0, 6.0, 6.0, 20.0]]);
 
             let tiou_matrix = rotated_tiou_distance(&boxes1, &boxes2);
+            let parallel_result = parallel_rotated_tiou_distance(&boxes1, &boxes2);
             assert_eq!(
                 tiou_matrix,
                 arr2(&[
@@ -229,6 +314,7 @@ mod tests {
                     [0.561738213456193, 0.7725560385451797]
                 ])
             );
+            assert_eq!(tiou_matrix, parallel_result);
         }
     }
 }

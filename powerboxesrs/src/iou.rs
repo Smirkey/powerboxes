@@ -1,3 +1,5 @@
+use rayon::prelude::*;
+
 use crate::{
     boxes,
     rotation::{intersection_area, minimal_bounding_rect, Rect},
@@ -127,6 +129,72 @@ pub fn rotated_iou_distance_slice(boxes1: &[f64], boxes2: &[f64], n1: usize, n2:
         let union = area1 + area2 - intersection;
         result[box1.index * n2 + box2.index] = utils::ONE - intersection / union;
     }
+
+    result
+}
+
+/// Calculates the Rotated IoU distance in parallel using Rayon.
+///
+/// Each row of the result matrix is computed in a separate thread. Uses per-pair AABB overlap
+/// checks (no R-tree) to skip expensive polygon intersection for non-overlapping bounding rects.
+///
+/// # Arguments
+///
+/// * `boxes1` - A flat slice of length `n1 * 5`. Each box: (cx, cy, w, h, angle).
+/// * `boxes2` - A flat slice of length `n2 * 5`. Each box: (cx, cy, w, h, angle).
+/// * `n1` - The number of boxes in the first set.
+/// * `n2` - The number of boxes in the second set.
+///
+/// # Returns
+///
+/// A flat `Vec<f64>` of length `n1 * n2` (row-major) containing the Rotated IoU distance matrix.
+pub fn parallel_rotated_iou_distance_slice(
+    boxes1: &[f64],
+    boxes2: &[f64],
+    n1: usize,
+    n2: usize,
+) -> Vec<f64> {
+    let mut result = vec![utils::ONE; n1 * n2];
+    let areas1 = boxes::rotated_box_areas_slice(boxes1, n1);
+    let areas2 = boxes::rotated_box_areas_slice(boxes2, n2);
+
+    let boxes1_rects: Vec<Rect> = (0..n1)
+        .map(|i| {
+            let (cx, cy, w, h, a) = utils::row5(boxes1, i);
+            Rect::new(cx, cy, w, h, a)
+        })
+        .collect();
+    let boxes2_rects: Vec<Rect> = (0..n2)
+        .map(|i| {
+            let (cx, cy, w, h, a) = utils::row5(boxes2, i);
+            Rect::new(cx, cy, w, h, a)
+        })
+        .collect();
+
+    let boxes1_bboxes: Vec<(f64, f64, f64, f64)> = boxes1_rects
+        .iter()
+        .map(|r| minimal_bounding_rect(&r.points()))
+        .collect();
+    let boxes2_bboxes: Vec<(f64, f64, f64, f64)> = boxes2_rects
+        .iter()
+        .map(|r| minimal_bounding_rect(&r.points()))
+        .collect();
+
+    result.par_chunks_mut(n2).enumerate().for_each(|(i, row)| {
+        let area1 = areas1[i];
+        let (ax1, ay1, ax2, ay2) = boxes1_bboxes[i];
+        for j in 0..n2 {
+            let (bx1, by1, bx2, by2) = boxes2_bboxes[j];
+            // AABB rejection
+            if ax2 < bx1 || bx2 < ax1 || ay2 < by1 || by2 < ay1 {
+                continue;
+            }
+            let area2 = areas2[j];
+            let intersection = intersection_area(&boxes1_rects[i], &boxes2_rects[j]);
+            let union = area1 + area2 - intersection;
+            row[j] = utils::ONE - intersection / union;
+        }
+    });
 
     result
 }
@@ -271,6 +339,31 @@ where
     Array2::from_shape_vec((n1, n2), result).unwrap()
 }
 
+/// Calculates the Rotated IoU distance matrix in parallel using Rayon.
+///
+/// # Arguments
+///
+/// * `boxes1` - A 2D array with rows (center_x, center_y, width, height, angle).
+/// * `boxes2` - A 2D array with rows (center_x, center_y, width, height, angle).
+///
+/// # Returns
+///
+/// A 2D array containing the Rotated IoU distance matrix.
+#[cfg(feature = "ndarray")]
+pub fn parallel_rotated_iou_distance<'a, BA>(boxes1: BA, boxes2: BA) -> Array2<f64>
+where
+    BA: Into<ArrayView2<'a, f64>>,
+{
+    let b1 = boxes1.into();
+    let b2 = boxes2.into();
+    let n1 = b1.nrows();
+    let n2 = b2.nrows();
+    let s1 = b1.as_slice().expect("boxes1 must be contiguous");
+    let s2 = b2.as_slice().expect("boxes2 must be contiguous");
+    let result = parallel_rotated_iou_distance_slice(s1, s2, n1, n2);
+    Array2::from_shape_vec((n1, n2), result).unwrap()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -349,7 +442,9 @@ mod tests {
             let boxes1 = arr2(&[[5.0, 5.0, 2.0, 2.0, 0.0]]);
             let boxes2 = arr2(&[[4.0, 4.0, 2.0, 2.0, 0.0]]);
             let rotated_iou_distance_result = rotated_iou_distance(&boxes1, &boxes2);
+            let parallel_result = parallel_rotated_iou_distance(&boxes1, &boxes2);
             assert_eq!(rotated_iou_distance_result, arr2(&[[0.8571428571428572]]));
+            assert_eq!(rotated_iou_distance_result, parallel_result);
         }
     }
 }
