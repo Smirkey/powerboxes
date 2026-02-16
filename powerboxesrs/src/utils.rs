@@ -40,7 +40,10 @@ where
 
 /// Get a row from a flat slice representing an N x 5 matrix.
 #[inline]
-pub fn row5(data: &[f64], i: usize) -> (f64, f64, f64, f64, f64) {
+pub fn row5<N>(data: &[N], i: usize) -> (N, N, N, N, N)
+where
+    N: Copy,
+{
     let base = i * 5;
     (
         data[base],
