@@ -15,6 +15,7 @@ from powerboxes import (
     remove_small_boxes,
     rotated_giou_distance,
     rotated_iou_distance,
+    rotated_nms,
     rotated_tiou_distance,
     rtree_nms,
     supported_dtypes,
@@ -413,3 +414,22 @@ def test_diou_distance_dtype():
             boxes1.astype(unsuported_dtype_example),
             boxes2.astype(unsuported_dtype_example),
         )
+
+
+@pytest.mark.parametrize("dtype", supported_dtypes)
+def test_rotated_nms(dtype):
+    boxes = np.random.random((100, 5))
+    scores = np.random.random((100,))
+    rotated_nms(boxes.astype(dtype), scores, 0.5, 0.5)
+
+
+def test_rotated_nms_bad_inputs():
+    with pytest.raises(TypeError, match="Boxes and scores must be numpy arrays"):
+        rotated_nms("foo", "bar", 0.5, 0.5)
+
+
+def test_rotated_nms_bad_dtype():
+    boxes = np.random.random((100, 5))
+    scores = np.random.random((100,))
+    with pytest.raises(TypeError):
+        rotated_nms(boxes.astype(unsuported_dtype_example), scores, 0.5, 0.5)

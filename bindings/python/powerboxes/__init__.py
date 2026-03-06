@@ -555,6 +555,7 @@ __all__ = [
     "rotated_iou_distance",
     "rotated_giou_distance",
     "rotated_tiou_distance",
+    "rotated_nms",
     "rtree_nms",
     "draw_boxes",
     "__version__",

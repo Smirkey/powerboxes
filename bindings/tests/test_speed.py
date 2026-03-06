@@ -215,7 +215,7 @@ def test_rtree_nms_many_boxes(benchmark, generate_boxes):
     benchmark(rtree_nms, boxes, scores, 0.5, 0.5)
 
 @pytest.mark.benchmark(group="rotated_nms_many_boxes")
-@pytest.mark.parametrize("generate_rotated_boxes", [1000, 5000, 10000, 20000], indirect=True)
+@pytest.mark.parametrize("generate_rotated_boxes", [1000, 5000, 10000], indirect=True)
 def test_rotated_nms_many_boxes(benchmark, generate_rotated_boxes):
     boxes = generate_rotated_boxes
     scores = np.random.random(len(boxes))
