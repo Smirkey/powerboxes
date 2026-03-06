@@ -17,7 +17,7 @@ from ._iou import (
     _dtype_to_func_iou_distance,
     _dtype_to_func_parallel_iou_distance,
 )
-from ._nms import _dtype_to_func_nms, _dtype_to_func_rtree_nms
+from ._nms import _dtype_to_func_nms, _dtype_to_func_rtree_nms, _dtype_to_func_rotated_nms
 from ._powerboxes import masks_to_boxes as _masks_to_boxes
 from ._powerboxes import rotated_giou_distance as _rotated_giou_distance
 from ._powerboxes import rotated_iou_distance as _rotated_iou_distance
@@ -447,6 +447,36 @@ def nms(
             f"Box dtype: {boxes.dtype} not in supported dtypes {supported_dtypes}"
         )
 
+def rotated_nms(
+    boxes: npt.NDArray[T],
+    scores: npt.NDArray[np.float64],
+    iou_threshold: float,
+    score_threshold: float,
+) -> npt.NDArray[np.uint64]:
+    """Apply non-maximum suppression to oriented bounding boxes.
+
+    Args:
+        boxes: 2d array of boxes in cxcywha format
+        scores: 1d array of scores
+        iou_threshold: threshold for iou
+        score_threshold: threshold for scores
+
+    Raises:
+        TypeError: if boxes or scores are not numpy arrays
+
+    Returns:
+        npt.NDArray[np.uint64]: 1d array of indices to keep
+    """
+    if not isinstance(boxes, np.ndarray) or not isinstance(scores, np.ndarray):
+        raise TypeError("Boxes and scores must be numpy arrays")
+    try:
+        return _dtype_to_func_rotated_nms[boxes.dtype]( # type: ignore
+            boxes, scores, iou_threshold, score_threshold
+        )
+    except KeyError:
+        raise TypeError(
+            f"Box dtype: {boxes.dtype} not in supported dtypes {supported_dtypes}"
+        )
 
 def rtree_nms(
     boxes: npt.NDArray[Union[np.float64, np.float32, np.int64, np.int32, np.int16]],

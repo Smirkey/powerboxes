@@ -104,6 +104,16 @@ fn _powerboxes(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(nms_u32, m)?)?;
     m.add_function(wrap_pyfunction!(nms_u16, m)?)?;
     m.add_function(wrap_pyfunction!(nms_u8, m)?)?;
+    // rotated nms
+    m.add_function(wrap_pyfunction!(rotated_nms_f64, m)?)?;
+    m.add_function(wrap_pyfunction!(rotated_nms_f32, m)?)?;
+    m.add_function(wrap_pyfunction!(rotated_nms_i64, m)?)?;
+    m.add_function(wrap_pyfunction!(rotated_nms_i32, m)?)?;
+    m.add_function(wrap_pyfunction!(rotated_nms_i16, m)?)?;
+    m.add_function(wrap_pyfunction!(rotated_nms_u64, m)?)?;
+    m.add_function(wrap_pyfunction!(rotated_nms_u32, m)?)?;
+    m.add_function(wrap_pyfunction!(rotated_nms_u16, m)?)?;
+    m.add_function(wrap_pyfunction!(rotated_nms_u8, m)?)?;
     // rtree nms
     m.add_function(wrap_pyfunction!(rtree_nms_f64, m)?)?;
     m.add_function(wrap_pyfunction!(rtree_nms_f32, m)?)?;
@@ -1157,6 +1167,169 @@ fn nms_u8(
     score_threshold: f64,
 ) -> PyResult<Py<PyArray1<usize>>> {
     return Ok(nms_generic(
+        py,
+        boxes,
+        scores,
+        iou_threshold,
+        score_threshold,
+    )?);
+}
+
+// rotated nms
+fn rotated_nms_generic<T>(
+    py: Python,
+    boxes: &Bound<'_, PyArray2<T>>,
+    scores: &Bound<'_, PyArray1<f64>>,
+    iou_threshold: f64,
+    score_threshold: f64,
+) -> PyResult<Py<PyArray1<usize>>>
+where
+    T: numpy::Element + Num + PartialEq + PartialOrd + ToPrimitive + Copy,
+{
+    let boxes = preprocess_rotated_boxes(boxes).unwrap();
+    let scores = preprocess_array1(scores);
+    let keep = nms::rotated_nms(&boxes, &scores, iou_threshold, score_threshold);
+    let keep_as_ndarray = Array1::from(keep);
+    let keep_as_numpy = utils::array_to_numpy(py, keep_as_ndarray).unwrap();
+    return Ok(keep_as_numpy.unbind());
+}
+#[pyfunction]
+fn rotated_nms_f64(
+    py: Python,
+    boxes: &Bound<'_, PyArray2<f64>>,
+    scores: &Bound<'_, PyArray1<f64>>,
+    iou_threshold: f64,
+    score_threshold: f64,
+) -> PyResult<Py<PyArray1<usize>>> {
+    return Ok(rotated_nms_generic(
+        py,
+        boxes,
+        scores,
+        iou_threshold,
+        score_threshold,
+    )?);
+}
+#[pyfunction]
+fn rotated_nms_f32(
+    py: Python,
+    boxes: &Bound<'_, PyArray2<f32>>,
+    scores: &Bound<'_, PyArray1<f64>>,
+    iou_threshold: f64,
+    score_threshold: f64,
+) -> PyResult<Py<PyArray1<usize>>> {
+    return Ok(rotated_nms_generic(
+        py,
+        boxes,
+        scores,
+        iou_threshold,
+        score_threshold,
+    )?);
+}
+#[pyfunction]
+fn rotated_nms_i64(
+    py: Python,
+    boxes: &Bound<'_, PyArray2<i64>>,
+    scores: &Bound<'_, PyArray1<f64>>,
+    iou_threshold: f64,
+    score_threshold: f64,
+) -> PyResult<Py<PyArray1<usize>>> {
+    return Ok(rotated_nms_generic(
+        py,
+        boxes,
+        scores,
+        iou_threshold,
+        score_threshold,
+    )?);
+}
+#[pyfunction]
+fn rotated_nms_i32(
+    py: Python,
+    boxes: &Bound<'_, PyArray2<i32>>,
+    scores: &Bound<'_, PyArray1<f64>>,
+    iou_threshold: f64,
+    score_threshold: f64,
+) -> PyResult<Py<PyArray1<usize>>> {
+    return Ok(rotated_nms_generic(
+        py,
+        boxes,
+        scores,
+        iou_threshold,
+        score_threshold,
+    )?);
+}
+#[pyfunction]
+fn rotated_nms_i16(
+    py: Python,
+    boxes: &Bound<'_, PyArray2<i16>>,
+    scores: &Bound<'_, PyArray1<f64>>,
+    iou_threshold: f64,
+    score_threshold: f64,
+) -> PyResult<Py<PyArray1<usize>>> {
+    return Ok(rotated_nms_generic(
+        py,
+        boxes,
+        scores,
+        iou_threshold,
+        score_threshold,
+    )?);
+}
+#[pyfunction]
+fn rotated_nms_u64(
+    py: Python,
+    boxes: &Bound<'_, PyArray2<u64>>,
+    scores: &Bound<'_, PyArray1<f64>>,
+    iou_threshold: f64,
+    score_threshold: f64,
+) -> PyResult<Py<PyArray1<usize>>> {
+    return Ok(rotated_nms_generic(
+        py,
+        boxes,
+        scores,
+        iou_threshold,
+        score_threshold,
+    )?);
+}
+#[pyfunction]
+fn rotated_nms_u32(
+    py: Python,
+    boxes: &Bound<'_, PyArray2<u32>>,
+    scores: &Bound<'_, PyArray1<f64>>,
+    iou_threshold: f64,
+    score_threshold: f64,
+) -> PyResult<Py<PyArray1<usize>>> {
+    return Ok(rotated_nms_generic(
+        py,
+        boxes,
+        scores,
+        iou_threshold,
+        score_threshold,
+    )?);
+}
+#[pyfunction]
+fn rotated_nms_u16(
+    py: Python,
+    boxes: &Bound<'_, PyArray2<u16>>,
+    scores: &Bound<'_, PyArray1<f64>>,
+    iou_threshold: f64,
+    score_threshold: f64,
+) -> PyResult<Py<PyArray1<usize>>> {
+    return Ok(rotated_nms_generic(
+        py,
+        boxes,
+        scores,
+        iou_threshold,
+        score_threshold,
+    )?);
+}
+#[pyfunction]
+fn rotated_nms_u8(
+    py: Python,
+    boxes: &Bound<'_, PyArray2<u8>>,
+    scores: &Bound<'_, PyArray1<f64>>,
+    iou_threshold: f64,
+    score_threshold: f64,
+) -> PyResult<Py<PyArray1<usize>>> {
+    return Ok(rotated_nms_generic(
         py,
         boxes,
         scores,
