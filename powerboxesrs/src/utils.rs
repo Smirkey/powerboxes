@@ -114,4 +114,11 @@ mod tests {
         assert_eq!(row4(&data, 0), (1.0, 2.0, 3.0, 4.0));
         assert_eq!(row4(&data, 1), (5.0, 6.0, 7.0, 8.0));
     }
+
+    #[test]
+    fn test_row5() {
+        let data = vec![1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0];
+        assert_eq!(row5(&data, 0), (1.0, 2.0, 3.0, 4.0, 5.0));
+        assert_eq!(row5(&data, 1), (6.0, 7.0, 8.0, 9.0, 10.0));
+    }
 }

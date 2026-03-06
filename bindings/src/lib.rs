@@ -1186,11 +1186,11 @@ fn rotated_nms_generic<T>(
 where
     T: numpy::Element + Num + PartialEq + PartialOrd + ToPrimitive + Copy,
 {
-    let boxes = preprocess_rotated_boxes(boxes).unwrap();
+    let boxes = preprocess_rotated_boxes(boxes)?;
     let scores = preprocess_array1(scores);
     let keep = nms::rotated_nms(&boxes, &scores, iou_threshold, score_threshold);
     let keep_as_ndarray = Array1::from(keep);
-    let keep_as_numpy = utils::array_to_numpy(py, keep_as_ndarray).unwrap();
+    let keep_as_numpy = utils::array_to_numpy(py, keep_as_ndarray)?;
     return Ok(keep_as_numpy.unbind());
 }
 #[pyfunction]

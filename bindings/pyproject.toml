@@ -37,6 +37,7 @@ dev = [
     "pytest-codspeed>=2.0.0",
     "pytest-cov",
     "pillow",
+    "shapely>=2.0",
     "maturin>=1.2,<2.0",
 ]
 docs = [

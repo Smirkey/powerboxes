@@ -92,7 +92,7 @@ where
 ///
 /// A flat `Vec<f64>` of length `n1 * n2` (row-major) representing the rotated GIoU distance matrix.
 pub fn rotated_giou_distance_slice(boxes1: &[f64], boxes2: &[f64], n1: usize, n2: usize) -> Vec<f64> {
-    let mut result = vec![utils::ONE; n1 * n2];
+    let mut result = vec![0.0f64; n1 * n2];
     let areas1 = boxes::rotated_box_areas_slice(boxes1, n1);
     let areas2 = boxes::rotated_box_areas_slice(boxes2, n2);
 
@@ -109,40 +109,40 @@ pub fn rotated_giou_distance_slice(boxes1: &[f64], boxes2: &[f64], n1: usize, n2
         })
         .collect();
 
-    let boxes1_bounding_rects: Vec<utils::Bbox<f64>> = boxes1_rects
+    let boxes1_bboxes: Vec<(f64, f64, f64, f64)> = boxes1_rects
         .iter()
-        .enumerate()
-        .map(|(idx, rect)| {
-            let (min_x, min_y, max_x, max_y) = minimal_bounding_rect(&rect.points());
-            utils::Bbox { index: idx, x1: min_x, y1: min_y, x2: max_x, y2: max_y }
-        })
+        .map(|r| minimal_bounding_rect(&r.points()))
         .collect();
-    let boxes2_bounding_rects: Vec<utils::Bbox<f64>> = boxes2_rects
+    let boxes2_bboxes: Vec<(f64, f64, f64, f64)> = boxes2_rects
         .iter()
-        .enumerate()
-        .map(|(idx, rect)| {
-            let (min_x, min_y, max_x, max_y) = minimal_bounding_rect(&rect.points());
-            utils::Bbox { index: idx, x1: min_x, y1: min_y, x2: max_x, y2: max_y }
-        })
+        .map(|r| minimal_bounding_rect(&r.points()))
         .collect();
 
-    let box1_rtree: RTree<utils::Bbox<f64>> = RTree::bulk_load(boxes1_bounding_rects);
-    let box2_rtree: RTree<utils::Bbox<f64>> = RTree::bulk_load(boxes2_bounding_rects);
-
-    for (box1, box2) in box1_rtree.intersection_candidates_with_other_tree(&box2_rtree) {
-        let area1 = areas1[box1.index];
-        let area2 = areas2[box2.index];
-        let rect1 = boxes1_rects[box1.index];
-        let rect2 = boxes2_rects[box2.index];
-        let intersection = intersection_area(&rect1, &rect2);
-        let union = area1 + area2 - intersection;
-        let c_x1 = utils::min(box1.x1, box2.x1);
-        let c_y1 = utils::min(box1.y1, box2.y1);
-        let c_x2 = utils::max(box1.x2, box2.x2);
-        let c_y2 = utils::max(box1.y2, box2.y2);
-        let c_area = (c_x2 - c_x1) * (c_y2 - c_y1);
-        let c_area = c_area.to_f64().unwrap();
-        result[box1.index * n2 + box2.index] = intersection / union - ((c_area - union) / c_area);
+    for i in 0..n1 {
+        let area1 = areas1[i];
+        let (ax1, ay1, ax2, ay2) = boxes1_bboxes[i];
+        for j in 0..n2 {
+            let area2 = areas2[j];
+            let (bx1, by1, bx2, by2) = boxes2_bboxes[j];
+            // Only compute expensive polygon intersection if AABBs overlap
+            let (iou, union) = if ax2 < bx1 || bx2 < ax1 || ay2 < by1 || by2 < ay1 {
+                (0.0, area1 + area2)
+            } else {
+                let intersection = intersection_area(&boxes1_rects[i], &boxes2_rects[j]);
+                let union = area1 + area2 - intersection;
+                if union == 0.0 { (0.0, 0.0) } else { (intersection / union, union) }
+            };
+            let c_x1 = utils::min(ax1, bx1);
+            let c_y1 = utils::min(ay1, by1);
+            let c_x2 = utils::max(ax2, bx2);
+            let c_y2 = utils::max(ay2, by2);
+            let c_area = (c_x2 - c_x1) * (c_y2 - c_y1);
+            if c_area == 0.0 {
+                continue;
+            }
+            let giou = iou - ((c_area - union) / c_area);
+            result[i * n2 + j] = utils::ONE - giou;
+        }
     }
 
     result
@@ -169,7 +169,7 @@ pub fn parallel_rotated_giou_distance_slice(
     n1: usize,
     n2: usize,
 ) -> Vec<f64> {
-    let mut result = vec![utils::ONE; n1 * n2];
+    let mut result = vec![0.0f64; n1 * n2];
     let areas1 = boxes::rotated_box_areas_slice(boxes1, n1);
     let areas2 = boxes::rotated_box_areas_slice(boxes2, n2);
 
@@ -199,20 +199,26 @@ pub fn parallel_rotated_giou_distance_slice(
         let area1 = areas1[i];
         let (ax1, ay1, ax2, ay2) = boxes1_bboxes[i];
         for j in 0..n2 {
-            let (bx1, by1, bx2, by2) = boxes2_bboxes[j];
-            // AABB rejection — skip polygon intersection for non-overlapping pairs
-            if ax2 < bx1 || bx2 < ax1 || ay2 < by1 || by2 < ay1 {
-                continue;
-            }
             let area2 = areas2[j];
-            let intersection = intersection_area(&boxes1_rects[i], &boxes2_rects[j]);
-            let union = area1 + area2 - intersection;
+            let (bx1, by1, bx2, by2) = boxes2_bboxes[j];
+            // Only compute expensive polygon intersection if AABBs overlap
+            let (iou, union) = if ax2 < bx1 || bx2 < ax1 || ay2 < by1 || by2 < ay1 {
+                (0.0, area1 + area2)
+            } else {
+                let intersection = intersection_area(&boxes1_rects[i], &boxes2_rects[j]);
+                let union = area1 + area2 - intersection;
+                if union == 0.0 { (0.0, 0.0) } else { (intersection / union, union) }
+            };
             let c_x1 = utils::min(ax1, bx1);
             let c_y1 = utils::min(ay1, by1);
             let c_x2 = utils::max(ax2, bx2);
             let c_y2 = utils::max(ay2, by2);
             let c_area = (c_x2 - c_x1) * (c_y2 - c_y1);
-            row[j] = intersection / union - ((c_area - union) / c_area);
+            if c_area == 0.0 {
+                continue;
+            }
+            let giou = iou - ((c_area - union) / c_area);
+            row[j] = utils::ONE - giou;
         }
     });
 
@@ -450,7 +456,7 @@ mod tests {
             let boxes2 = arr2(&[[4.0, 4.0, 2.0, 2.0, 0.0]]);
             let rotated_iou_distance_result = rotated_giou_distance(&boxes1, &boxes2);
             let parallel_result = parallel_rotated_giou_distance(&boxes1, &boxes2);
-            assert_eq!(rotated_iou_distance_result, arr2(&[[-0.07936507936507936]]));
+            assert_eq!(rotated_iou_distance_result, arr2(&[[1.0793650793650793]]));
             assert_eq!(rotated_iou_distance_result, parallel_result);
         }
     }
