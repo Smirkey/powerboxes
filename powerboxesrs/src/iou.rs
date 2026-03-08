@@ -72,7 +72,12 @@ where
 /// # Returns
 ///
 /// A flat `Vec<f64>` of length `n1 * n2` (row-major) containing the Rotated IoU distance matrix.
-pub fn rotated_iou_distance_slice(boxes1: &[f64], boxes2: &[f64], n1: usize, n2: usize) -> Vec<f64> {
+pub fn rotated_iou_distance_slice(
+    boxes1: &[f64],
+    boxes2: &[f64],
+    n1: usize,
+    n2: usize,
+) -> Vec<f64> {
     let mut result = vec![utils::ONE; n1 * n2];
     let areas1 = boxes::rotated_box_areas_slice(boxes1, n1);
     let areas2 = boxes::rotated_box_areas_slice(boxes2, n2);
@@ -394,8 +399,8 @@ mod tests {
 
     #[cfg(feature = "ndarray")]
     mod ndarray_tests {
-        use ndarray::arr2;
         use super::*;
+        use ndarray::arr2;
 
         #[test]
         fn test_iou_distance() {

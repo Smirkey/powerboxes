@@ -60,14 +60,22 @@ pub fn draw_boxes_slice(
         for x in x1..=x2 {
             // Top edge
             for dy in 0..thickness {
-                let y = if y1 + dy >= half_t { y1 + dy - half_t } else { 0 };
+                let y = if y1 + dy >= half_t {
+                    y1 + dy - half_t
+                } else {
+                    0
+                };
                 if y < height && x < width {
                     set_pixel_chw(&mut output, height, width, y, x, r, g, bl);
                 }
             }
             // Bottom edge
             for dy in 0..thickness {
-                let y = if y2 + dy >= half_t { y2 + dy - half_t } else { 0 };
+                let y = if y2 + dy >= half_t {
+                    y2 + dy - half_t
+                } else {
+                    0
+                };
                 if y < height && x < width {
                     set_pixel_chw(&mut output, height, width, y, x, r, g, bl);
                 }
@@ -78,14 +86,22 @@ pub fn draw_boxes_slice(
         for y in y1..=y2 {
             // Left edge
             for dx in 0..thickness {
-                let x = if x1 + dx >= half_t { x1 + dx - half_t } else { 0 };
+                let x = if x1 + dx >= half_t {
+                    x1 + dx - half_t
+                } else {
+                    0
+                };
                 if y < height && x < width {
                     set_pixel_chw(&mut output, height, width, y, x, r, g, bl);
                 }
             }
             // Right edge
             for dx in 0..thickness {
-                let x = if x2 + dx >= half_t { x2 + dx - half_t } else { 0 };
+                let x = if x2 + dx >= half_t {
+                    x2 + dx - half_t
+                } else {
+                    0
+                };
                 if y < height && x < width {
                     set_pixel_chw(&mut output, height, width, y, x, r, g, bl);
                 }
@@ -97,11 +113,20 @@ pub fn draw_boxes_slice(
 }
 
 #[inline]
-fn set_pixel_chw(image: &mut [u8], height: usize, width: usize, y: usize, x: usize, r: u8, g: u8, b: u8) {
+fn set_pixel_chw(
+    image: &mut [u8],
+    height: usize,
+    width: usize,
+    y: usize,
+    x: usize,
+    r: u8,
+    g: u8,
+    b: u8,
+) {
     let hw = height * width;
-    image[y * width + x] = r;             // channel 0 (R)
-    image[hw + y * width + x] = g;        // channel 1 (G)
-    image[2 * hw + y * width + x] = b;    // channel 2 (B)
+    image[y * width + x] = r; // channel 0 (R)
+    image[hw + y * width + x] = g; // channel 1 (G)
+    image[2 * hw + y * width + x] = b; // channel 2 (B)
 }
 
 #[cfg(test)]
@@ -140,7 +165,7 @@ mod tests {
 
         let hw = height * width;
         // Check top-left corner of box (1, 1) has custom color
-        assert_eq!(result[1 * width + 1], 0);     // R
+        assert_eq!(result[1 * width + 1], 0); // R
         assert_eq!(result[hw + 1 * width + 1], 255); // G
         assert_eq!(result[2 * hw + 1 * width + 1], 128); // B
     }

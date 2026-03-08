@@ -1,8 +1,8 @@
 // Largely inspired by lsnms: https://github.com/remydubois/lsnms
 use std::cmp::Ordering;
 
-use crate::utils;
 use crate::rotation;
+use crate::utils;
 #[cfg(feature = "ndarray")]
 use ndarray::{ArrayView1, ArrayView2, Axis};
 use num_traits::{Num, ToPrimitive};
@@ -427,7 +427,6 @@ where
     let boxes_slice = boxes.as_slice().expect("boxes must be contiguous");
     let scores_slice = scores.as_slice().expect("scores must be contiguous");
     rotated_nms_slice(boxes_slice, scores_slice, iou_threshold, score_threshold)
-
 }
 
 #[cfg(test)]
@@ -437,12 +436,30 @@ mod tests {
     #[test]
     fn test_nms_slice_normal() {
         let boxes = vec![
-            184.68927598, 850.65932762, 201.47437531, 866.02327337,
-            185.68927598, 851.65932762, 200.47437531, 865.02327337,
-            875.33814954, 706.46958933, 902.14487263, 737.14697788,
-            874.33814954, 703.46958933, 901.14487263, 732.14697788,
-            277.71729109, 744.81869575, 308.13768447, 777.11413807,
-            275.71729109, 740.81869575, 310.13768447, 765.11413807,
+            184.68927598,
+            850.65932762,
+            201.47437531,
+            866.02327337,
+            185.68927598,
+            851.65932762,
+            200.47437531,
+            865.02327337,
+            875.33814954,
+            706.46958933,
+            902.14487263,
+            737.14697788,
+            874.33814954,
+            703.46958933,
+            901.14487263,
+            732.14697788,
+            277.71729109,
+            744.81869575,
+            308.13768447,
+            777.11413807,
+            275.71729109,
+            740.81869575,
+            310.13768447,
+            765.11413807,
         ];
         let scores = vec![0.9, 0.8, 0.7, 0.6, 0.5, 0.4];
         let keep = nms_slice(&boxes, &scores, 6, 0.5, 0.0);
@@ -454,9 +471,7 @@ mod tests {
     #[test]
     fn test_rotated_nms_slice_normal() {
         let boxes = vec![
-            1.0, 2.0, 10.0, 5.0, 45.0,
-            0.0, 1.0, 9.0, 4.0, 30.0,
-            10.0, 20.0, 5.0, 8.0, -45.0,
+            1.0, 2.0, 10.0, 5.0, 45.0, 0.0, 1.0, 9.0, 4.0, 30.0, 10.0, 20.0, 5.0, 8.0, -45.0,
         ];
         let scores = vec![0.9, 0.8, 0.7];
         let keep = rotated_nms_slice(&boxes, &scores, 0.5, 0.0);
@@ -465,8 +480,8 @@ mod tests {
 
     #[cfg(feature = "ndarray")]
     mod ndarray_tests {
-        use ndarray::{arr2, Array1};
         use super::*;
+        use ndarray::{arr2, Array1};
 
         #[test]
         fn test_nms_normal_case() {
@@ -550,6 +565,5 @@ mod tests {
             let keep = rotated_nms(&boxes, &scores, 0.8, 0.0);
             assert_eq!(keep, vec![0, 1]);
         }
-
     }
 }

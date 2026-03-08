@@ -9,117 +9,200 @@ use powerboxesrs::{boxes, diou, draw, giou, iou, nms, tiou};
 use pyo3::prelude::*;
 use utils::{preprocess_array1, preprocess_array3, preprocess_boxes, preprocess_rotated_boxes};
 
+// ---------------------------------------------------------------------------
+// Type-dispatch helpers
+// ---------------------------------------------------------------------------
+
+/// Call `$mac!(prefix, generic_fn, $T, $suffix)` for all 9 numeric types.
+macro_rules! for_each_numeric_type {
+    ($mac:ident, $prefix:ident, $generic:ident) => {
+        $mac!($prefix, $generic, f64, f64);
+        $mac!($prefix, $generic, f32, f32);
+        $mac!($prefix, $generic, i64, i64);
+        $mac!($prefix, $generic, i32, i32);
+        $mac!($prefix, $generic, i16, i16);
+        $mac!($prefix, $generic, u64, u64);
+        $mac!($prefix, $generic, u32, u32);
+        $mac!($prefix, $generic, u16, u16);
+        $mac!($prefix, $generic, u8, u8);
+    };
+}
+
+/// Call `$mac!(prefix, generic_fn, $T, $suffix)` for float types only.
+macro_rules! for_each_float_type {
+    ($mac:ident, $prefix:ident, $generic:ident) => {
+        $mac!($prefix, $generic, f64, f64);
+        $mac!($prefix, $generic, f32, f32);
+    };
+}
+
+/// Call `$mac!(prefix, generic_fn, $T, $suffix)` for signed+float types (rtree_nms).
+macro_rules! for_each_signed_type {
+    ($mac:ident, $prefix:ident, $generic:ident) => {
+        $mac!($prefix, $generic, f64, f64);
+        $mac!($prefix, $generic, f32, f32);
+        $mac!($prefix, $generic, i64, i64);
+        $mac!($prefix, $generic, i32, i32);
+        $mac!($prefix, $generic, i16, i16);
+    };
+}
+
+// ---------------------------------------------------------------------------
+// Function-shape macros
+// ---------------------------------------------------------------------------
+
+/// Generate a typed `#[pyfunction]` for `(py, boxes1, boxes2) -> Array2<f64>`.
+macro_rules! impl_distance2_fn {
+    ($prefix:ident, $generic:ident, $T:ty, $suffix:ident) => {
+        ::paste::paste! {
+            #[pyfunction]
+            fn [<$prefix _ $suffix>](
+                py: Python,
+                boxes1: &Bound<'_, PyArray2<$T>>,
+                boxes2: &Bound<'_, PyArray2<$T>>,
+            ) -> PyResult<Py<PyArray2<f64>>> {
+                $generic(py, boxes1, boxes2)
+            }
+        }
+    };
+}
+
+/// Generate a typed `#[pyfunction]` for `(py, boxes) -> Array1<f64>`.
+macro_rules! impl_unary_f64_fn {
+    ($prefix:ident, $generic:ident, $T:ty, $suffix:ident) => {
+        ::paste::paste! {
+            #[pyfunction]
+            fn [<$prefix _ $suffix>](
+                py: Python,
+                boxes: &Bound<'_, PyArray2<$T>>,
+            ) -> PyResult<Py<PyArray1<f64>>> {
+                $generic(py, boxes)
+            }
+        }
+    };
+}
+
+/// Generate a typed `#[pyfunction]` for `(py, boxes, min_size: f64) -> Array2<T>`.
+macro_rules! impl_filter_fn {
+    ($prefix:ident, $generic:ident, $T:ty, $suffix:ident) => {
+        ::paste::paste! {
+            #[pyfunction]
+            fn [<$prefix _ $suffix>](
+                py: Python,
+                boxes: &Bound<'_, PyArray2<$T>>,
+                min_size: f64,
+            ) -> PyResult<Py<PyArray2<$T>>> {
+                $generic(py, boxes, min_size)
+            }
+        }
+    };
+}
+
+/// Generate a typed `#[pyfunction]` for `(py, boxes, in_fmt, out_fmt) -> Array2<T>`.
+macro_rules! impl_convert_fn {
+    ($prefix:ident, $generic:ident, $T:ty, $suffix:ident) => {
+        ::paste::paste! {
+            #[pyfunction]
+            fn [<$prefix _ $suffix>](
+                py: Python,
+                boxes: &Bound<'_, PyArray2<$T>>,
+                in_fmt: &str,
+                out_fmt: &str,
+            ) -> PyResult<Py<PyArray2<$T>>> {
+                $generic(py, boxes, in_fmt, out_fmt)
+            }
+        }
+    };
+}
+
+/// Generate a typed `#[pyfunction]` for `(py, boxes, scores, iou_threshold, score_threshold) -> Array1<usize>`.
+macro_rules! impl_nms_fn {
+    ($prefix:ident, $generic:ident, $T:ty, $suffix:ident) => {
+        ::paste::paste! {
+            #[pyfunction]
+            fn [<$prefix _ $suffix>](
+                py: Python,
+                boxes: &Bound<'_, PyArray2<$T>>,
+                scores: &Bound<'_, PyArray1<f64>>,
+                iou_threshold: f64,
+                score_threshold: f64,
+            ) -> PyResult<Py<PyArray1<usize>>> {
+                $generic(py, boxes, scores, iou_threshold, score_threshold)
+            }
+        }
+    };
+}
+
+// ---------------------------------------------------------------------------
+// Module registration helper
+// ---------------------------------------------------------------------------
+
+/// Register all 9 typed variants of a function with the Python module.
+/// Usage: `register_typed!(m, prefix, [f64, f32, ...])`
+macro_rules! register_typed {
+    ($m:ident, $prefix:ident, [$( $suffix:ident ),+]) => {
+        $(
+            ::paste::paste! {
+                $m.add_function(wrap_pyfunction!([<$prefix _ $suffix>], $m)?)?;
+            }
+        )+
+    };
+}
+
+// ---------------------------------------------------------------------------
+// Module definition
+// ---------------------------------------------------------------------------
+
 #[pymodule]
 fn _powerboxes(m: &Bound<'_, PyModule>) -> PyResult<()> {
     // TIoU
-    m.add_function(wrap_pyfunction!(tiou_distance_f64, m)?)?;
-    m.add_function(wrap_pyfunction!(tiou_distance_f32, m)?)?;
-    m.add_function(wrap_pyfunction!(tiou_distance_i64, m)?)?;
-    m.add_function(wrap_pyfunction!(tiou_distance_i32, m)?)?;
-    m.add_function(wrap_pyfunction!(tiou_distance_i16, m)?)?;
-    m.add_function(wrap_pyfunction!(tiou_distance_u64, m)?)?;
-    m.add_function(wrap_pyfunction!(tiou_distance_u32, m)?)?;
-    m.add_function(wrap_pyfunction!(tiou_distance_u16, m)?)?;
-    m.add_function(wrap_pyfunction!(tiou_distance_u8, m)?)?;
+    register_typed!(
+        m,
+        tiou_distance,
+        [f64, f32, i64, i32, i16, u64, u32, u16, u8]
+    );
     // IoU
-    m.add_function(wrap_pyfunction!(iou_distance_f64, m)?)?;
-    m.add_function(wrap_pyfunction!(iou_distance_f32, m)?)?;
-    m.add_function(wrap_pyfunction!(iou_distance_i64, m)?)?;
-    m.add_function(wrap_pyfunction!(iou_distance_i32, m)?)?;
-    m.add_function(wrap_pyfunction!(iou_distance_i16, m)?)?;
-    m.add_function(wrap_pyfunction!(iou_distance_u64, m)?)?;
-    m.add_function(wrap_pyfunction!(iou_distance_u32, m)?)?;
-    m.add_function(wrap_pyfunction!(iou_distance_u16, m)?)?;
-    m.add_function(wrap_pyfunction!(iou_distance_u8, m)?)?;
+    register_typed!(
+        m,
+        iou_distance,
+        [f64, f32, i64, i32, i16, u64, u32, u16, u8]
+    );
     // Parallel IoU
-    m.add_function(wrap_pyfunction!(parallel_iou_distance_f64, m)?)?;
-    m.add_function(wrap_pyfunction!(parallel_iou_distance_f32, m)?)?;
-    m.add_function(wrap_pyfunction!(parallel_iou_distance_i64, m)?)?;
-    m.add_function(wrap_pyfunction!(parallel_iou_distance_i32, m)?)?;
-    m.add_function(wrap_pyfunction!(parallel_iou_distance_i16, m)?)?;
-    m.add_function(wrap_pyfunction!(parallel_iou_distance_u64, m)?)?;
-    m.add_function(wrap_pyfunction!(parallel_iou_distance_u32, m)?)?;
-    m.add_function(wrap_pyfunction!(parallel_iou_distance_u16, m)?)?;
-    m.add_function(wrap_pyfunction!(parallel_iou_distance_u8, m)?)?;
-    // DIoU
-    m.add_function(wrap_pyfunction!(diou_distance_f64, m)?)?;
-    m.add_function(wrap_pyfunction!(diou_distance_f32, m)?)?;
+    register_typed!(
+        m,
+        parallel_iou_distance,
+        [f64, f32, i64, i32, i16, u64, u32, u16, u8]
+    );
+    // DIoU (float only)
+    register_typed!(m, diou_distance, [f64, f32]);
     // GIoU
-    m.add_function(wrap_pyfunction!(giou_distance_f64, m)?)?;
-    m.add_function(wrap_pyfunction!(giou_distance_f32, m)?)?;
-    m.add_function(wrap_pyfunction!(giou_distance_i64, m)?)?;
-    m.add_function(wrap_pyfunction!(giou_distance_i32, m)?)?;
-    m.add_function(wrap_pyfunction!(giou_distance_i16, m)?)?;
-    m.add_function(wrap_pyfunction!(giou_distance_u64, m)?)?;
-    m.add_function(wrap_pyfunction!(giou_distance_u32, m)?)?;
-    m.add_function(wrap_pyfunction!(giou_distance_u16, m)?)?;
-    m.add_function(wrap_pyfunction!(giou_distance_u8, m)?)?;
+    register_typed!(
+        m,
+        giou_distance,
+        [f64, f32, i64, i32, i16, u64, u32, u16, u8]
+    );
     // Parallel GIoU
-    m.add_function(wrap_pyfunction!(parallel_giou_distance_f64, m)?)?;
-    m.add_function(wrap_pyfunction!(parallel_giou_distance_f32, m)?)?;
-    m.add_function(wrap_pyfunction!(parallel_giou_distance_i64, m)?)?;
-    m.add_function(wrap_pyfunction!(parallel_giou_distance_i32, m)?)?;
-    m.add_function(wrap_pyfunction!(parallel_giou_distance_i16, m)?)?;
-    m.add_function(wrap_pyfunction!(parallel_giou_distance_u64, m)?)?;
-    m.add_function(wrap_pyfunction!(parallel_giou_distance_u32, m)?)?;
-    m.add_function(wrap_pyfunction!(parallel_giou_distance_u16, m)?)?;
-    m.add_function(wrap_pyfunction!(parallel_giou_distance_u8, m)?)?;
+    register_typed!(
+        m,
+        parallel_giou_distance,
+        [f64, f32, i64, i32, i16, u64, u32, u16, u8]
+    );
     // Remove small boxes
-    m.add_function(wrap_pyfunction!(remove_small_boxes_f64, m)?)?;
-    m.add_function(wrap_pyfunction!(remove_small_boxes_f32, m)?)?;
-    m.add_function(wrap_pyfunction!(remove_small_boxes_i64, m)?)?;
-    m.add_function(wrap_pyfunction!(remove_small_boxes_i32, m)?)?;
-    m.add_function(wrap_pyfunction!(remove_small_boxes_i16, m)?)?;
-    m.add_function(wrap_pyfunction!(remove_small_boxes_u64, m)?)?;
-    m.add_function(wrap_pyfunction!(remove_small_boxes_u32, m)?)?;
-    m.add_function(wrap_pyfunction!(remove_small_boxes_u16, m)?)?;
-    m.add_function(wrap_pyfunction!(remove_small_boxes_u8, m)?)?;
-    // Boxes areas
-    m.add_function(wrap_pyfunction!(box_areas_f64, m)?)?;
-    m.add_function(wrap_pyfunction!(box_areas_f32, m)?)?;
-    m.add_function(wrap_pyfunction!(box_areas_i64, m)?)?;
-    m.add_function(wrap_pyfunction!(box_areas_i32, m)?)?;
-    m.add_function(wrap_pyfunction!(box_areas_i16, m)?)?;
-    m.add_function(wrap_pyfunction!(box_areas_u64, m)?)?;
-    m.add_function(wrap_pyfunction!(box_areas_u32, m)?)?;
-    m.add_function(wrap_pyfunction!(box_areas_u16, m)?)?;
-    m.add_function(wrap_pyfunction!(box_areas_u8, m)?)?;
+    register_typed!(
+        m,
+        remove_small_boxes,
+        [f64, f32, i64, i32, i16, u64, u32, u16, u8]
+    );
+    // Box areas
+    register_typed!(m, box_areas, [f64, f32, i64, i32, i16, u64, u32, u16, u8]);
     // Box convert
-    m.add_function(wrap_pyfunction!(box_convert_f64, m)?)?;
-    m.add_function(wrap_pyfunction!(box_convert_f32, m)?)?;
-    m.add_function(wrap_pyfunction!(box_convert_i64, m)?)?;
-    m.add_function(wrap_pyfunction!(box_convert_i32, m)?)?;
-    m.add_function(wrap_pyfunction!(box_convert_i16, m)?)?;
-    m.add_function(wrap_pyfunction!(box_convert_u64, m)?)?;
-    m.add_function(wrap_pyfunction!(box_convert_u32, m)?)?;
-    m.add_function(wrap_pyfunction!(box_convert_u16, m)?)?;
-    m.add_function(wrap_pyfunction!(box_convert_u8, m)?)?;
-    // nms
-    m.add_function(wrap_pyfunction!(nms_f64, m)?)?;
-    m.add_function(wrap_pyfunction!(nms_f32, m)?)?;
-    m.add_function(wrap_pyfunction!(nms_i64, m)?)?;
-    m.add_function(wrap_pyfunction!(nms_i32, m)?)?;
-    m.add_function(wrap_pyfunction!(nms_i16, m)?)?;
-    m.add_function(wrap_pyfunction!(nms_u64, m)?)?;
-    m.add_function(wrap_pyfunction!(nms_u32, m)?)?;
-    m.add_function(wrap_pyfunction!(nms_u16, m)?)?;
-    m.add_function(wrap_pyfunction!(nms_u8, m)?)?;
-    // rotated nms
-    m.add_function(wrap_pyfunction!(rotated_nms_f64, m)?)?;
-    m.add_function(wrap_pyfunction!(rotated_nms_f32, m)?)?;
-    m.add_function(wrap_pyfunction!(rotated_nms_i64, m)?)?;
-    m.add_function(wrap_pyfunction!(rotated_nms_i32, m)?)?;
-    m.add_function(wrap_pyfunction!(rotated_nms_i16, m)?)?;
-    m.add_function(wrap_pyfunction!(rotated_nms_u64, m)?)?;
-    m.add_function(wrap_pyfunction!(rotated_nms_u32, m)?)?;
-    m.add_function(wrap_pyfunction!(rotated_nms_u16, m)?)?;
-    m.add_function(wrap_pyfunction!(rotated_nms_u8, m)?)?;
-    // rtree nms
-    m.add_function(wrap_pyfunction!(rtree_nms_f64, m)?)?;
-    m.add_function(wrap_pyfunction!(rtree_nms_f32, m)?)?;
-    m.add_function(wrap_pyfunction!(rtree_nms_i64, m)?)?;
-    m.add_function(wrap_pyfunction!(rtree_nms_i32, m)?)?;
-    m.add_function(wrap_pyfunction!(rtree_nms_i16, m)?)?;
+    register_typed!(m, box_convert, [f64, f32, i64, i32, i16, u64, u32, u16, u8]);
+    // NMS
+    register_typed!(m, nms, [f64, f32, i64, i32, i16, u64, u32, u16, u8]);
+    // Rotated NMS
+    register_typed!(m, rotated_nms, [f64, f32, i64, i32, i16, u64, u32, u16, u8]);
+    // Rtree NMS (signed + float only)
+    register_typed!(m, rtree_nms, [f64, f32, i64, i32, i16]);
     // Masks to boxes
     m.add_function(wrap_pyfunction!(masks_to_boxes, m)?)?;
     // Rotated IoU
@@ -138,7 +221,11 @@ fn _powerboxes(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(draw_boxes, m)?)?;
     Ok(())
 }
-// Masks to boxes
+
+// ---------------------------------------------------------------------------
+// One-off functions (rotated/f64-only, masks, draw)
+// ---------------------------------------------------------------------------
+
 #[pyfunction]
 fn masks_to_boxes(py: Python, masks: &Bound<'_, PyArray3<bool>>) -> PyResult<Py<PyArray2<usize>>> {
     let masks = preprocess_array3(masks);
@@ -146,8 +233,6 @@ fn masks_to_boxes(py: Python, masks: &Bound<'_, PyArray3<bool>>) -> PyResult<Py<
     let boxes_as_numpy = utils::array_to_numpy(py, boxes).unwrap();
     return Ok(boxes_as_numpy.unbind());
 }
-
-// Rotated box IoU
 
 #[pyfunction]
 fn rotated_iou_distance(
@@ -162,8 +247,6 @@ fn rotated_iou_distance(
     return Ok(iou_as_numpy.unbind());
 }
 
-// Parallel Rotated box IoU
-
 #[pyfunction]
 fn parallel_rotated_iou_distance(
     py: Python,
@@ -176,8 +259,6 @@ fn parallel_rotated_iou_distance(
     let iou_as_numpy = utils::array_to_numpy(py, iou).unwrap();
     return Ok(iou_as_numpy.unbind());
 }
-
-// Rotated box GIoU
 
 #[pyfunction]
 fn rotated_giou_distance(
@@ -192,8 +273,6 @@ fn rotated_giou_distance(
     return Ok(iou_as_numpy.unbind());
 }
 
-// Parallel Rotated box GIoU
-
 #[pyfunction]
 fn parallel_rotated_giou_distance(
     py: Python,
@@ -207,8 +286,6 @@ fn parallel_rotated_giou_distance(
     return Ok(iou_as_numpy.unbind());
 }
 
-// Rotated box TIoU
-
 #[pyfunction]
 fn rotated_tiou_distance(
     py: Python,
@@ -221,7 +298,6 @@ fn rotated_tiou_distance(
     let iou_as_numpy = utils::array_to_numpy(py, iou).unwrap();
     return Ok(iou_as_numpy.unbind());
 }
-// Parallel Rotated box TIoU
 
 #[pyfunction]
 fn parallel_rotated_tiou_distance(
@@ -236,7 +312,6 @@ fn parallel_rotated_tiou_distance(
     return Ok(iou_as_numpy.unbind());
 }
 
-// Draw boxes
 #[pyfunction]
 #[pyo3(signature = (image, boxes, colors=None, thickness=2))]
 fn draw_boxes(
@@ -265,7 +340,6 @@ fn draw_boxes(
     }
     let num_boxes = boxes_shape[0];
 
-    // Flatten image to contiguous slice
     let image_slice: Vec<u8> = image_array.iter().copied().collect();
     let boxes_slice: Vec<f64> = boxes_array.iter().copied().collect();
 
@@ -284,12 +358,15 @@ fn draw_boxes(
         thickness,
     );
 
-    // Convert back to (3, H, W) numpy array
     let result_array = ndarray::Array3::from_shape_vec((3, height, width), result)
         .map_err(|e| pyo3::exceptions::PyValueError::new_err(e.to_string()))?;
     let numpy_array = utils::array_to_numpy(py, result_array)?;
     Ok(numpy_array.unbind())
 }
+
+// ---------------------------------------------------------------------------
+// Generic implementations + typed wrappers via macros
+// ---------------------------------------------------------------------------
 
 // DIoU
 fn diou_distance_generic<T>(
@@ -306,23 +383,7 @@ where
     let iou_as_numpy = utils::array_to_numpy(py, iou).unwrap();
     return Ok(iou_as_numpy.unbind());
 }
-
-#[pyfunction]
-fn diou_distance_f64(
-    py: Python,
-    boxes1: &Bound<'_, PyArray2<f64>>,
-    boxes2: &Bound<'_, PyArray2<f64>>,
-) -> PyResult<Py<PyArray2<f64>>> {
-    return Ok(diou_distance_generic(py, boxes1, boxes2)?);
-}
-#[pyfunction]
-fn diou_distance_f32(
-    py: Python,
-    boxes1: &Bound<'_, PyArray2<f32>>,
-    boxes2: &Bound<'_, PyArray2<f32>>,
-) -> PyResult<Py<PyArray2<f64>>> {
-    return Ok(diou_distance_generic(py, boxes1, boxes2)?);
-}
+for_each_float_type!(impl_distance2_fn, diou_distance, diou_distance_generic);
 
 // IoU
 fn iou_distance_generic<T>(
@@ -339,79 +400,8 @@ where
     let iou_as_numpy = utils::array_to_numpy(py, iou).unwrap();
     return Ok(iou_as_numpy.unbind());
 }
+for_each_numeric_type!(impl_distance2_fn, iou_distance, iou_distance_generic);
 
-#[pyfunction]
-fn iou_distance_f64(
-    py: Python,
-    boxes1: &Bound<'_, PyArray2<f64>>,
-    boxes2: &Bound<'_, PyArray2<f64>>,
-) -> PyResult<Py<PyArray2<f64>>> {
-    return Ok(iou_distance_generic(py, boxes1, boxes2)?);
-}
-#[pyfunction]
-fn iou_distance_f32(
-    py: Python,
-    boxes1: &Bound<'_, PyArray2<f32>>,
-    boxes2: &Bound<'_, PyArray2<f32>>,
-) -> PyResult<Py<PyArray2<f64>>> {
-    return Ok(iou_distance_generic(py, boxes1, boxes2)?);
-}
-#[pyfunction]
-fn iou_distance_i64(
-    py: Python,
-    boxes1: &Bound<'_, PyArray2<i64>>,
-    boxes2: &Bound<'_, PyArray2<i64>>,
-) -> PyResult<Py<PyArray2<f64>>> {
-    return Ok(iou_distance_generic(py, boxes1, boxes2)?);
-}
-#[pyfunction]
-fn iou_distance_i32(
-    py: Python,
-    boxes1: &Bound<'_, PyArray2<i32>>,
-    boxes2: &Bound<'_, PyArray2<i32>>,
-) -> PyResult<Py<PyArray2<f64>>> {
-    return Ok(iou_distance_generic(py, boxes1, boxes2)?);
-}
-#[pyfunction]
-fn iou_distance_i16(
-    py: Python,
-    boxes1: &Bound<'_, PyArray2<i16>>,
-    boxes2: &Bound<'_, PyArray2<i16>>,
-) -> PyResult<Py<PyArray2<f64>>> {
-    return Ok(iou_distance_generic(py, boxes1, boxes2)?);
-}
-#[pyfunction]
-fn iou_distance_u64(
-    py: Python,
-    boxes1: &Bound<'_, PyArray2<u64>>,
-    boxes2: &Bound<'_, PyArray2<u64>>,
-) -> PyResult<Py<PyArray2<f64>>> {
-    return Ok(iou_distance_generic(py, boxes1, boxes2)?);
-}
-#[pyfunction]
-fn iou_distance_u32(
-    py: Python,
-    boxes1: &Bound<'_, PyArray2<u32>>,
-    boxes2: &Bound<'_, PyArray2<u32>>,
-) -> PyResult<Py<PyArray2<f64>>> {
-    return Ok(iou_distance_generic(py, boxes1, boxes2)?);
-}
-#[pyfunction]
-fn iou_distance_u16(
-    py: Python,
-    boxes1: &Bound<'_, PyArray2<u16>>,
-    boxes2: &Bound<'_, PyArray2<u16>>,
-) -> PyResult<Py<PyArray2<f64>>> {
-    return Ok(iou_distance_generic(py, boxes1, boxes2)?);
-}
-#[pyfunction]
-fn iou_distance_u8(
-    py: Python,
-    boxes1: &Bound<'_, PyArray2<u8>>,
-    boxes2: &Bound<'_, PyArray2<u8>>,
-) -> PyResult<Py<PyArray2<f64>>> {
-    return Ok(iou_distance_generic(py, boxes1, boxes2)?);
-}
 // Parallel IoU
 fn parallel_iou_distance_generic<T>(
     py: Python,
@@ -427,78 +417,12 @@ where
     let iou_as_numpy = utils::array_to_numpy(py, iou).unwrap();
     return Ok(iou_as_numpy.unbind());
 }
-#[pyfunction]
-fn parallel_iou_distance_f64(
-    py: Python,
-    boxes1: &Bound<'_, PyArray2<f64>>,
-    boxes2: &Bound<'_, PyArray2<f64>>,
-) -> PyResult<Py<PyArray2<f64>>> {
-    return Ok(parallel_iou_distance_generic(py, boxes1, boxes2)?);
-}
-#[pyfunction]
-fn parallel_iou_distance_f32(
-    py: Python,
-    boxes1: &Bound<'_, PyArray2<f32>>,
-    boxes2: &Bound<'_, PyArray2<f32>>,
-) -> PyResult<Py<PyArray2<f64>>> {
-    return Ok(parallel_iou_distance_generic(py, boxes1, boxes2)?);
-}
-#[pyfunction]
-fn parallel_iou_distance_i64(
-    py: Python,
-    boxes1: &Bound<'_, PyArray2<i64>>,
-    boxes2: &Bound<'_, PyArray2<i64>>,
-) -> PyResult<Py<PyArray2<f64>>> {
-    return Ok(parallel_iou_distance_generic(py, boxes1, boxes2)?);
-}
-#[pyfunction]
-fn parallel_iou_distance_i32(
-    py: Python,
-    boxes1: &Bound<'_, PyArray2<i32>>,
-    boxes2: &Bound<'_, PyArray2<i32>>,
-) -> PyResult<Py<PyArray2<f64>>> {
-    return Ok(parallel_iou_distance_generic(py, boxes1, boxes2)?);
-}
-#[pyfunction]
-fn parallel_iou_distance_i16(
-    py: Python,
-    boxes1: &Bound<'_, PyArray2<i16>>,
-    boxes2: &Bound<'_, PyArray2<i16>>,
-) -> PyResult<Py<PyArray2<f64>>> {
-    return Ok(parallel_iou_distance_generic(py, boxes1, boxes2)?);
-}
-#[pyfunction]
-fn parallel_iou_distance_u64(
-    py: Python,
-    boxes1: &Bound<'_, PyArray2<u64>>,
-    boxes2: &Bound<'_, PyArray2<u64>>,
-) -> PyResult<Py<PyArray2<f64>>> {
-    return Ok(parallel_iou_distance_generic(py, boxes1, boxes2)?);
-}
-#[pyfunction]
-fn parallel_iou_distance_u32(
-    py: Python,
-    boxes1: &Bound<'_, PyArray2<u32>>,
-    boxes2: &Bound<'_, PyArray2<u32>>,
-) -> PyResult<Py<PyArray2<f64>>> {
-    return Ok(parallel_iou_distance_generic(py, boxes1, boxes2)?);
-}
-#[pyfunction]
-fn parallel_iou_distance_u16(
-    py: Python,
-    boxes1: &Bound<'_, PyArray2<u16>>,
-    boxes2: &Bound<'_, PyArray2<u16>>,
-) -> PyResult<Py<PyArray2<f64>>> {
-    return Ok(parallel_iou_distance_generic(py, boxes1, boxes2)?);
-}
-#[pyfunction]
-fn parallel_iou_distance_u8(
-    py: Python,
-    boxes1: &Bound<'_, PyArray2<u8>>,
-    boxes2: &Bound<'_, PyArray2<u8>>,
-) -> PyResult<Py<PyArray2<f64>>> {
-    return Ok(parallel_iou_distance_generic(py, boxes1, boxes2)?);
-}
+for_each_numeric_type!(
+    impl_distance2_fn,
+    parallel_iou_distance,
+    parallel_iou_distance_generic
+);
+
 // TIoU
 fn tiou_distance_generic<T>(
     py: Python,
@@ -514,79 +438,8 @@ where
     let tiou_as_numpy = utils::array_to_numpy(py, tiou).unwrap();
     return Ok(tiou_as_numpy.unbind());
 }
+for_each_numeric_type!(impl_distance2_fn, tiou_distance, tiou_distance_generic);
 
-#[pyfunction]
-fn tiou_distance_f64(
-    py: Python,
-    boxes1: &Bound<'_, PyArray2<f64>>,
-    boxes2: &Bound<'_, PyArray2<f64>>,
-) -> PyResult<Py<PyArray2<f64>>> {
-    return Ok(tiou_distance_generic(py, boxes1, boxes2)?);
-}
-#[pyfunction]
-fn tiou_distance_f32(
-    py: Python,
-    boxes1: &Bound<'_, PyArray2<f32>>,
-    boxes2: &Bound<'_, PyArray2<f32>>,
-) -> PyResult<Py<PyArray2<f64>>> {
-    return Ok(tiou_distance_generic(py, boxes1, boxes2)?);
-}
-#[pyfunction]
-fn tiou_distance_i64(
-    py: Python,
-    boxes1: &Bound<'_, PyArray2<i64>>,
-    boxes2: &Bound<'_, PyArray2<i64>>,
-) -> PyResult<Py<PyArray2<f64>>> {
-    return Ok(tiou_distance_generic(py, boxes1, boxes2)?);
-}
-#[pyfunction]
-fn tiou_distance_i32(
-    py: Python,
-    boxes1: &Bound<'_, PyArray2<i32>>,
-    boxes2: &Bound<'_, PyArray2<i32>>,
-) -> PyResult<Py<PyArray2<f64>>> {
-    return Ok(tiou_distance_generic(py, boxes1, boxes2)?);
-}
-#[pyfunction]
-fn tiou_distance_i16(
-    py: Python,
-    boxes1: &Bound<'_, PyArray2<i16>>,
-    boxes2: &Bound<'_, PyArray2<i16>>,
-) -> PyResult<Py<PyArray2<f64>>> {
-    return Ok(tiou_distance_generic(py, boxes1, boxes2)?);
-}
-#[pyfunction]
-fn tiou_distance_u64(
-    py: Python,
-    boxes1: &Bound<'_, PyArray2<u64>>,
-    boxes2: &Bound<'_, PyArray2<u64>>,
-) -> PyResult<Py<PyArray2<f64>>> {
-    return Ok(tiou_distance_generic(py, boxes1, boxes2)?);
-}
-#[pyfunction]
-fn tiou_distance_u32(
-    py: Python,
-    boxes1: &Bound<'_, PyArray2<u32>>,
-    boxes2: &Bound<'_, PyArray2<u32>>,
-) -> PyResult<Py<PyArray2<f64>>> {
-    return Ok(tiou_distance_generic(py, boxes1, boxes2)?);
-}
-#[pyfunction]
-fn tiou_distance_u16(
-    py: Python,
-    boxes1: &Bound<'_, PyArray2<u16>>,
-    boxes2: &Bound<'_, PyArray2<u16>>,
-) -> PyResult<Py<PyArray2<f64>>> {
-    return Ok(tiou_distance_generic(py, boxes1, boxes2)?);
-}
-#[pyfunction]
-fn tiou_distance_u8(
-    py: Python,
-    boxes1: &Bound<'_, PyArray2<u8>>,
-    boxes2: &Bound<'_, PyArray2<u8>>,
-) -> PyResult<Py<PyArray2<f64>>> {
-    return Ok(tiou_distance_generic(py, boxes1, boxes2)?);
-}
 // GIoU
 fn giou_distance_generic<T>(
     py: Python,
@@ -602,80 +455,31 @@ where
     let iou_as_numpy = utils::array_to_numpy(py, iou).unwrap();
     return Ok(iou_as_numpy.unbind());
 }
-#[pyfunction]
-fn giou_distance_f64(
+for_each_numeric_type!(impl_distance2_fn, giou_distance, giou_distance_generic);
+
+// Parallel GIoU — float types use the parallel implementation
+fn parallel_giou_distance_float_generic<T>(
     py: Python,
-    boxes1: &Bound<'_, PyArray2<f64>>,
-    boxes2: &Bound<'_, PyArray2<f64>>,
-) -> PyResult<Py<PyArray2<f64>>> {
-    return Ok(giou_distance_generic(py, boxes1, boxes2)?);
+    boxes1: &Bound<'_, PyArray2<T>>,
+    boxes2: &Bound<'_, PyArray2<T>>,
+) -> PyResult<Py<PyArray2<f64>>>
+where
+    T: Num + ToPrimitive + PartialOrd + numpy::Element + Copy + Sync + Send + Float,
+{
+    let boxes1 = preprocess_boxes(boxes1).unwrap();
+    let boxes2 = preprocess_boxes(boxes2).unwrap();
+    let iou = giou::parallel_giou_distance(&boxes1, &boxes2);
+    let iou_as_numpy = utils::array_to_numpy(py, iou).unwrap();
+    return Ok(iou_as_numpy.unbind());
 }
-#[pyfunction]
-fn giou_distance_f32(
-    py: Python,
-    boxes1: &Bound<'_, PyArray2<f32>>,
-    boxes2: &Bound<'_, PyArray2<f32>>,
-) -> PyResult<Py<PyArray2<f64>>> {
-    return Ok(giou_distance_generic(py, boxes1, boxes2)?);
-}
-#[pyfunction]
-fn giou_distance_i64(
-    py: Python,
-    boxes1: &Bound<'_, PyArray2<i64>>,
-    boxes2: &Bound<'_, PyArray2<i64>>,
-) -> PyResult<Py<PyArray2<f64>>> {
-    return Ok(giou_distance_generic(py, boxes1, boxes2)?);
-}
-#[pyfunction]
-fn giou_distance_i32(
-    py: Python,
-    boxes1: &Bound<'_, PyArray2<i32>>,
-    boxes2: &Bound<'_, PyArray2<i32>>,
-) -> PyResult<Py<PyArray2<f64>>> {
-    return Ok(giou_distance_generic(py, boxes1, boxes2)?);
-}
-#[pyfunction]
-fn giou_distance_i16(
-    py: Python,
-    boxes1: &Bound<'_, PyArray2<i16>>,
-    boxes2: &Bound<'_, PyArray2<i16>>,
-) -> PyResult<Py<PyArray2<f64>>> {
-    return Ok(giou_distance_generic(py, boxes1, boxes2)?);
-}
-#[pyfunction]
-fn giou_distance_u64(
-    py: Python,
-    boxes1: &Bound<'_, PyArray2<u64>>,
-    boxes2: &Bound<'_, PyArray2<u64>>,
-) -> PyResult<Py<PyArray2<f64>>> {
-    return Ok(giou_distance_generic(py, boxes1, boxes2)?);
-}
-#[pyfunction]
-fn giou_distance_u32(
-    py: Python,
-    boxes1: &Bound<'_, PyArray2<u32>>,
-    boxes2: &Bound<'_, PyArray2<u32>>,
-) -> PyResult<Py<PyArray2<f64>>> {
-    return Ok(giou_distance_generic(py, boxes1, boxes2)?);
-}
-#[pyfunction]
-fn giou_distance_u16(
-    py: Python,
-    boxes1: &Bound<'_, PyArray2<u16>>,
-    boxes2: &Bound<'_, PyArray2<u16>>,
-) -> PyResult<Py<PyArray2<f64>>> {
-    return Ok(giou_distance_generic(py, boxes1, boxes2)?);
-}
-#[pyfunction]
-fn giou_distance_u8(
-    py: Python,
-    boxes1: &Bound<'_, PyArray2<u8>>,
-    boxes2: &Bound<'_, PyArray2<u8>>,
-) -> PyResult<Py<PyArray2<f64>>> {
-    return Ok(giou_distance_generic(py, boxes1, boxes2)?);
-}
-// Parallel GIoU
-fn parallel_giou_distance_generic<T>(
+for_each_float_type!(
+    impl_distance2_fn,
+    parallel_giou_distance,
+    parallel_giou_distance_float_generic
+);
+
+// Parallel GIoU — integer types fall back to sequential (parallel requires Float/Real)
+fn parallel_giou_distance_int_generic<T>(
     py: Python,
     boxes1: &Bound<'_, PyArray2<T>>,
     boxes2: &Bound<'_, PyArray2<T>>,
@@ -689,78 +493,23 @@ where
     let iou_as_numpy = utils::array_to_numpy(py, iou).unwrap();
     return Ok(iou_as_numpy.unbind());
 }
-#[pyfunction]
-fn parallel_giou_distance_f64(
-    py: Python,
-    boxes1: &Bound<'_, PyArray2<f64>>,
-    boxes2: &Bound<'_, PyArray2<f64>>,
-) -> PyResult<Py<PyArray2<f64>>> {
-    return Ok(parallel_giou_distance_generic(py, boxes1, boxes2)?);
+macro_rules! impl_parallel_giou_int_types {
+    ($mac:ident, $prefix:ident, $generic:ident) => {
+        $mac!($prefix, $generic, i64, i64);
+        $mac!($prefix, $generic, i32, i32);
+        $mac!($prefix, $generic, i16, i16);
+        $mac!($prefix, $generic, u64, u64);
+        $mac!($prefix, $generic, u32, u32);
+        $mac!($prefix, $generic, u16, u16);
+        $mac!($prefix, $generic, u8, u8);
+    };
 }
-#[pyfunction]
-fn parallel_giou_distance_f32(
-    py: Python,
-    boxes1: &Bound<'_, PyArray2<f32>>,
-    boxes2: &Bound<'_, PyArray2<f32>>,
-) -> PyResult<Py<PyArray2<f64>>> {
-    return Ok(parallel_giou_distance_generic(py, boxes1, boxes2)?);
-}
-#[pyfunction]
-fn parallel_giou_distance_i64(
-    py: Python,
-    boxes1: &Bound<'_, PyArray2<i64>>,
-    boxes2: &Bound<'_, PyArray2<i64>>,
-) -> PyResult<Py<PyArray2<f64>>> {
-    return Ok(parallel_giou_distance_generic(py, boxes1, boxes2)?);
-}
-#[pyfunction]
-fn parallel_giou_distance_i32(
-    py: Python,
-    boxes1: &Bound<'_, PyArray2<i32>>,
-    boxes2: &Bound<'_, PyArray2<i32>>,
-) -> PyResult<Py<PyArray2<f64>>> {
-    return Ok(parallel_giou_distance_generic(py, boxes1, boxes2)?);
-}
-#[pyfunction]
-fn parallel_giou_distance_i16(
-    py: Python,
-    boxes1: &Bound<'_, PyArray2<i16>>,
-    boxes2: &Bound<'_, PyArray2<i16>>,
-) -> PyResult<Py<PyArray2<f64>>> {
-    return Ok(parallel_giou_distance_generic(py, boxes1, boxes2)?);
-}
-#[pyfunction]
-fn parallel_giou_distance_u64(
-    py: Python,
-    boxes1: &Bound<'_, PyArray2<u64>>,
-    boxes2: &Bound<'_, PyArray2<u64>>,
-) -> PyResult<Py<PyArray2<f64>>> {
-    return Ok(parallel_giou_distance_generic(py, boxes1, boxes2)?);
-}
-#[pyfunction]
-fn parallel_giou_distance_u32(
-    py: Python,
-    boxes1: &Bound<'_, PyArray2<u32>>,
-    boxes2: &Bound<'_, PyArray2<u32>>,
-) -> PyResult<Py<PyArray2<f64>>> {
-    return Ok(parallel_giou_distance_generic(py, boxes1, boxes2)?);
-}
-#[pyfunction]
-fn parallel_giou_distance_u16(
-    py: Python,
-    boxes1: &Bound<'_, PyArray2<u16>>,
-    boxes2: &Bound<'_, PyArray2<u16>>,
-) -> PyResult<Py<PyArray2<f64>>> {
-    return Ok(parallel_giou_distance_generic(py, boxes1, boxes2)?);
-}
-#[pyfunction]
-fn parallel_giou_distance_u8(
-    py: Python,
-    boxes1: &Bound<'_, PyArray2<u8>>,
-    boxes2: &Bound<'_, PyArray2<u8>>,
-) -> PyResult<Py<PyArray2<f64>>> {
-    return Ok(parallel_giou_distance_generic(py, boxes1, boxes2)?);
-}
+impl_parallel_giou_int_types!(
+    impl_distance2_fn,
+    parallel_giou_distance,
+    parallel_giou_distance_int_generic
+);
+
 // Remove small boxes
 fn remove_small_boxes_generic<T>(
     py: Python,
@@ -775,79 +524,13 @@ where
     let filtered_boxes_as_numpy = utils::array_to_numpy(py, filtered_boxes).unwrap();
     return Ok(filtered_boxes_as_numpy.unbind());
 }
-#[pyfunction]
-fn remove_small_boxes_f64(
-    py: Python,
-    boxes: &Bound<'_, PyArray2<f64>>,
-    min_size: f64,
-) -> PyResult<Py<PyArray2<f64>>> {
-    return Ok(remove_small_boxes_generic(py, boxes, min_size)?);
-}
-#[pyfunction]
-fn remove_small_boxes_f32(
-    py: Python,
-    boxes: &Bound<'_, PyArray2<f32>>,
-    min_size: f64,
-) -> PyResult<Py<PyArray2<f32>>> {
-    return Ok(remove_small_boxes_generic(py, boxes, min_size)?);
-}
-#[pyfunction]
-fn remove_small_boxes_i64(
-    py: Python,
-    boxes: &Bound<'_, PyArray2<i64>>,
-    min_size: f64,
-) -> PyResult<Py<PyArray2<i64>>> {
-    return Ok(remove_small_boxes_generic(py, boxes, min_size)?);
-}
-#[pyfunction]
-fn remove_small_boxes_i32(
-    py: Python,
-    boxes: &Bound<'_, PyArray2<i32>>,
-    min_size: f64,
-) -> PyResult<Py<PyArray2<i32>>> {
-    return Ok(remove_small_boxes_generic(py, boxes, min_size)?);
-}
-#[pyfunction]
-fn remove_small_boxes_i16(
-    py: Python,
-    boxes: &Bound<'_, PyArray2<i16>>,
-    min_size: f64,
-) -> PyResult<Py<PyArray2<i16>>> {
-    return Ok(remove_small_boxes_generic(py, boxes, min_size)?);
-}
-#[pyfunction]
-fn remove_small_boxes_u64(
-    py: Python,
-    boxes: &Bound<'_, PyArray2<u64>>,
-    min_size: f64,
-) -> PyResult<Py<PyArray2<u64>>> {
-    return Ok(remove_small_boxes_generic(py, boxes, min_size)?);
-}
-#[pyfunction]
-fn remove_small_boxes_u32(
-    py: Python,
-    boxes: &Bound<'_, PyArray2<u32>>,
-    min_size: f64,
-) -> PyResult<Py<PyArray2<u32>>> {
-    return Ok(remove_small_boxes_generic(py, boxes, min_size)?);
-}
-#[pyfunction]
-fn remove_small_boxes_u16(
-    py: Python,
-    boxes: &Bound<'_, PyArray2<u16>>,
-    min_size: f64,
-) -> PyResult<Py<PyArray2<u16>>> {
-    return Ok(remove_small_boxes_generic(py, boxes, min_size)?);
-}
-#[pyfunction]
-fn remove_small_boxes_u8(
-    py: Python,
-    boxes: &Bound<'_, PyArray2<u8>>,
-    min_size: f64,
-) -> PyResult<Py<PyArray2<u8>>> {
-    return Ok(remove_small_boxes_generic(py, boxes, min_size)?);
-}
-// Boxes areas
+for_each_numeric_type!(
+    impl_filter_fn,
+    remove_small_boxes,
+    remove_small_boxes_generic
+);
+
+// Box areas
 fn generic_box_areas<T>(py: Python, boxes: &Bound<'_, PyArray2<T>>) -> PyResult<Py<PyArray1<f64>>>
 where
     T: Num + numpy::Element + PartialOrd + ToPrimitive + Sync + Send + Copy,
@@ -857,44 +540,9 @@ where
     let areas_as_numpy = utils::array_to_numpy(py, areas).unwrap();
     return Ok(areas_as_numpy.unbind());
 }
+for_each_numeric_type!(impl_unary_f64_fn, box_areas, generic_box_areas);
 
-#[pyfunction]
-fn box_areas_f64(py: Python, boxes: &Bound<'_, PyArray2<f64>>) -> PyResult<Py<PyArray1<f64>>> {
-    return Ok(generic_box_areas(py, boxes)?);
-}
-#[pyfunction]
-fn box_areas_f32(py: Python, boxes: &Bound<'_, PyArray2<f32>>) -> PyResult<Py<PyArray1<f64>>> {
-    return Ok(generic_box_areas(py, boxes)?);
-}
-#[pyfunction]
-fn box_areas_i64(py: Python, boxes: &Bound<'_, PyArray2<i64>>) -> PyResult<Py<PyArray1<f64>>> {
-    return Ok(generic_box_areas(py, boxes)?);
-}
-#[pyfunction]
-fn box_areas_i32(py: Python, boxes: &Bound<'_, PyArray2<i32>>) -> PyResult<Py<PyArray1<f64>>> {
-    return Ok(generic_box_areas(py, boxes)?);
-}
-#[pyfunction]
-fn box_areas_i16(py: Python, boxes: &Bound<'_, PyArray2<i16>>) -> PyResult<Py<PyArray1<f64>>> {
-    return Ok(generic_box_areas(py, boxes)?);
-}
-#[pyfunction]
-fn box_areas_u64(py: Python, boxes: &Bound<'_, PyArray2<u64>>) -> PyResult<Py<PyArray1<f64>>> {
-    return Ok(generic_box_areas(py, boxes)?);
-}
-#[pyfunction]
-fn box_areas_u32(py: Python, boxes: &Bound<'_, PyArray2<u32>>) -> PyResult<Py<PyArray1<f64>>> {
-    return Ok(generic_box_areas(py, boxes)?);
-}
-#[pyfunction]
-fn box_areas_u16(py: Python, boxes: &Bound<'_, PyArray2<u16>>) -> PyResult<Py<PyArray1<f64>>> {
-    return Ok(generic_box_areas(py, boxes)?);
-}
-#[pyfunction]
-fn box_areas_u8(py: Python, boxes: &Bound<'_, PyArray2<u8>>) -> PyResult<Py<PyArray1<f64>>> {
-    return Ok(generic_box_areas(py, boxes)?);
-}
-
+// Box convert
 fn box_convert_generic<T>(
     py: Python,
     boxes: &Bound<'_, PyArray2<T>>,
@@ -929,90 +577,9 @@ where
     let converted_boxes_as_numpy = utils::array_to_numpy(py, converted_boxes).unwrap();
     return Ok(converted_boxes_as_numpy.unbind());
 }
+for_each_numeric_type!(impl_convert_fn, box_convert, box_convert_generic);
 
-#[pyfunction]
-fn box_convert_f64(
-    py: Python,
-    boxes: &Bound<'_, PyArray2<f64>>,
-    in_fmt: &str,
-    out_fmt: &str,
-) -> PyResult<Py<PyArray2<f64>>> {
-    return Ok(box_convert_generic(py, boxes, in_fmt, out_fmt).unwrap());
-}
-#[pyfunction]
-fn box_convert_f32(
-    py: Python,
-    boxes: &Bound<'_, PyArray2<f32>>,
-    in_fmt: &str,
-    out_fmt: &str,
-) -> PyResult<Py<PyArray2<f32>>> {
-    return Ok(box_convert_generic(py, boxes, in_fmt, out_fmt).unwrap());
-}
-#[pyfunction]
-fn box_convert_i64(
-    py: Python,
-    boxes: &Bound<'_, PyArray2<i64>>,
-    in_fmt: &str,
-    out_fmt: &str,
-) -> PyResult<Py<PyArray2<i64>>> {
-    return Ok(box_convert_generic(py, boxes, in_fmt, out_fmt).unwrap());
-}
-#[pyfunction]
-fn box_convert_i32(
-    py: Python,
-    boxes: &Bound<'_, PyArray2<i32>>,
-    in_fmt: &str,
-    out_fmt: &str,
-) -> PyResult<Py<PyArray2<i32>>> {
-    return Ok(box_convert_generic(py, boxes, in_fmt, out_fmt).unwrap());
-}
-#[pyfunction]
-fn box_convert_i16(
-    py: Python,
-    boxes: &Bound<'_, PyArray2<i16>>,
-    in_fmt: &str,
-    out_fmt: &str,
-) -> PyResult<Py<PyArray2<i16>>> {
-    return Ok(box_convert_generic(py, boxes, in_fmt, out_fmt).unwrap());
-}
-#[pyfunction]
-fn box_convert_u64(
-    py: Python,
-    boxes: &Bound<'_, PyArray2<u64>>,
-    in_fmt: &str,
-    out_fmt: &str,
-) -> PyResult<Py<PyArray2<u64>>> {
-    return Ok(box_convert_generic(py, boxes, in_fmt, out_fmt).unwrap());
-}
-#[pyfunction]
-fn box_convert_u32(
-    py: Python,
-    boxes: &Bound<'_, PyArray2<u32>>,
-    in_fmt: &str,
-    out_fmt: &str,
-) -> PyResult<Py<PyArray2<u32>>> {
-    return Ok(box_convert_generic(py, boxes, in_fmt, out_fmt).unwrap());
-}
-#[pyfunction]
-fn box_convert_u16(
-    py: Python,
-    boxes: &Bound<'_, PyArray2<u16>>,
-    in_fmt: &str,
-    out_fmt: &str,
-) -> PyResult<Py<PyArray2<u16>>> {
-    return Ok(box_convert_generic(py, boxes, in_fmt, out_fmt).unwrap());
-}
-#[pyfunction]
-fn box_convert_u8(
-    py: Python,
-    boxes: &Bound<'_, PyArray2<u8>>,
-    in_fmt: &str,
-    out_fmt: &str,
-) -> PyResult<Py<PyArray2<u8>>> {
-    return Ok(box_convert_generic(py, boxes, in_fmt, out_fmt).unwrap());
-}
-
-// nms
+// NMS
 fn nms_generic<T>(
     py: Python,
     boxes: &Bound<'_, PyArray2<T>>,
@@ -1030,152 +597,9 @@ where
     let keep_as_numpy = utils::array_to_numpy(py, keep_as_ndarray).unwrap();
     return Ok(keep_as_numpy.unbind());
 }
-#[pyfunction]
-fn nms_f64(
-    py: Python,
-    boxes: &Bound<'_, PyArray2<f64>>,
-    scores: &Bound<'_, PyArray1<f64>>,
-    iou_threshold: f64,
-    score_threshold: f64,
-) -> PyResult<Py<PyArray1<usize>>> {
-    return Ok(nms_generic(
-        py,
-        boxes,
-        scores,
-        iou_threshold,
-        score_threshold,
-    )?);
-}
-#[pyfunction]
-fn nms_f32(
-    py: Python,
-    boxes: &Bound<'_, PyArray2<f32>>,
-    scores: &Bound<'_, PyArray1<f64>>,
-    iou_threshold: f64,
-    score_threshold: f64,
-) -> PyResult<Py<PyArray1<usize>>> {
-    return Ok(nms_generic(
-        py,
-        boxes,
-        scores,
-        iou_threshold,
-        score_threshold,
-    )?);
-}
-#[pyfunction]
-fn nms_i64(
-    py: Python,
-    boxes: &Bound<'_, PyArray2<i64>>,
-    scores: &Bound<'_, PyArray1<f64>>,
-    iou_threshold: f64,
-    score_threshold: f64,
-) -> PyResult<Py<PyArray1<usize>>> {
-    return Ok(nms_generic(
-        py,
-        boxes,
-        scores,
-        iou_threshold,
-        score_threshold,
-    )?);
-}
-#[pyfunction]
-fn nms_i32(
-    py: Python,
-    boxes: &Bound<'_, PyArray2<i32>>,
-    scores: &Bound<'_, PyArray1<f64>>,
-    iou_threshold: f64,
-    score_threshold: f64,
-) -> PyResult<Py<PyArray1<usize>>> {
-    return Ok(nms_generic(
-        py,
-        boxes,
-        scores,
-        iou_threshold,
-        score_threshold,
-    )?);
-}
-#[pyfunction]
-fn nms_i16(
-    py: Python,
-    boxes: &Bound<'_, PyArray2<i16>>,
-    scores: &Bound<'_, PyArray1<f64>>,
-    iou_threshold: f64,
-    score_threshold: f64,
-) -> PyResult<Py<PyArray1<usize>>> {
-    return Ok(nms_generic(
-        py,
-        boxes,
-        scores,
-        iou_threshold,
-        score_threshold,
-    )?);
-}
-#[pyfunction]
-fn nms_u64(
-    py: Python,
-    boxes: &Bound<'_, PyArray2<u64>>,
-    scores: &Bound<'_, PyArray1<f64>>,
-    iou_threshold: f64,
-    score_threshold: f64,
-) -> PyResult<Py<PyArray1<usize>>> {
-    return Ok(nms_generic(
-        py,
-        boxes,
-        scores,
-        iou_threshold,
-        score_threshold,
-    )?);
-}
-#[pyfunction]
-fn nms_u32(
-    py: Python,
-    boxes: &Bound<'_, PyArray2<u32>>,
-    scores: &Bound<'_, PyArray1<f64>>,
-    iou_threshold: f64,
-    score_threshold: f64,
-) -> PyResult<Py<PyArray1<usize>>> {
-    return Ok(nms_generic(
-        py,
-        boxes,
-        scores,
-        iou_threshold,
-        score_threshold,
-    )?);
-}
-#[pyfunction]
-fn nms_u16(
-    py: Python,
-    boxes: &Bound<'_, PyArray2<u16>>,
-    scores: &Bound<'_, PyArray1<f64>>,
-    iou_threshold: f64,
-    score_threshold: f64,
-) -> PyResult<Py<PyArray1<usize>>> {
-    return Ok(nms_generic(
-        py,
-        boxes,
-        scores,
-        iou_threshold,
-        score_threshold,
-    )?);
-}
-#[pyfunction]
-fn nms_u8(
-    py: Python,
-    boxes: &Bound<'_, PyArray2<u8>>,
-    scores: &Bound<'_, PyArray1<f64>>,
-    iou_threshold: f64,
-    score_threshold: f64,
-) -> PyResult<Py<PyArray1<usize>>> {
-    return Ok(nms_generic(
-        py,
-        boxes,
-        scores,
-        iou_threshold,
-        score_threshold,
-    )?);
-}
+for_each_numeric_type!(impl_nms_fn, nms, nms_generic);
 
-// rotated nms
+// Rotated NMS
 fn rotated_nms_generic<T>(
     py: Python,
     boxes: &Bound<'_, PyArray2<T>>,
@@ -1193,152 +617,9 @@ where
     let keep_as_numpy = utils::array_to_numpy(py, keep_as_ndarray)?;
     return Ok(keep_as_numpy.unbind());
 }
-#[pyfunction]
-fn rotated_nms_f64(
-    py: Python,
-    boxes: &Bound<'_, PyArray2<f64>>,
-    scores: &Bound<'_, PyArray1<f64>>,
-    iou_threshold: f64,
-    score_threshold: f64,
-) -> PyResult<Py<PyArray1<usize>>> {
-    return Ok(rotated_nms_generic(
-        py,
-        boxes,
-        scores,
-        iou_threshold,
-        score_threshold,
-    )?);
-}
-#[pyfunction]
-fn rotated_nms_f32(
-    py: Python,
-    boxes: &Bound<'_, PyArray2<f32>>,
-    scores: &Bound<'_, PyArray1<f64>>,
-    iou_threshold: f64,
-    score_threshold: f64,
-) -> PyResult<Py<PyArray1<usize>>> {
-    return Ok(rotated_nms_generic(
-        py,
-        boxes,
-        scores,
-        iou_threshold,
-        score_threshold,
-    )?);
-}
-#[pyfunction]
-fn rotated_nms_i64(
-    py: Python,
-    boxes: &Bound<'_, PyArray2<i64>>,
-    scores: &Bound<'_, PyArray1<f64>>,
-    iou_threshold: f64,
-    score_threshold: f64,
-) -> PyResult<Py<PyArray1<usize>>> {
-    return Ok(rotated_nms_generic(
-        py,
-        boxes,
-        scores,
-        iou_threshold,
-        score_threshold,
-    )?);
-}
-#[pyfunction]
-fn rotated_nms_i32(
-    py: Python,
-    boxes: &Bound<'_, PyArray2<i32>>,
-    scores: &Bound<'_, PyArray1<f64>>,
-    iou_threshold: f64,
-    score_threshold: f64,
-) -> PyResult<Py<PyArray1<usize>>> {
-    return Ok(rotated_nms_generic(
-        py,
-        boxes,
-        scores,
-        iou_threshold,
-        score_threshold,
-    )?);
-}
-#[pyfunction]
-fn rotated_nms_i16(
-    py: Python,
-    boxes: &Bound<'_, PyArray2<i16>>,
-    scores: &Bound<'_, PyArray1<f64>>,
-    iou_threshold: f64,
-    score_threshold: f64,
-) -> PyResult<Py<PyArray1<usize>>> {
-    return Ok(rotated_nms_generic(
-        py,
-        boxes,
-        scores,
-        iou_threshold,
-        score_threshold,
-    )?);
-}
-#[pyfunction]
-fn rotated_nms_u64(
-    py: Python,
-    boxes: &Bound<'_, PyArray2<u64>>,
-    scores: &Bound<'_, PyArray1<f64>>,
-    iou_threshold: f64,
-    score_threshold: f64,
-) -> PyResult<Py<PyArray1<usize>>> {
-    return Ok(rotated_nms_generic(
-        py,
-        boxes,
-        scores,
-        iou_threshold,
-        score_threshold,
-    )?);
-}
-#[pyfunction]
-fn rotated_nms_u32(
-    py: Python,
-    boxes: &Bound<'_, PyArray2<u32>>,
-    scores: &Bound<'_, PyArray1<f64>>,
-    iou_threshold: f64,
-    score_threshold: f64,
-) -> PyResult<Py<PyArray1<usize>>> {
-    return Ok(rotated_nms_generic(
-        py,
-        boxes,
-        scores,
-        iou_threshold,
-        score_threshold,
-    )?);
-}
-#[pyfunction]
-fn rotated_nms_u16(
-    py: Python,
-    boxes: &Bound<'_, PyArray2<u16>>,
-    scores: &Bound<'_, PyArray1<f64>>,
-    iou_threshold: f64,
-    score_threshold: f64,
-) -> PyResult<Py<PyArray1<usize>>> {
-    return Ok(rotated_nms_generic(
-        py,
-        boxes,
-        scores,
-        iou_threshold,
-        score_threshold,
-    )?);
-}
-#[pyfunction]
-fn rotated_nms_u8(
-    py: Python,
-    boxes: &Bound<'_, PyArray2<u8>>,
-    scores: &Bound<'_, PyArray1<f64>>,
-    iou_threshold: f64,
-    score_threshold: f64,
-) -> PyResult<Py<PyArray1<usize>>> {
-    return Ok(rotated_nms_generic(
-        py,
-        boxes,
-        scores,
-        iou_threshold,
-        score_threshold,
-    )?);
-}
+for_each_numeric_type!(impl_nms_fn, rotated_nms, rotated_nms_generic);
 
-// rtree nms
+// Rtree NMS (signed + float types only)
 fn rtree_nms_generic<T>(
     py: Python,
     boxes: &Bound<'_, PyArray2<T>>,
@@ -1366,83 +647,4 @@ where
     let keep_as_numpy = utils::array_to_numpy(py, keep_as_ndarray).unwrap();
     return Ok(keep_as_numpy.unbind());
 }
-#[pyfunction]
-fn rtree_nms_f64(
-    py: Python,
-    boxes: &Bound<'_, PyArray2<f64>>,
-    scores: &Bound<'_, PyArray1<f64>>,
-    iou_threshold: f64,
-    score_threshold: f64,
-) -> PyResult<Py<PyArray1<usize>>> {
-    return Ok(rtree_nms_generic(
-        py,
-        boxes,
-        scores,
-        iou_threshold,
-        score_threshold,
-    )?);
-}
-#[pyfunction]
-fn rtree_nms_f32(
-    py: Python,
-    boxes: &Bound<'_, PyArray2<f32>>,
-    scores: &Bound<'_, PyArray1<f64>>,
-    iou_threshold: f64,
-    score_threshold: f64,
-) -> PyResult<Py<PyArray1<usize>>> {
-    return Ok(rtree_nms_generic(
-        py,
-        boxes,
-        scores,
-        iou_threshold,
-        score_threshold,
-    )?);
-}
-#[pyfunction]
-fn rtree_nms_i64(
-    py: Python,
-    boxes: &Bound<'_, PyArray2<i64>>,
-    scores: &Bound<'_, PyArray1<f64>>,
-    iou_threshold: f64,
-    score_threshold: f64,
-) -> PyResult<Py<PyArray1<usize>>> {
-    return Ok(rtree_nms_generic(
-        py,
-        boxes,
-        scores,
-        iou_threshold,
-        score_threshold,
-    )?);
-}
-#[pyfunction]
-fn rtree_nms_i32(
-    py: Python,
-    boxes: &Bound<'_, PyArray2<i32>>,
-    scores: &Bound<'_, PyArray1<f64>>,
-    iou_threshold: f64,
-    score_threshold: f64,
-) -> PyResult<Py<PyArray1<usize>>> {
-    return Ok(rtree_nms_generic(
-        py,
-        boxes,
-        scores,
-        iou_threshold,
-        score_threshold,
-    )?);
-}
-#[pyfunction]
-fn rtree_nms_i16(
-    py: Python,
-    boxes: &Bound<'_, PyArray2<i16>>,
-    scores: &Bound<'_, PyArray1<f64>>,
-    iou_threshold: f64,
-    score_threshold: f64,
-) -> PyResult<Py<PyArray1<usize>>> {
-    return Ok(rtree_nms_generic(
-        py,
-        boxes,
-        scores,
-        iou_threshold,
-        score_threshold,
-    )?);
-}
+for_each_signed_type!(impl_nms_fn, rtree_nms, rtree_nms_generic);

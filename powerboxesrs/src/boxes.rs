@@ -75,8 +75,12 @@ where
 /// * `n` - The number of bounding boxes.
 /// * `in_fmt` - The input format of the boxes.
 /// * `out_fmt` - The desired output format of the boxes.
-pub fn box_convert_inplace_slice<N>(boxes: &mut [N], n: usize, in_fmt: BoxFormat, out_fmt: BoxFormat)
-where
+pub fn box_convert_inplace_slice<N>(
+    boxes: &mut [N],
+    n: usize,
+    in_fmt: BoxFormat,
+    out_fmt: BoxFormat,
+) where
     N: Num + PartialEq + PartialOrd + ToPrimitive + Clone + Copy,
 {
     let two = N::one() + N::one();
@@ -163,7 +167,12 @@ where
 /// # Returns
 ///
 /// A flat `Vec<usize>` of length `num_masks * 4` containing bounding boxes in xyxy format.
-pub fn masks_to_boxes_slice(masks: &[bool], num_masks: usize, height: usize, width: usize) -> Vec<usize> {
+pub fn masks_to_boxes_slice(
+    masks: &[bool],
+    num_masks: usize,
+    height: usize,
+    width: usize,
+) -> Vec<usize> {
     let mut result = vec![0usize; num_masks * 4];
     for i in 0..num_masks {
         let mask_offset = i * height * width;
@@ -680,8 +689,7 @@ mod tests {
     fn test_masks_to_boxes_slice() {
         let masks = vec![
             // mask 0: top row all true
-            true, true, true, false, false, false,
-            // mask 1: bottom row all true
+            true, true, true, false, false, false, // mask 1: bottom row all true
             false, false, false, true, true, true,
         ];
         let boxes = masks_to_boxes_slice(&masks, 2, 2, 3);

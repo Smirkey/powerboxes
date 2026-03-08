@@ -85,7 +85,9 @@ where
     return Ok(array);
 }
 
-pub fn preprocess_array3<'py, N>(array: &'py Bound<'py, PyArray3<N>>) -> ArrayBase<ViewRepr<&'py N>, Dim<[usize; 3]>>
+pub fn preprocess_array3<'py, N>(
+    array: &'py Bound<'py, PyArray3<N>>,
+) -> ArrayBase<ViewRepr<&'py N>, Dim<[usize; 3]>>
 where
     N: numpy::Element,
 {
@@ -93,7 +95,9 @@ where
     return array;
 }
 
-pub fn preprocess_array1<'py, N>(array: &'py Bound<'py, PyArray1<N>>) -> ArrayBase<ViewRepr<&'py N>, Dim<[usize; 1]>>
+pub fn preprocess_array1<'py, N>(
+    array: &'py Bound<'py, PyArray1<N>>,
+) -> ArrayBase<ViewRepr<&'py N>, Dim<[usize; 1]>>
 where
     N: numpy::Element,
 {
