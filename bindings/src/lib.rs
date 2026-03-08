@@ -26,19 +26,11 @@ macro_rules! for_each_numeric_type {
         $mac!($prefix, $generic, u16, u16);
         $mac!($prefix, $generic, u8, u8);
     };
-}
-
-/// Call `$mac!(prefix, generic_fn, $T, $suffix)` for float types only.
-macro_rules! for_each_float_type {
-    ($mac:ident, $prefix:ident, $generic:ident) => {
+    ($mac:ident, $prefix:ident, $generic:ident, floats) => {
         $mac!($prefix, $generic, f64, f64);
         $mac!($prefix, $generic, f32, f32);
     };
-}
-
-/// Call `$mac!(prefix, generic_fn, $T, $suffix)` for signed+float types (rtree_nms).
-macro_rules! for_each_signed_type {
-    ($mac:ident, $prefix:ident, $generic:ident) => {
+    ($mac:ident, $prefix:ident, $generic:ident, signed) => {
         $mac!($prefix, $generic, f64, f64);
         $mac!($prefix, $generic, f32, f32);
         $mac!($prefix, $generic, i64, i64);
