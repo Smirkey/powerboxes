@@ -37,6 +37,15 @@ macro_rules! for_each_numeric_type {
         $mac!($prefix, $generic, i32, i32);
         $mac!($prefix, $generic, i16, i16);
     };
+    ($mac:ident, $prefix:ident, $generic:ident, integers) => {
+        $mac!($prefix, $generic, i64, i64);
+        $mac!($prefix, $generic, i32, i32);
+        $mac!($prefix, $generic, i16, i16);
+        $mac!($prefix, $generic, u64, u64);
+        $mac!($prefix, $generic, u32, u32);
+        $mac!($prefix, $generic, u16, u16);
+        $mac!($prefix, $generic, u8, u8);
+    };
 }
 
 // ---------------------------------------------------------------------------
@@ -375,7 +384,7 @@ where
     let iou_as_numpy = utils::array_to_numpy(py, iou).unwrap();
     Ok(iou_as_numpy.unbind())
 }
-for_each_float_type!(impl_distance2_fn, diou_distance, diou_distance_generic);
+for_each_numeric_type!(impl_distance2_fn, diou_distance, diou_distance_generic, floats);
 
 // IoU
 fn iou_distance_generic<T>(
@@ -464,10 +473,11 @@ where
     let iou_as_numpy = utils::array_to_numpy(py, iou).unwrap();
     Ok(iou_as_numpy.unbind())
 }
-for_each_float_type!(
+for_each_numeric_type!(
     impl_distance2_fn,
     parallel_giou_distance,
-    parallel_giou_distance_float_generic
+    parallel_giou_distance_float_generic,
+    floats
 );
 
 // Parallel GIoU — integer types fall back to sequential (parallel requires Float/Real)
@@ -485,21 +495,11 @@ where
     let iou_as_numpy = utils::array_to_numpy(py, iou).unwrap();
     Ok(iou_as_numpy.unbind())
 }
-macro_rules! impl_parallel_giou_int_types {
-    ($mac:ident, $prefix:ident, $generic:ident) => {
-        $mac!($prefix, $generic, i64, i64);
-        $mac!($prefix, $generic, i32, i32);
-        $mac!($prefix, $generic, i16, i16);
-        $mac!($prefix, $generic, u64, u64);
-        $mac!($prefix, $generic, u32, u32);
-        $mac!($prefix, $generic, u16, u16);
-        $mac!($prefix, $generic, u8, u8);
-    };
-}
-impl_parallel_giou_int_types!(
+for_each_numeric_type!(
     impl_distance2_fn,
     parallel_giou_distance,
-    parallel_giou_distance_int_generic
+    parallel_giou_distance_int_generic,
+    integers
 );
 
 // Remove small boxes
@@ -639,4 +639,4 @@ where
     let keep_as_numpy = utils::array_to_numpy(py, keep_as_ndarray).unwrap();
     Ok(keep_as_numpy.unbind())
 }
-for_each_signed_type!(impl_nms_fn, rtree_nms, rtree_nms_generic);
+for_each_numeric_type!(impl_nms_fn, rtree_nms, rtree_nms_generic, signed);
