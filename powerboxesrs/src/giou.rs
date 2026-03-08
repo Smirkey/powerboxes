@@ -5,7 +5,6 @@ use ndarray::{Array2, ArrayView2, Zip};
 #[cfg(feature = "ndarray")]
 use num_traits::real::Real;
 use num_traits::{Num, ToPrimitive};
-use rstar::RTree;
 
 use crate::{
     boxes,

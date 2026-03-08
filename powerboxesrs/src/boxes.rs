@@ -30,13 +30,12 @@ pub fn box_areas_slice<N>(boxes: &[N], n: usize) -> Vec<f64>
 where
     N: Num + PartialEq + ToPrimitive + Copy,
 {
-    let mut areas = vec![0.0f64; n];
-    for i in 0..n {
-        let (x1, y1, x2, y2) = utils::row4(boxes, i);
-        let area = (x2 - x1) * (y2 - y1);
-        areas[i] = area.to_f64().unwrap();
-    }
-    areas
+    (0..n)
+        .map(|i| {
+            let (x1, y1, x2, y2) = utils::row4(boxes, i);
+            ((x2 - x1) * (y2 - y1)).to_f64().unwrap()
+        })
+        .collect()
 }
 
 /// Removes all boxes that have an area smaller than `min_size`.
@@ -55,14 +54,10 @@ where
     N: Num + PartialEq + Clone + PartialOrd + ToPrimitive + Copy,
 {
     let areas = box_areas_slice(boxes, n);
-    let mut result = Vec::new();
-    for i in 0..n {
-        if areas[i] >= min_size {
-            let base = i * 4;
-            result.extend_from_slice(&boxes[base..base + 4]);
-        }
-    }
-    result
+    (0..n)
+        .filter(|&i| areas[i] >= min_size)
+        .flat_map(|i| boxes[i * 4..i * 4 + 4].iter().copied())
+        .collect()
 }
 
 /// Converts bounding boxes in-place from one format to another.
@@ -222,12 +217,9 @@ pub fn masks_to_boxes_slice(
 ///
 /// A `Vec<f64>` of length `n` containing the area of each rotated box.
 pub fn rotated_box_areas_slice(boxes: &[f64], n: usize) -> Vec<f64> {
-    let mut areas = vec![0.0f64; n];
-    for i in 0..n {
-        let base = i * 5;
-        areas[i] = boxes[base + 2] * boxes[base + 3];
-    }
-    areas
+    (0..n)
+        .map(|i| boxes[i * 5 + 2] * boxes[i * 5 + 3])
+        .collect()
 }
 
 // ─── ndarray wrappers ───

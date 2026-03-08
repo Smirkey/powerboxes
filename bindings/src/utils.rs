@@ -30,7 +30,7 @@ where
 {
     let numpy_array = array.into_pyarray(py);
 
-    return Ok(numpy_array);
+    Ok(numpy_array)
 }
 
 pub fn preprocess_boxes<'py, N>(
@@ -56,7 +56,7 @@ where
         }
     }
 
-    return Ok(array);
+    Ok(array)
 }
 
 pub fn preprocess_rotated_boxes<'py, N>(
@@ -82,7 +82,7 @@ where
         }
     }
 
-    return Ok(array);
+    Ok(array)
 }
 
 pub fn preprocess_array3<'py, N>(
@@ -92,7 +92,7 @@ where
     N: numpy::Element,
 {
     let array = unsafe { array.as_array() };
-    return array;
+    array
 }
 
 pub fn preprocess_array1<'py, N>(
@@ -103,7 +103,7 @@ where
 {
     let array: ArrayBase<ViewRepr<&N>, ndarray::prelude::Dim<[usize; 1]>> =
         unsafe { array.as_array() };
-    return array;
+    array
 }
 
 #[cfg(test)]

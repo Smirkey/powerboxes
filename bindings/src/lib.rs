@@ -231,7 +231,7 @@ fn masks_to_boxes(py: Python, masks: &Bound<'_, PyArray3<bool>>) -> PyResult<Py<
     let masks = preprocess_array3(masks);
     let boxes = boxes::masks_to_boxes(masks);
     let boxes_as_numpy = utils::array_to_numpy(py, boxes).unwrap();
-    return Ok(boxes_as_numpy.unbind());
+    Ok(boxes_as_numpy.unbind())
 }
 
 #[pyfunction]
@@ -244,7 +244,7 @@ fn rotated_iou_distance(
     let boxes2 = preprocess_rotated_boxes(boxes2).unwrap();
     let iou = iou::rotated_iou_distance(&boxes1, &boxes2);
     let iou_as_numpy = utils::array_to_numpy(py, iou).unwrap();
-    return Ok(iou_as_numpy.unbind());
+    Ok(iou_as_numpy.unbind())
 }
 
 #[pyfunction]
@@ -257,7 +257,7 @@ fn parallel_rotated_iou_distance(
     let boxes2 = preprocess_rotated_boxes(boxes2).unwrap();
     let iou = iou::parallel_rotated_iou_distance(&boxes1, &boxes2);
     let iou_as_numpy = utils::array_to_numpy(py, iou).unwrap();
-    return Ok(iou_as_numpy.unbind());
+    Ok(iou_as_numpy.unbind())
 }
 
 #[pyfunction]
@@ -270,7 +270,7 @@ fn rotated_giou_distance(
     let boxes2 = preprocess_rotated_boxes(boxes2).unwrap();
     let iou = giou::rotated_giou_distance(&boxes1, &boxes2);
     let iou_as_numpy = utils::array_to_numpy(py, iou).unwrap();
-    return Ok(iou_as_numpy.unbind());
+    Ok(iou_as_numpy.unbind())
 }
 
 #[pyfunction]
@@ -283,7 +283,7 @@ fn parallel_rotated_giou_distance(
     let boxes2 = preprocess_rotated_boxes(boxes2).unwrap();
     let iou = giou::parallel_rotated_giou_distance(&boxes1, &boxes2);
     let iou_as_numpy = utils::array_to_numpy(py, iou).unwrap();
-    return Ok(iou_as_numpy.unbind());
+    Ok(iou_as_numpy.unbind())
 }
 
 #[pyfunction]
@@ -296,7 +296,7 @@ fn rotated_tiou_distance(
     let boxes2 = preprocess_rotated_boxes(boxes2).unwrap();
     let iou = tiou::rotated_tiou_distance(&boxes1, &boxes2);
     let iou_as_numpy = utils::array_to_numpy(py, iou).unwrap();
-    return Ok(iou_as_numpy.unbind());
+    Ok(iou_as_numpy.unbind())
 }
 
 #[pyfunction]
@@ -309,7 +309,7 @@ fn parallel_rotated_tiou_distance(
     let boxes2 = preprocess_rotated_boxes(boxes2).unwrap();
     let iou = tiou::parallel_rotated_tiou_distance(&boxes1, &boxes2);
     let iou_as_numpy = utils::array_to_numpy(py, iou).unwrap();
-    return Ok(iou_as_numpy.unbind());
+    Ok(iou_as_numpy.unbind())
 }
 
 #[pyfunction]
@@ -381,7 +381,7 @@ where
     let boxes2 = preprocess_boxes(boxes2).unwrap();
     let iou = diou::diou_distance(&boxes1, &boxes2);
     let iou_as_numpy = utils::array_to_numpy(py, iou).unwrap();
-    return Ok(iou_as_numpy.unbind());
+    Ok(iou_as_numpy.unbind())
 }
 for_each_float_type!(impl_distance2_fn, diou_distance, diou_distance_generic);
 
@@ -398,7 +398,7 @@ where
     let boxes2 = preprocess_boxes(boxes2).unwrap();
     let iou = iou::iou_distance(boxes1, boxes2);
     let iou_as_numpy = utils::array_to_numpy(py, iou).unwrap();
-    return Ok(iou_as_numpy.unbind());
+    Ok(iou_as_numpy.unbind())
 }
 for_each_numeric_type!(impl_distance2_fn, iou_distance, iou_distance_generic);
 
@@ -415,7 +415,7 @@ where
     let boxes2 = preprocess_boxes(boxes2).unwrap();
     let iou = iou::parallel_iou_distance(&boxes1, &boxes2);
     let iou_as_numpy = utils::array_to_numpy(py, iou).unwrap();
-    return Ok(iou_as_numpy.unbind());
+    Ok(iou_as_numpy.unbind())
 }
 for_each_numeric_type!(
     impl_distance2_fn,
@@ -436,7 +436,7 @@ where
     let boxes2 = preprocess_boxes(boxes2).unwrap();
     let tiou = tiou::tiou_distance(&boxes1, &boxes2);
     let tiou_as_numpy = utils::array_to_numpy(py, tiou).unwrap();
-    return Ok(tiou_as_numpy.unbind());
+    Ok(tiou_as_numpy.unbind())
 }
 for_each_numeric_type!(impl_distance2_fn, tiou_distance, tiou_distance_generic);
 
@@ -453,7 +453,7 @@ where
     let boxes2 = preprocess_boxes(boxes2).unwrap();
     let iou = giou::giou_distance(&boxes1, &boxes2);
     let iou_as_numpy = utils::array_to_numpy(py, iou).unwrap();
-    return Ok(iou_as_numpy.unbind());
+    Ok(iou_as_numpy.unbind())
 }
 for_each_numeric_type!(impl_distance2_fn, giou_distance, giou_distance_generic);
 
@@ -470,7 +470,7 @@ where
     let boxes2 = preprocess_boxes(boxes2).unwrap();
     let iou = giou::parallel_giou_distance(&boxes1, &boxes2);
     let iou_as_numpy = utils::array_to_numpy(py, iou).unwrap();
-    return Ok(iou_as_numpy.unbind());
+    Ok(iou_as_numpy.unbind())
 }
 for_each_float_type!(
     impl_distance2_fn,
@@ -491,7 +491,7 @@ where
     let boxes2 = preprocess_boxes(boxes2).unwrap();
     let iou = giou::giou_distance(&boxes1, &boxes2);
     let iou_as_numpy = utils::array_to_numpy(py, iou).unwrap();
-    return Ok(iou_as_numpy.unbind());
+    Ok(iou_as_numpy.unbind())
 }
 macro_rules! impl_parallel_giou_int_types {
     ($mac:ident, $prefix:ident, $generic:ident) => {
@@ -520,9 +520,9 @@ where
     T: Num + ToPrimitive + PartialOrd + numpy::Element + Copy,
 {
     let boxes = preprocess_boxes(boxes).unwrap();
-    let filtered_boxes = boxes::remove_small_boxes(&boxes, min_size);
+    let filtered_boxes = boxes::remove_small_boxes(boxes, min_size);
     let filtered_boxes_as_numpy = utils::array_to_numpy(py, filtered_boxes).unwrap();
-    return Ok(filtered_boxes_as_numpy.unbind());
+    Ok(filtered_boxes_as_numpy.unbind())
 }
 for_each_numeric_type!(
     impl_filter_fn,
@@ -536,9 +536,9 @@ where
     T: Num + numpy::Element + PartialOrd + ToPrimitive + Sync + Send + Copy,
 {
     let boxes = preprocess_boxes(boxes).unwrap();
-    let areas = boxes::box_areas(&boxes);
+    let areas = boxes::box_areas(boxes);
     let areas_as_numpy = utils::array_to_numpy(py, areas).unwrap();
-    return Ok(areas_as_numpy.unbind());
+    Ok(areas_as_numpy.unbind())
 }
 for_each_numeric_type!(impl_unary_f64_fn, box_areas, generic_box_areas);
 
@@ -573,9 +573,9 @@ where
             ))
         }
     };
-    let converted_boxes = boxes::box_convert(&boxes, in_fmt, out_fmt);
+    let converted_boxes = boxes::box_convert(boxes, in_fmt, out_fmt);
     let converted_boxes_as_numpy = utils::array_to_numpy(py, converted_boxes).unwrap();
-    return Ok(converted_boxes_as_numpy.unbind());
+    Ok(converted_boxes_as_numpy.unbind())
 }
 for_each_numeric_type!(impl_convert_fn, box_convert, box_convert_generic);
 
@@ -592,10 +592,10 @@ where
 {
     let boxes = preprocess_boxes(boxes).unwrap();
     let scores = preprocess_array1(scores);
-    let keep = nms::nms(&boxes, &scores, iou_threshold, score_threshold);
+    let keep = nms::nms(boxes, scores, iou_threshold, score_threshold);
     let keep_as_ndarray = Array1::from(keep);
     let keep_as_numpy = utils::array_to_numpy(py, keep_as_ndarray).unwrap();
-    return Ok(keep_as_numpy.unbind());
+    Ok(keep_as_numpy.unbind())
 }
 for_each_numeric_type!(impl_nms_fn, nms, nms_generic);
 
@@ -612,10 +612,10 @@ where
 {
     let boxes = preprocess_rotated_boxes(boxes)?;
     let scores = preprocess_array1(scores);
-    let keep = nms::rotated_nms(&boxes, &scores, iou_threshold, score_threshold);
+    let keep = nms::rotated_nms(boxes, scores, iou_threshold, score_threshold);
     let keep_as_ndarray = Array1::from(keep);
     let keep_as_numpy = utils::array_to_numpy(py, keep_as_ndarray)?;
-    return Ok(keep_as_numpy.unbind());
+    Ok(keep_as_numpy.unbind())
 }
 for_each_numeric_type!(impl_nms_fn, rotated_nms, rotated_nms_generic);
 
@@ -642,9 +642,9 @@ where
 {
     let boxes = preprocess_boxes(boxes).unwrap();
     let scores = preprocess_array1(scores);
-    let keep = nms::rtree_nms(&boxes, &scores, iou_threshold, score_threshold);
+    let keep = nms::rtree_nms(boxes, scores, iou_threshold, score_threshold);
     let keep_as_ndarray = Array1::from(keep);
     let keep_as_numpy = utils::array_to_numpy(py, keep_as_ndarray).unwrap();
-    return Ok(keep_as_numpy.unbind());
+    Ok(keep_as_numpy.unbind())
 }
 for_each_signed_type!(impl_nms_fn, rtree_nms, rtree_nms_generic);

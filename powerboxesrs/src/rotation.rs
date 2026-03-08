@@ -79,7 +79,7 @@ pub fn cxcywha_to_points(cx: f64, cy: f64, w: f64, h: f64, a: f64) -> (Point, Po
         Point::new(cx, cy) + Point::new(dxcos - dysin, dxsin + dycos),
         Point::new(cx, cy) + Point::new(-dxcos - dysin, -dxsin + dycos),
     );
-    return (p1, p2, p3, p4);
+    (p1, p2, p3, p4)
 }
 
 #[derive(Clone, Copy)]
@@ -223,13 +223,10 @@ impl SoaPoly {
             let ys = f64x4::from([self.ys[0], self.ys[1], self.ys[2], self.ys[3]]);
             let result = a_vec * xs + b_vec * ys + c_vec;
             let arr: [f64; 4] = result.into();
-            values[0] = arr[0];
-            values[1] = arr[1];
-            values[2] = arr[2];
-            values[3] = arr[3];
+            values[..4].copy_from_slice(&arr);
         } else {
-            for i in 0..self.len {
-                values[i] = line.a * self.xs[i] + line.b * self.ys[i] + line.c;
+            for (i, v) in values.iter_mut().enumerate().take(self.len) {
+                *v = line.a * self.xs[i] + line.b * self.ys[i] + line.c;
             }
             return (values, self.len);
         }
@@ -239,17 +236,13 @@ impl SoaPoly {
             let remaining = self.len - 4;
             let mut rx = [0.0f64; 4];
             let mut ry = [0.0f64; 4];
-            for i in 0..remaining {
-                rx[i] = self.xs[4 + i];
-                ry[i] = self.ys[4 + i];
-            }
+            rx[..remaining].copy_from_slice(&self.xs[4..4 + remaining]);
+            ry[..remaining].copy_from_slice(&self.ys[4..4 + remaining]);
             let xs = f64x4::from(rx);
             let ys = f64x4::from(ry);
             let result = a_vec * xs + b_vec * ys + c_vec;
             let arr: [f64; 4] = result.into();
-            for i in 0..remaining {
-                values[4 + i] = arr[i];
-            }
+            values[4..(remaining + 4)].copy_from_slice(&arr[..remaining]);
         }
 
         (values, self.len)
@@ -266,10 +259,8 @@ impl SoaPoly {
         // Build shifted arrays: xs_next[i] = xs[(i+1) % n], ys_next[i] = ys[(i+1) % n]
         let mut xs_next = [0.0f64; MAX_POLY_VERTS];
         let mut ys_next = [0.0f64; MAX_POLY_VERTS];
-        for i in 0..n - 1 {
-            xs_next[i] = self.xs[i + 1];
-            ys_next[i] = self.ys[i + 1];
-        }
+        xs_next[..n - 1].copy_from_slice(&self.xs[1..n]);
+        ys_next[..n - 1].copy_from_slice(&self.ys[1..n]);
         xs_next[n - 1] = self.xs[0];
         ys_next[n - 1] = self.ys[0];
 
@@ -294,21 +285,17 @@ impl SoaPoly {
             let mut ry = [0.0f64; 4];
             let mut rxn = [0.0f64; 4];
             let mut ryn = [0.0f64; 4];
-            for i in 0..remaining {
-                rx[i] = self.xs[4 + i];
-                ry[i] = self.ys[4 + i];
-                rxn[i] = xs_next[4 + i];
-                ryn[i] = ys_next[4 + i];
-            }
+            rx[..remaining].copy_from_slice(&self.xs[4..4 + remaining]);
+            ry[..remaining].copy_from_slice(&self.ys[4..4 + remaining]);
+            rxn[..remaining].copy_from_slice(&xs_next[4..4 + remaining]);
+            ryn[..remaining].copy_from_slice(&ys_next[4..4 + remaining]);
             let x = f64x4::from(rx);
             let y = f64x4::from(ry);
             let xn = f64x4::from(rxn);
             let yn = f64x4::from(ryn);
             let cross = x * yn - y * xn;
             let arr: [f64; 4] = cross.into();
-            for i in 0..remaining {
-                sum += arr[i];
-            }
+            sum += arr[..remaining].iter().sum::<f64>();
         } else if n < 4 {
             // Small polygon (3 vertices) — scalar fallback
             for i in 0..n {
