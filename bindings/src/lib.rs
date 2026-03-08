@@ -384,7 +384,12 @@ where
     let iou_as_numpy = utils::array_to_numpy(py, iou).unwrap();
     Ok(iou_as_numpy.unbind())
 }
-for_each_numeric_type!(impl_distance2_fn, diou_distance, diou_distance_generic, floats);
+for_each_numeric_type!(
+    impl_distance2_fn,
+    diou_distance,
+    diou_distance_generic,
+    floats
+);
 
 // IoU
 fn iou_distance_generic<T>(
