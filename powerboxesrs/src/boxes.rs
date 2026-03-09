@@ -30,13 +30,12 @@ pub fn box_areas_slice<N>(boxes: &[N], n: usize) -> Vec<f64>
 where
     N: Num + PartialEq + ToPrimitive + Copy,
 {
-    let mut areas = vec![0.0f64; n];
-    for i in 0..n {
-        let (x1, y1, x2, y2) = utils::row4(boxes, i);
-        let area = (x2 - x1) * (y2 - y1);
-        areas[i] = area.to_f64().unwrap();
-    }
-    areas
+    (0..n)
+        .map(|i| {
+            let (x1, y1, x2, y2) = utils::row4(boxes, i);
+            ((x2 - x1) * (y2 - y1)).to_f64().unwrap()
+        })
+        .collect()
 }
 
 /// Removes all boxes that have an area smaller than `min_size`.
@@ -55,14 +54,10 @@ where
     N: Num + PartialEq + Clone + PartialOrd + ToPrimitive + Copy,
 {
     let areas = box_areas_slice(boxes, n);
-    let mut result = Vec::new();
-    for i in 0..n {
-        if areas[i] >= min_size {
-            let base = i * 4;
-            result.extend_from_slice(&boxes[base..base + 4]);
-        }
-    }
-    result
+    (0..n)
+        .filter(|&i| areas[i] >= min_size)
+        .flat_map(|i| boxes[i * 4..i * 4 + 4].iter().copied())
+        .collect()
 }
 
 /// Converts bounding boxes in-place from one format to another.
@@ -75,8 +70,12 @@ where
 /// * `n` - The number of bounding boxes.
 /// * `in_fmt` - The input format of the boxes.
 /// * `out_fmt` - The desired output format of the boxes.
-pub fn box_convert_inplace_slice<N>(boxes: &mut [N], n: usize, in_fmt: BoxFormat, out_fmt: BoxFormat)
-where
+pub fn box_convert_inplace_slice<N>(
+    boxes: &mut [N],
+    n: usize,
+    in_fmt: BoxFormat,
+    out_fmt: BoxFormat,
+) where
     N: Num + PartialEq + PartialOrd + ToPrimitive + Clone + Copy,
 {
     let two = N::one() + N::one();
@@ -163,7 +162,12 @@ where
 /// # Returns
 ///
 /// A flat `Vec<usize>` of length `num_masks * 4` containing bounding boxes in xyxy format.
-pub fn masks_to_boxes_slice(masks: &[bool], num_masks: usize, height: usize, width: usize) -> Vec<usize> {
+pub fn masks_to_boxes_slice(
+    masks: &[bool],
+    num_masks: usize,
+    height: usize,
+    width: usize,
+) -> Vec<usize> {
     let mut result = vec![0usize; num_masks * 4];
     for i in 0..num_masks {
         let mask_offset = i * height * width;
@@ -213,12 +217,9 @@ pub fn masks_to_boxes_slice(masks: &[bool], num_masks: usize, height: usize, wid
 ///
 /// A `Vec<f64>` of length `n` containing the area of each rotated box.
 pub fn rotated_box_areas_slice(boxes: &[f64], n: usize) -> Vec<f64> {
-    let mut areas = vec![0.0f64; n];
-    for i in 0..n {
-        let base = i * 5;
-        areas[i] = boxes[base + 2] * boxes[base + 3];
-    }
-    areas
+    (0..n)
+        .map(|i| boxes[i * 5 + 2] * boxes[i * 5 + 3])
+        .collect()
 }
 
 // ─── ndarray wrappers ───
@@ -680,8 +681,7 @@ mod tests {
     fn test_masks_to_boxes_slice() {
         let masks = vec![
             // mask 0: top row all true
-            true, true, true, false, false, false,
-            // mask 1: bottom row all true
+            true, true, true, false, false, false, // mask 1: bottom row all true
             false, false, false, true, true, true,
         ];
         let boxes = masks_to_boxes_slice(&masks, 2, 2, 3);

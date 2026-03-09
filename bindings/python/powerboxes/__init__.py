@@ -3,27 +3,32 @@ from typing import TypeVar, Union
 import numpy as np
 import numpy.typing as npt
 
-from ._boxes import (
+from ._dispatch import (
     _dtype_to_func_box_areas,
     _dtype_to_func_box_convert,
-    _dtype_to_func_remove_small_boxes,
-)
-from ._diou import _dtype_to_func_diou_distance
-from ._giou import (
+    _dtype_to_func_diou_distance,
     _dtype_to_func_giou_distance,
-    _dtype_to_func_parallel_giou_distance,
-)
-from ._iou import (
     _dtype_to_func_iou_distance,
+    _dtype_to_func_nms,
+    _dtype_to_func_parallel_giou_distance,
     _dtype_to_func_parallel_iou_distance,
+    _dtype_to_func_remove_small_boxes,
+    _dtype_to_func_rotated_nms,
+    _dtype_to_func_rtree_nms,
+    _dtype_to_func_tiou_distance,
 )
-from ._nms import _dtype_to_func_nms, _dtype_to_func_rtree_nms, _dtype_to_func_rotated_nms
+from ._powerboxes import draw_boxes as _draw_boxes
 from ._powerboxes import masks_to_boxes as _masks_to_boxes
+from ._powerboxes import (
+    parallel_rotated_giou_distance as _parallel_rotated_giou_distance,
+)
+from ._powerboxes import parallel_rotated_iou_distance as _parallel_rotated_iou_distance
+from ._powerboxes import (
+    parallel_rotated_tiou_distance as _parallel_rotated_tiou_distance,
+)
 from ._powerboxes import rotated_giou_distance as _rotated_giou_distance
 from ._powerboxes import rotated_iou_distance as _rotated_iou_distance
 from ._powerboxes import rotated_tiou_distance as _rotated_tiou_distance
-from ._powerboxes import draw_boxes as _draw_boxes
-from ._tiou import _dtype_to_func_tiou_distance
 
 _BOXES_NOT_SAME_TYPE = "boxes1 and boxes2 must have the same dtype"
 _BOXES_NOT_NP_ARRAY = "boxes must be numpy array"
@@ -56,6 +61,42 @@ T = TypeVar(
 )
 
 
+# ---------------------------------------------------------------------------
+# Internal dispatch helpers
+# ---------------------------------------------------------------------------
+
+
+def _dispatch2(dispatch_map, boxes1, boxes2, *args):
+    """Dispatch a (boxes1, boxes2[, *args]) call via dtype."""
+    if not isinstance(boxes1, np.ndarray) or not isinstance(boxes2, np.ndarray):
+        raise TypeError(_BOXES_NOT_NP_ARRAY)
+    if boxes1.dtype != boxes2.dtype:
+        raise ValueError(_BOXES_NOT_SAME_TYPE)
+    try:
+        return dispatch_map[boxes1.dtype](boxes1, boxes2, *args)
+    except KeyError:
+        raise TypeError(
+            f"Box dtype: {boxes1.dtype} not in supported dtypes {supported_dtypes}"
+        )
+
+
+def _dispatch1(dispatch_map, boxes, *args):
+    """Dispatch a (boxes[, *args]) call via dtype."""
+    if not isinstance(boxes, np.ndarray):
+        raise TypeError(_BOXES_NOT_NP_ARRAY)
+    try:
+        return dispatch_map[boxes.dtype](boxes, *args)
+    except KeyError:
+        raise TypeError(
+            f"Box dtype: {boxes.dtype} not in supported dtypes {supported_dtypes}"
+        )
+
+
+# ---------------------------------------------------------------------------
+# Public API
+# ---------------------------------------------------------------------------
+
+
 def diou_distance(
     boxes1: npt.NDArray[Union[np.float32, np.float64]],
     boxes2: npt.NDArray[Union[np.float32, np.float64]],
@@ -75,17 +116,7 @@ def diou_distance(
     Returns:
         np.ndarray: 2d matrix of pairwise distances
     """
-    if not isinstance(boxes1, np.ndarray) or not isinstance(boxes2, np.ndarray):
-        raise TypeError(_BOXES_NOT_NP_ARRAY)
-    if boxes1.dtype == boxes2.dtype:
-        try:
-            return _dtype_to_func_diou_distance[boxes1.dtype](boxes1, boxes2)
-        except KeyError:
-            raise TypeError(
-                f"Box dtype: {boxes1.dtype} not in supported dtypes np.float32, np.float64"
-            )
-    else:
-        raise ValueError(_BOXES_NOT_SAME_TYPE)
+    return _dispatch2(_dtype_to_func_diou_distance, boxes1, boxes2)
 
 
 def iou_distance(
@@ -104,17 +135,7 @@ def iou_distance(
     Returns:
         np.ndarray: 2d matrix of pairwise distances
     """
-    if not isinstance(boxes1, np.ndarray) or not isinstance(boxes2, np.ndarray):
-        raise TypeError(_BOXES_NOT_NP_ARRAY)
-    if boxes1.dtype == boxes2.dtype:
-        try:
-            return _dtype_to_func_iou_distance[boxes1.dtype](boxes1, boxes2)
-        except KeyError:
-            raise TypeError(
-                f"Box dtype: {boxes1.dtype} not in supported dtypes {supported_dtypes}"
-            )
-    else:
-        raise ValueError(_BOXES_NOT_SAME_TYPE)
+    return _dispatch2(_dtype_to_func_iou_distance, boxes1, boxes2)
 
 
 def parallel_iou_distance(
@@ -133,48 +154,7 @@ def parallel_iou_distance(
     Returns:
         np.ndarray: 2d matrix of pairwise distances
     """
-    if not isinstance(boxes1, np.ndarray) or not isinstance(boxes2, np.ndarray):
-        raise TypeError(_BOXES_NOT_NP_ARRAY)
-    if boxes1.dtype == boxes2.dtype:
-        try:
-            return _dtype_to_func_parallel_iou_distance[boxes1.dtype](boxes1, boxes2) # type: ignore
-        except KeyError:
-            raise TypeError(
-                f"Box dtype: {boxes1.dtype} not in supported dtypes {supported_dtypes}"
-            )
-    else:
-        raise ValueError(_BOXES_NOT_SAME_TYPE)
-
-
-def parallel_giou_distance(
-    boxes1: npt.NDArray[T], boxes2: npt.NDArray[T]
-) -> npt.NDArray[np.float64]:
-    """Compute pairwise box giou distances, in parallel.
-
-    see [here](https://giou.stanford.edu/) for giou distance definition
-
-    Args:
-        boxes1: 2d array of boxes in xyxy format
-        boxes2: 2d array of boxes in xyxy format
-
-    Raises:
-        TypeError: if boxes1 or boxes2 are not numpy arrays
-        ValueError: if boxes1 and boxes2 have different dtypes
-
-    Returns:
-        np.ndarray: 2d matrix of pairwise distances
-    """
-    if not isinstance(boxes1, np.ndarray) or not isinstance(boxes2, np.ndarray):
-        raise TypeError(_BOXES_NOT_NP_ARRAY)
-    if boxes1.dtype == boxes2.dtype:
-        try:
-            return _dtype_to_func_parallel_giou_distance[boxes1.dtype](boxes1, boxes2) # type: ignore
-        except KeyError:
-            raise TypeError(
-                f"Box dtype: {boxes1.dtype} not in supported dtypes {supported_dtypes}"
-            )
-    else:
-        raise ValueError(_BOXES_NOT_SAME_TYPE)
+    return _dispatch2(_dtype_to_func_parallel_iou_distance, boxes1, boxes2)
 
 
 def giou_distance(
@@ -195,23 +175,34 @@ def giou_distance(
     Returns:
         np.ndarray: 2d matrix of pairwise distances
     """
-    if not isinstance(boxes1, np.ndarray) or not isinstance(boxes2, np.ndarray):
-        raise TypeError(_BOXES_NOT_NP_ARRAY)
-    if boxes1.dtype == boxes2.dtype:
-        try:
-            return _dtype_to_func_giou_distance[boxes1.dtype](boxes1, boxes2) # type: ignore
-        except KeyError:
-            raise TypeError(
-                f"Box dtype: {boxes1.dtype} not in supported dtypes {supported_dtypes}"
-            )
-    else:
-        raise ValueError(_BOXES_NOT_SAME_TYPE)
+    return _dispatch2(_dtype_to_func_giou_distance, boxes1, boxes2)
+
+
+def parallel_giou_distance(
+    boxes1: npt.NDArray[T], boxes2: npt.NDArray[T]
+) -> npt.NDArray[np.float64]:
+    """Compute pairwise box giou distances, in parallel.
+
+    see [here](https://giou.stanford.edu/) for giou distance definition
+
+    Args:
+        boxes1: 2d array of boxes in xyxy format
+        boxes2: 2d array of boxes in xyxy format
+
+    Raises:
+        TypeError: if boxes1 or boxes2 are not numpy arrays
+        ValueError: if boxes1 and boxes2 have different dtypes
+
+    Returns:
+        np.ndarray: 2d matrix of pairwise distances
+    """
+    return _dispatch2(_dtype_to_func_parallel_giou_distance, boxes1, boxes2)
 
 
 def tiou_distance(
     boxes1: npt.NDArray[T], boxes2: npt.NDArray[T]
 ) -> npt.NDArray[np.float64]:
-    """Compute pairwise box tiou (tracking iou)  distances.
+    """Compute pairwise box tiou (tracking iou) distances.
 
     see [here](https://arxiv.org/pdf/2310.05171.pdf) for tiou definition
 
@@ -226,23 +217,13 @@ def tiou_distance(
     Returns:
         np.ndarray: 2d matrix of pairwise distances
     """
-    if not isinstance(boxes1, np.ndarray) or not isinstance(boxes2, np.ndarray):
-        raise TypeError(_BOXES_NOT_NP_ARRAY)
-    if boxes1.dtype == boxes2.dtype:
-        try:
-            return _dtype_to_func_tiou_distance[boxes1.dtype](boxes1, boxes2) # type: ignore
-        except KeyError:
-            raise TypeError(
-                f"Box dtype: {boxes1.dtype} not in supported dtypes {supported_dtypes}"
-            )
-    else:
-        raise ValueError(_BOXES_NOT_SAME_TYPE)
+    return _dispatch2(_dtype_to_func_tiou_distance, boxes1, boxes2)
 
 
 def rotated_iou_distance(
     boxes1: npt.NDArray[np.float64], boxes2: npt.NDArray[np.float64]
 ) -> npt.NDArray[np.float64]:
-    """Compute the pairwise iou distance between rotated boxes
+    """Compute the pairwise iou distance between rotated boxes.
 
     Boxes should be in (cx, cy, w, h, a) format
     where cx and cy are center coordinates, w and h
@@ -263,16 +244,40 @@ def rotated_iou_distance(
         raise TypeError(_BOXES_NOT_NP_ARRAY)
     if boxes1.dtype == boxes2.dtype == np.dtype("float64"):
         return _rotated_iou_distance(boxes1, boxes2)
-    else:
-        raise TypeError(
-            f"Boxes dtype: {boxes1.dtype}, {boxes2.dtype} not in float64 dtype"
-        )
+    raise TypeError(f"Boxes dtype: {boxes1.dtype}, {boxes2.dtype} not in float64 dtype")
+
+
+def parallel_rotated_iou_distance(
+    boxes1: npt.NDArray[np.float64], boxes2: npt.NDArray[np.float64]
+) -> npt.NDArray[np.float64]:
+    """Compute the pairwise iou distance between rotated boxes, in parallel.
+
+    Boxes should be in (cx, cy, w, h, a) format
+    where cx and cy are center coordinates, w and h
+    width and height and a, the angle in degrees
+
+    Args:
+        boxes1: 2d array of boxes in cxywha format
+        boxes2: 2d array of boxes in cxywha format
+
+    Raises:
+        TypeError: if boxes1 or boxes2 are not numpy arrays
+        ValueError: if boxes1 and boxes2 have different dtypes
+
+    Returns:
+        np.ndarray: 2d matrix of pairwise distances
+    """
+    if not isinstance(boxes1, np.ndarray) or not isinstance(boxes2, np.ndarray):
+        raise TypeError(_BOXES_NOT_NP_ARRAY)
+    if boxes1.dtype == boxes2.dtype == np.dtype("float64"):
+        return _parallel_rotated_iou_distance(boxes1, boxes2)
+    raise TypeError(f"Boxes dtype: {boxes1.dtype}, {boxes2.dtype} not in float64 dtype")
 
 
 def rotated_giou_distance(
     boxes1: npt.NDArray[np.float64], boxes2: npt.NDArray[np.float64]
 ) -> npt.NDArray[np.float64]:
-    """Compute the pairwise giou distance between rotated boxes
+    """Compute the pairwise giou distance between rotated boxes.
 
     Boxes should be in (cx, cy, w, h, a) format
     where cx and cy are center coordinates, w and h
@@ -293,16 +298,40 @@ def rotated_giou_distance(
         raise TypeError(_BOXES_NOT_NP_ARRAY)
     if boxes1.dtype == boxes2.dtype == np.dtype("float64"):
         return _rotated_giou_distance(boxes1, boxes2)
-    else:
-        raise TypeError(
-            f"Boxes dtype: {boxes1.dtype}, {boxes2.dtype} not in float64 dtype"
-        )
+    raise TypeError(f"Boxes dtype: {boxes1.dtype}, {boxes2.dtype} not in float64 dtype")
+
+
+def parallel_rotated_giou_distance(
+    boxes1: npt.NDArray[np.float64], boxes2: npt.NDArray[np.float64]
+) -> npt.NDArray[np.float64]:
+    """Compute the pairwise giou distance between rotated boxes, in parallel.
+
+    Boxes should be in (cx, cy, w, h, a) format
+    where cx and cy are center coordinates, w and h
+    width and height and a, the angle in degrees
+
+    Args:
+        boxes1: 2d array of boxes in cxywha format
+        boxes2: 2d array of boxes in cxywha format
+
+    Raises:
+        TypeError: if boxes1 or boxes2 are not numpy arrays
+        ValueError: if boxes1 and boxes2 have different dtypes
+
+    Returns:
+        np.ndarray: 2d matrix of pairwise distances
+    """
+    if not isinstance(boxes1, np.ndarray) or not isinstance(boxes2, np.ndarray):
+        raise TypeError(_BOXES_NOT_NP_ARRAY)
+    if boxes1.dtype == boxes2.dtype == np.dtype("float64"):
+        return _parallel_rotated_giou_distance(boxes1, boxes2)
+    raise TypeError(f"Boxes dtype: {boxes1.dtype}, {boxes2.dtype} not in float64 dtype")
 
 
 def rotated_tiou_distance(
     boxes1: npt.NDArray[np.float64], boxes2: npt.NDArray[np.float64]
 ) -> npt.NDArray[np.float64]:
-    """Compute pairwise box tiou (tracking iou)  distances.
+    """Compute pairwise box tiou (tracking iou) distances between rotated boxes.
 
     see [here](https://arxiv.org/pdf/2310.05171.pdf) for tiou definition
 
@@ -325,10 +354,36 @@ def rotated_tiou_distance(
         raise TypeError(_BOXES_NOT_NP_ARRAY)
     if boxes1.dtype == boxes2.dtype == np.dtype("float64"):
         return _rotated_tiou_distance(boxes1, boxes2)
-    else:
-        raise TypeError(
-            f"Boxes dtype: {boxes1.dtype}, {boxes2.dtype} not in float64 dtype"
-        )
+    raise TypeError(f"Boxes dtype: {boxes1.dtype}, {boxes2.dtype} not in float64 dtype")
+
+
+def parallel_rotated_tiou_distance(
+    boxes1: npt.NDArray[np.float64], boxes2: npt.NDArray[np.float64]
+) -> npt.NDArray[np.float64]:
+    """Compute pairwise box tiou (tracking iou) distances between rotated boxes, in parallel.
+
+    see [here](https://arxiv.org/pdf/2310.05171.pdf) for tiou definition
+
+    Boxes should be in (cx, cy, w, h, a) format
+    where cx and cy are center coordinates, w and h
+    width and height and a, the angle in degrees
+
+    Args:
+        boxes1: 2d array of boxes in cxywha format
+        boxes2: 2d array of boxes in cxywha format
+
+    Raises:
+        TypeError: if boxes1 or boxes2 are not numpy arrays
+        ValueError: if boxes1 and boxes2 have different dtypes
+
+    Returns:
+        np.ndarray: 2d matrix of pairwise distances
+    """
+    if not isinstance(boxes1, np.ndarray) or not isinstance(boxes2, np.ndarray):
+        raise TypeError(_BOXES_NOT_NP_ARRAY)
+    if boxes1.dtype == boxes2.dtype == np.dtype("float64"):
+        return _parallel_rotated_tiou_distance(boxes1, boxes2)
+    raise TypeError(f"Boxes dtype: {boxes1.dtype}, {boxes2.dtype} not in float64 dtype")
 
 
 def remove_small_boxes(boxes: npt.NDArray[T], min_size: float) -> npt.NDArray[T]:
@@ -344,14 +399,7 @@ def remove_small_boxes(boxes: npt.NDArray[T], min_size: float) -> npt.NDArray[T]
     Returns:
         np.ndarray: 2d array of boxes in xyxy format
     """
-    if not isinstance(boxes, np.ndarray):
-        raise TypeError(_BOXES_NOT_NP_ARRAY)
-    try:
-        return _dtype_to_func_remove_small_boxes[boxes.dtype](boxes, min_size) # type: ignore
-    except KeyError:
-        raise TypeError(
-            f"Box dtype: {boxes.dtype} not in supported dtypes {supported_dtypes}"
-        )
+    return _dispatch1(_dtype_to_func_remove_small_boxes, boxes, min_size)
 
 
 def boxes_areas(boxes: npt.NDArray[T]) -> npt.NDArray[np.float64]:
@@ -363,14 +411,7 @@ def boxes_areas(boxes: npt.NDArray[T]) -> npt.NDArray[np.float64]:
     Returns:
         np.ndarray: 1d array of areas
     """
-    if not isinstance(boxes, np.ndarray):
-        raise TypeError(_BOXES_NOT_NP_ARRAY)
-    try:
-        return _dtype_to_func_box_areas[boxes.dtype](boxes) # type: ignore
-    except KeyError:
-        raise TypeError(
-            f"Box dtype: {boxes.dtype} not in supported dtypes {supported_dtypes}"
-        )
+    return _dispatch1(_dtype_to_func_box_areas, boxes)
 
 
 def box_convert(boxes: npt.NDArray[T], in_fmt: str, out_fmt: str) -> npt.NDArray[T]:
@@ -389,14 +430,7 @@ def box_convert(boxes: npt.NDArray[T], in_fmt: str, out_fmt: str) -> npt.NDArray
     Returns:
         np.ndarray: boxes in out_fmt
     """
-    if not isinstance(boxes, np.ndarray):
-        raise TypeError(_BOXES_NOT_NP_ARRAY)
-    try:
-        return _dtype_to_func_box_convert[boxes.dtype](boxes, in_fmt, out_fmt) # type: ignore
-    except KeyError:
-        raise TypeError(
-            f"Box dtype: {boxes.dtype} not in supported dtypes {supported_dtypes}"
-        )
+    return _dispatch1(_dtype_to_func_box_convert, boxes, in_fmt, out_fmt)
 
 
 def masks_to_boxes(masks: npt.NDArray[np.bool_]) -> npt.NDArray[np.uint64]:
@@ -438,14 +472,8 @@ def nms(
     """
     if not isinstance(boxes, np.ndarray) or not isinstance(scores, np.ndarray):
         raise TypeError("Boxes and scores must be numpy arrays")
-    try:
-        return _dtype_to_func_nms[boxes.dtype]( # type: ignore
-            boxes, scores, iou_threshold, score_threshold
-        )
-    except KeyError:
-        raise TypeError(
-            f"Box dtype: {boxes.dtype} not in supported dtypes {supported_dtypes}"
-        )
+    return _dispatch1(_dtype_to_func_nms, boxes, scores, iou_threshold, score_threshold)
+
 
 def rotated_nms(
     boxes: npt.NDArray[T],
@@ -469,14 +497,10 @@ def rotated_nms(
     """
     if not isinstance(boxes, np.ndarray) or not isinstance(scores, np.ndarray):
         raise TypeError("Boxes and scores must be numpy arrays")
-    try:
-        return _dtype_to_func_rotated_nms[boxes.dtype]( # type: ignore
-            boxes, scores, iou_threshold, score_threshold
-        )
-    except KeyError:
-        raise TypeError(
-            f"Box dtype: {boxes.dtype} not in supported dtypes {supported_dtypes}"
-        )
+    return _dispatch1(
+        _dtype_to_func_rotated_nms, boxes, scores, iou_threshold, score_threshold
+    )
+
 
 def rtree_nms(
     boxes: npt.NDArray[Union[np.float64, np.float32, np.int64, np.int32, np.int16]],
@@ -484,10 +508,10 @@ def rtree_nms(
     iou_threshold: float,
     score_threshold: float,
 ) -> npt.NDArray[np.uint64]:
-    """Apply non-maximum suppression to boxes.
+    """Apply non-maximum suppression to boxes using an R-tree index.
 
-    Uses an rtree to speed up computation. This is only available for
-    signed integer dtypes and float32 and float64.
+    Uses an rtree to speed up computation. Only available for
+    signed integer dtypes and float32/float64.
 
     Args:
         boxes: 2d array of boxes in xyxy format
@@ -503,14 +527,9 @@ def rtree_nms(
     """
     if not isinstance(boxes, np.ndarray) or not isinstance(scores, np.ndarray):
         raise TypeError("Boxes and scores must be numpy arrays")
-    try:
-        return _dtype_to_func_rtree_nms[boxes.dtype]( # type: ignore
-            boxes, scores, iou_threshold, score_threshold
-        )
-    except KeyError:
-        raise TypeError(
-            f"Box dtype: {boxes.dtype} not in supported dtypes {supported_dtypes}"
-        )
+    return _dispatch1(
+        _dtype_to_func_rtree_nms, boxes, scores, iou_threshold, score_threshold
+    )
 
 
 def draw_boxes(
@@ -529,7 +548,6 @@ def draw_boxes(
 
     Raises:
         TypeError: if image or boxes are not numpy arrays
-        ValueError: if image shape is not (3, H, W) or boxes shape is not (N, 4)
 
     Returns:
         np.ndarray: 3d array of shape (3, H, W) with boxes drawn
@@ -543,20 +561,23 @@ __all__ = [
     "diou_distance",
     "iou_distance",
     "parallel_iou_distance",
+    "giou_distance",
+    "parallel_giou_distance",
+    "tiou_distance",
+    "rotated_iou_distance",
+    "parallel_rotated_iou_distance",
+    "rotated_giou_distance",
+    "parallel_rotated_giou_distance",
+    "rotated_tiou_distance",
+    "parallel_rotated_tiou_distance",
     "remove_small_boxes",
     "boxes_areas",
     "box_convert",
-    "giou_distance",
-    "parallel_giou_distance",
     "masks_to_boxes",
-    "supported_dtypes",
     "nms",
-    "tiou_distance",
-    "rotated_iou_distance",
-    "rotated_giou_distance",
-    "rotated_tiou_distance",
     "rotated_nms",
     "rtree_nms",
     "draw_boxes",
+    "supported_dtypes",
     "__version__",
 ]

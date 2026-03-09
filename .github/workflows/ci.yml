@@ -18,6 +18,29 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - name: install rust stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - name: cargo fmt
+        run: |
+          cargo fmt --check --manifest-path bindings/Cargo.toml
+          cargo fmt --check --manifest-path powerboxesrs/Cargo.toml
+      - name: cargo clippy
+        run: |
+          cargo clippy --manifest-path bindings/Cargo.toml -- -D warnings
+          cargo clippy --manifest-path powerboxesrs/Cargo.toml -- -D warnings
+      - name: ruff format
+        run: |
+          cd bindings
+          uv sync --group dev
+          uv run ruff format --check python/
+
   coverage:
     runs-on: ubuntu-latest
     steps:
@@ -140,7 +163,7 @@ jobs:
   # https://github.com/marketplace/actions/alls-green#why used for branch protection checks
   check:
     if: always()
-    needs: [coverage, test-python, test-os]
+    needs: [lint, coverage, test-python, test-os]
     runs-on: ubuntu-latest
     steps:
       - name: Decide whether the needed jobs succeeded or failed

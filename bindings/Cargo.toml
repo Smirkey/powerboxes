@@ -19,6 +19,7 @@ numpy = "0.27"
 pyo3 = "0.27"
 powerboxesrs = { path = "../powerboxesrs/" }
 ndarray = { version = "0.15.6", features = ["rayon"] }
+paste = "1"
 
 [dev-dependencies]
 pyo3 = { version = "0.27", features = ["auto-initialize"] }

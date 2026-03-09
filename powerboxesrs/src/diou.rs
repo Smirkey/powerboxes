@@ -107,8 +107,8 @@ mod tests {
 
     #[cfg(feature = "ndarray")]
     mod ndarray_tests {
-        use ndarray::arr2;
         use super::*;
+        use ndarray::arr2;
 
         #[test]
         fn test_diou_distance() {

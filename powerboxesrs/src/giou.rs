@@ -5,7 +5,6 @@ use ndarray::{Array2, ArrayView2, Zip};
 #[cfg(feature = "ndarray")]
 use num_traits::real::Real;
 use num_traits::{Num, ToPrimitive};
-use rstar::RTree;
 
 use crate::{
     boxes,
@@ -91,7 +90,12 @@ where
 /// # Returns
 ///
 /// A flat `Vec<f64>` of length `n1 * n2` (row-major) representing the rotated GIoU distance matrix.
-pub fn rotated_giou_distance_slice(boxes1: &[f64], boxes2: &[f64], n1: usize, n2: usize) -> Vec<f64> {
+pub fn rotated_giou_distance_slice(
+    boxes1: &[f64],
+    boxes2: &[f64],
+    n1: usize,
+    n2: usize,
+) -> Vec<f64> {
     let mut result = vec![0.0f64; n1 * n2];
     let areas1 = boxes::rotated_box_areas_slice(boxes1, n1);
     let areas2 = boxes::rotated_box_areas_slice(boxes2, n2);
@@ -130,7 +134,11 @@ pub fn rotated_giou_distance_slice(boxes1: &[f64], boxes2: &[f64], n1: usize, n2
             } else {
                 let intersection = intersection_area(&boxes1_rects[i], &boxes2_rects[j]);
                 let union = area1 + area2 - intersection;
-                if union == 0.0 { (0.0, 0.0) } else { (intersection / union, union) }
+                if union == 0.0 {
+                    (0.0, 0.0)
+                } else {
+                    (intersection / union, union)
+                }
             };
             let c_x1 = utils::min(ax1, bx1);
             let c_y1 = utils::min(ay1, by1);
@@ -207,7 +215,11 @@ pub fn parallel_rotated_giou_distance_slice(
             } else {
                 let intersection = intersection_area(&boxes1_rects[i], &boxes2_rects[j]);
                 let union = area1 + area2 - intersection;
-                if union == 0.0 { (0.0, 0.0) } else { (intersection / union, union) }
+                if union == 0.0 {
+                    (0.0, 0.0)
+                } else {
+                    (intersection / union, union)
+                }
             };
             let c_x1 = utils::min(ax1, bx1);
             let c_y1 = utils::min(ay1, by1);
@@ -433,8 +445,8 @@ mod tests {
 
     #[cfg(feature = "ndarray")]
     mod ndarray_tests {
-        use ndarray::arr2;
         use super::*;
+        use ndarray::arr2;
 
         #[test]
         fn test_giou() {

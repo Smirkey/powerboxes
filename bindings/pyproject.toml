@@ -39,6 +39,7 @@ dev = [
     "pillow",
     "shapely>=2.0",
     "maturin>=1.2,<2.0",
+    "ruff",
 ]
 docs = [
     "mkdocs>=1.5",
