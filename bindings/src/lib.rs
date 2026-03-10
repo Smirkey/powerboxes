@@ -676,4 +676,9 @@ where
     let keep_as_numpy = utils::array_to_numpy(py, keep_as_ndarray).unwrap();
     Ok(keep_as_numpy.unbind())
 }
-for_each_numeric_type!(impl_nms_fn, rtree_rotated_nms, rtree_rotated_nms_generic, signed);
+for_each_numeric_type!(
+    impl_nms_fn,
+    rtree_rotated_nms,
+    rtree_rotated_nms_generic,
+    signed
+);
