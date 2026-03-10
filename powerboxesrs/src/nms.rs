@@ -244,6 +244,12 @@ where
                 h2,
                 box2.4.to_f64().unwrap(),
             );
+
+            // fast path: if envelopes dont intersect we can skip
+            if !rotation::envelopes_intersect(&rect1, &rect2) {
+                continue;
+            }
+
             let intersection = rotation::intersection_area(&rect1, &rect2);
 
             if intersection == 0.0 {
@@ -548,6 +554,20 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_filter_and_sort_scores_no_thresh() {
+        let scores = vec![0.9, 0.3, 0.7, 0.5, 0.1];
+        let result = filter_and_sort_scores(&scores, 0.0);
+        assert_eq!(result, vec![0, 2, 3, 1, 4]);
+    }
+
+    #[test]
+    fn test_filter_and_sort_scores_with_thresh() {
+        let scores = vec![0.9, 0.3, 0.7, 0.5, 0.1];
+        let result = filter_and_sort_scores(&scores, 0.5);
+        assert_eq!(result, vec![0, 2, 3]);
+    }
 
     #[test]
     fn test_nms_slice_normal() {
