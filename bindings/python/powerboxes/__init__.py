@@ -15,6 +15,7 @@ from ._dispatch import (
     _dtype_to_func_remove_small_boxes,
     _dtype_to_func_rotated_nms,
     _dtype_to_func_rtree_nms,
+    _dtype_to_func_rtree_rotated_nms,
     _dtype_to_func_tiou_distance,
 )
 from ._powerboxes import draw_boxes as _draw_boxes
@@ -529,6 +530,36 @@ def rtree_nms(
         raise TypeError("Boxes and scores must be numpy arrays")
     return _dispatch1(
         _dtype_to_func_rtree_nms, boxes, scores, iou_threshold, score_threshold
+    )
+
+
+def rtree_rotated_nms(
+    boxes: npt.NDArray[Union[np.float64, np.float32, np.int64, np.int32, np.int16]],
+    scores: npt.NDArray[np.float64],
+    iou_threshold: float,
+    score_threshold: float,
+) -> npt.NDArray[np.uint64]:
+    """Apply non-maximum suppression to oriented boxes using an R-tree index.
+
+    Uses an rtree to speed up computation. Only available for
+    signed integer dtypes and float32/float64.
+
+    Args:
+        boxes: 2d array of boxes in cxcywha format
+        scores: 1d array of scores
+        iou_threshold: threshold for iou
+        score_threshold: threshold for scores
+
+    Raises:
+        TypeError: if boxes or scores are not numpy arrays
+
+    Returns:
+        npt.NDArray[np.uint64]: 1d array of indices to keep
+    """
+    if not isinstance(boxes, np.ndarray) or not isinstance(scores, np.ndarray):
+        raise TypeError("Boxes and scores must be numpy arrays")
+    return _dispatch1(
+        _dtype_to_func_rtree_rotated_nms, boxes, scores, iou_threshold, score_threshold
     )
 
 

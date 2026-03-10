@@ -16,6 +16,7 @@ from powerboxes import (
     rotated_iou_distance,
     rotated_tiou_distance,
     rtree_nms,
+    rtree_rotated_nms,
     supported_dtypes,
     tiou_distance,
 )
@@ -32,6 +33,7 @@ def generate_boxes(request):
     topleft = np.random.uniform(0.0, high=im_size, size=(n_boxes, 2))
     wh = np.random.uniform(15, 45, size=topleft.shape)
     return np.concatenate([topleft, topleft + wh], axis=1).astype(np.float64)
+
 
 @pytest.fixture(scope="function")
 def generate_rotated_boxes(request):
@@ -192,12 +194,22 @@ def test_rtree_nms(benchmark, dtype, generate_boxes):
     boxes = boxes.astype(dtype)
     benchmark(rtree_nms, boxes, SCORES, 0.5, 0.5)
 
+
 @pytest.mark.benchmark(group="rotated_nms")
 @pytest.mark.parametrize("dtype", supported_dtypes)
 def test_rotated_nms(benchmark, dtype, generate_rotated_boxes):
     boxes = generate_rotated_boxes
     boxes = boxes.astype(dtype)
     benchmark(rotated_nms, boxes, SCORES, 0.5, 0.5)
+
+
+@pytest.mark.benchmark(group="rotated_nms")
+@pytest.mark.parametrize("dtype", ["float64", "float32", "int64", "int32", "int16"])
+def test_rtree_rotated_nms(benchmark, dtype, generate_rotated_boxes):
+    boxes = generate_rotated_boxes
+    boxes = boxes.astype(dtype)
+    benchmark(rtree_rotated_nms, boxes, SCORES, 0.5, 0.5)
+
 
 @pytest.mark.benchmark(group="nms_many_boxes")
 @pytest.mark.parametrize("generate_boxes", [1000, 5000, 10000, 20000], indirect=True)
@@ -214,9 +226,18 @@ def test_rtree_nms_many_boxes(benchmark, generate_boxes):
     scores = np.random.random(len(boxes))
     benchmark(rtree_nms, boxes, scores, 0.5, 0.5)
 
+
 @pytest.mark.benchmark(group="rotated_nms_many_boxes")
 @pytest.mark.parametrize("generate_rotated_boxes", [1000, 5000, 10000], indirect=True)
 def test_rotated_nms_many_boxes(benchmark, generate_rotated_boxes):
     boxes = generate_rotated_boxes
     scores = np.random.random(len(boxes))
     benchmark(rotated_nms, boxes, scores, 0.5, 0.5)
+
+
+@pytest.mark.benchmark(group="rotated_nms_many_boxes")
+@pytest.mark.parametrize("generate_rotated_boxes", [1000, 5000, 10000], indirect=True)
+def test_rtree_rotated_nms_many_boxes(benchmark, generate_rotated_boxes):
+    boxes = generate_rotated_boxes
+    scores = np.random.random(len(boxes))
+    benchmark(rtree_rotated_nms, boxes, scores, 0.5, 0.5)

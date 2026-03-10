@@ -204,6 +204,8 @@ fn _powerboxes(m: &Bound<'_, PyModule>) -> PyResult<()> {
     register_typed!(m, rotated_nms, [f64, f32, i64, i32, i16, u64, u32, u16, u8]);
     // Rtree NMS (signed + float only)
     register_typed!(m, rtree_nms, [f64, f32, i64, i32, i16]);
+    // Rtree Rotated NMS (signed + float only)
+    register_typed!(m, rtree_rotated_nms, [f64, f32, i64, i32, i16]);
     // Masks to boxes
     m.add_function(wrap_pyfunction!(masks_to_boxes, m)?)?;
     // Rotated IoU
@@ -645,3 +647,33 @@ where
     Ok(keep_as_numpy.unbind())
 }
 for_each_numeric_type!(impl_nms_fn, rtree_nms, rtree_nms_generic, signed);
+
+// Rtree Rotated NMS (signed + float types only)
+fn rtree_rotated_nms_generic<T>(
+    py: Python,
+    boxes: &Bound<'_, PyArray2<T>>,
+    scores: &Bound<'_, PyArray1<f64>>,
+    iou_threshold: f64,
+    score_threshold: f64,
+) -> PyResult<Py<PyArray1<usize>>>
+where
+    T: numpy::Element
+        + Num
+        + Signed
+        + Bounded
+        + Debug
+        + PartialEq
+        + PartialOrd
+        + ToPrimitive
+        + Copy
+        + Sync
+        + Send,
+{
+    let boxes = preprocess_rotated_boxes(boxes).unwrap();
+    let scores = preprocess_array1(scores);
+    let keep = nms::rtree_rotated_nms(boxes, scores, iou_threshold, score_threshold);
+    let keep_as_ndarray = Array1::from(keep);
+    let keep_as_numpy = utils::array_to_numpy(py, keep_as_ndarray).unwrap();
+    Ok(keep_as_numpy.unbind())
+}
+for_each_numeric_type!(impl_nms_fn, rtree_rotated_nms, rtree_rotated_nms_generic, signed);

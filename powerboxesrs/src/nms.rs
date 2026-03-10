@@ -18,6 +18,30 @@ where
 
 // ─── Slice-based core ───
 
+/// Filter scores below `score_threshold` and sort scores by descending order.
+///
+/// # Arguments
+/// * `scores` - A sclire representing the scores of the bounding boxes.
+/// * `score_threshold` - the score threshold to use for filtering.
+///
+/// # Returns
+///
+/// The indices to keep.
+pub fn filter_and_sort_scores(scores: &[f64], score_threshold: f64) -> Vec<usize> {
+    let mut indices: Vec<_> = if score_threshold > utils::ZERO {
+        scores
+            .iter()
+            .enumerate()
+            .filter(|(_, &score)| score >= score_threshold)
+            .map(|(idx, _)| idx)
+            .collect()
+    } else {
+        (0..scores.len()).collect()
+    };
+    indices.sort_unstable_by(|&a, &b| scores[b].partial_cmp(&scores[a]).unwrap_or(Ordering::Equal));
+    indices
+}
+
 /// Performs non-maximum suppression (NMS) on a set of bounding boxes using their scores and IoU.
 ///
 /// # Arguments
@@ -25,7 +49,6 @@ where
 /// * `boxes` - A flat slice of length `n * 4` representing the coordinates in xyxy format
 ///   of the bounding boxes (row-major).
 /// * `scores` - A slice of length `n` representing the scores of the bounding boxes.
-/// * `n` - The number of bounding boxes.
 /// * `iou_threshold` - The IoU threshold to use for filtering.
 /// * `score_threshold` - The score threshold to use for filtering.
 ///
@@ -35,30 +58,13 @@ where
 pub fn nms_slice<N>(
     boxes: &[N],
     scores: &[f64],
-    n: usize,
     iou_threshold: f64,
     score_threshold: f64,
 ) -> Vec<usize>
 where
     N: Num + PartialEq + PartialOrd + ToPrimitive + Copy,
 {
-    let order: Vec<usize> = {
-        let mut indices: Vec<_> = if score_threshold > utils::ZERO {
-            scores
-                .iter()
-                .enumerate()
-                .take(n)
-                .filter(|(_, &score)| score >= score_threshold)
-                .map(|(idx, _)| idx)
-                .collect()
-        } else {
-            (0..n).collect()
-        };
-        indices.sort_unstable_by(|&a, &b| {
-            scores[b].partial_cmp(&scores[a]).unwrap_or(Ordering::Equal)
-        });
-        indices
-    };
+    let order = filter_and_sort_scores(scores, score_threshold);
 
     let mut keep: Vec<usize> = Vec::new();
     let mut suppress = vec![false; order.len()];
@@ -104,7 +110,6 @@ where
 /// * `boxes` - A flat slice of length `n * 4` representing the coordinates in xyxy format
 ///   of the bounding boxes (row-major).
 /// * `scores` - A slice of length `n` representing the scores of the bounding boxes.
-/// * `n` - The number of bounding boxes.
 /// * `iou_threshold` - The IoU threshold to use for filtering.
 /// * `score_threshold` - The score threshold to use for filtering.
 ///
@@ -114,33 +119,16 @@ where
 pub fn rtree_nms_slice<N>(
     boxes: &[N],
     scores: &[f64],
-    n: usize,
     iou_threshold: f64,
     score_threshold: f64,
 ) -> Vec<usize>
 where
     N: RTreeNum + PartialEq + PartialOrd + ToPrimitive + Copy + Send + Sync,
 {
-    let order: Vec<usize> = {
-        let mut indices: Vec<_> = if score_threshold > utils::ZERO {
-            scores
-                .iter()
-                .enumerate()
-                .take(n)
-                .filter(|(_, &score)| score >= score_threshold)
-                .map(|(idx, _)| idx)
-                .collect()
-        } else {
-            (0..n).collect()
-        };
-        indices.sort_unstable_by(|&a, &b| {
-            scores[b].partial_cmp(&scores[a]).unwrap_or(Ordering::Equal)
-        });
-        indices
-    };
+    let order = filter_and_sort_scores(scores, score_threshold);
 
     let mut keep: Vec<usize> = Vec::new();
-    let mut suppress = vec![false; n];
+    let mut suppress = vec![false; boxes.len()];
 
     let rtree: RTree<utils::Bbox<N>> = RTree::bulk_load(
         order
@@ -199,7 +187,6 @@ where
 /// * `boxes` - A flat slice of length `n * 5` representing the coordinates in cxcywha format
 ///   of the oriented bounding boxes (row-major).
 /// * `scores` - A slice of length `n` representing the scores of the bounding boxes.
-/// * `n` - The number of bounding boxes.
 /// * `iou_threshold` - The IoU threshold to use for filtering.
 /// * `score_threshold` - The score threshold to use for filtering.
 ///
@@ -215,24 +202,7 @@ pub fn rotated_nms_slice<N>(
 where
     N: Num + PartialEq + PartialOrd + ToPrimitive + Copy,
 {
-    let order: Vec<usize> = {
-        let mut indices: Vec<_> = if score_threshold > utils::ZERO {
-            // filter out boxes lower than score threshold
-            scores
-                .iter()
-                .enumerate()
-                .filter(|(_, &score)| score >= score_threshold)
-                .map(|(idx, _)| idx)
-                .collect()
-        } else {
-            (0..scores.len()).collect()
-        };
-        // sort box indices by scores
-        indices.sort_unstable_by(|&a, &b| {
-            scores[b].partial_cmp(&scores[a]).unwrap_or(Ordering::Equal)
-        });
-        indices
-    };
+    let order = filter_and_sort_scores(scores, score_threshold);
 
     let mut keep: Vec<usize> = Vec::new();
     let mut suppress = vec![false; order.len()];
@@ -289,6 +259,112 @@ where
     keep
 }
 
+/// Performs non-maximum suppression (NMS) on a set of oriented bounding boxes using their scores
+/// and IoU.
+/// This function internally uses an R-tree to speed up the computation. It is recommended to use
+/// this function when the number of boxes is large.
+/// The R-tree implementation is based on the rstar crate. It allows queries in O(log n) time.
+///
+/// # Arguments
+///
+/// * `boxes` - A flat slice of length `n * 5` representing the coordinates in cxcywha format
+///   of the oriented bounding boxes (row-major).
+/// * `scores` - A slice of length `n` representing the scores of the bounding boxes.
+/// * `iou_threshold` - The IoU threshold to use for filtering.
+/// * `score_threshold` - The score threshold to use for filtering.
+///
+/// # Returns
+///
+/// A `Vec<usize>` representing the indices of the bounding boxes to keep.
+pub fn rtree_rotated_nms_slice<N>(
+    boxes: &[N],
+    scores: &[f64],
+    iou_threshold: f64,
+    score_threshold: f64,
+) -> Vec<usize>
+where
+    N: RTreeNum + PartialEq + PartialOrd + ToPrimitive + Copy + Send + Sync,
+{
+    let order = filter_and_sort_scores(scores, score_threshold);
+    let mut keep: Vec<usize> = Vec::new();
+    let mut suppress = vec![false; boxes.len()];
+
+    let rtree: RTree<utils::Bbox<f64>> = RTree::bulk_load(
+        order
+            .iter()
+            .map(|&idx| {
+                let (cx, cy, w, h, a) = utils::row5(boxes, idx);
+                let rect = rotation::Rect::new(
+                    cx.to_f64().unwrap(),
+                    cy.to_f64().unwrap(),
+                    w.to_f64().unwrap(),
+                    h.to_f64().unwrap(),
+                    a.to_f64().unwrap(),
+                );
+                let (x1, y1, x2, y2) = rotation::minimal_bounding_rect(&rect.points());
+                utils::Bbox {
+                    x1,
+                    y1,
+                    x2,
+                    y2,
+                    index: idx,
+                }
+            })
+            .collect(),
+    );
+
+    for &idx in &order {
+        if suppress[idx] {
+            continue;
+        }
+        keep.push(idx);
+        let (cx, cy, w, h, a) = utils::row5(boxes, idx);
+        let w = w.to_f64().unwrap();
+        let h = h.to_f64().unwrap();
+        let area1 = w * h;
+        if area1 == 0.0 {
+            continue;
+        }
+        let rect1 = rotation::Rect::new(
+            cx.to_f64().unwrap(),
+            cy.to_f64().unwrap(),
+            w,
+            h,
+            a.to_f64().unwrap(),
+        );
+        let (b1x, b1y, b1xx, b1yy) = rotation::minimal_bounding_rect(&rect1.points());
+        for bbox in
+            rtree.locate_in_envelope_intersecting(&AABB::from_corners([b1x, b1y], [b1xx, b1yy]))
+        {
+            let idx_j = bbox.index;
+            if suppress[idx_j] {
+                continue;
+            }
+            let (cx2, cy2, w2, h2, a2) = utils::row5(boxes, idx_j);
+            let w2 = w2.to_f64().unwrap();
+            let h2 = h2.to_f64().unwrap();
+            let area2 = w2 * h2;
+            if area2 == 0.0 {
+                continue;
+            }
+            let rect2 = rotation::Rect::new(
+                cx2.to_f64().unwrap(),
+                cy2.to_f64().unwrap(),
+                w2,
+                h2,
+                a2.to_f64().unwrap(),
+            );
+            let intersection = rotation::intersection_area(&rect1, &rect2);
+            let union = area1 + area2 - intersection;
+            let iou = intersection / union;
+            if iou > iou_threshold {
+                suppress[idx_j] = true;
+            }
+        }
+    }
+    keep
+}
+
 // ─── ndarray wrappers ───
 
 /// Performs non-maximum suppression (NMS) on a set of bounding boxes using their scores and IoU.
@@ -331,10 +407,9 @@ where
     let boxes = boxes.into();
     let scores = scores.into();
     assert_eq!(boxes.nrows(), scores.len_of(Axis(0)));
-    let n = boxes.nrows();
     let boxes_slice = boxes.as_slice().expect("boxes must be contiguous");
     let scores_slice = scores.as_slice().expect("scores must be contiguous");
-    nms_slice(boxes_slice, scores_slice, n, iou_threshold, score_threshold)
+    nms_slice(boxes_slice, scores_slice, iou_threshold, score_threshold)
 }
 
 /// Performs non-maximum suppression (NMS) on a set of bounding boxes using their scores and IoU.
@@ -379,10 +454,9 @@ where
 {
     let scores = scores.into();
     let boxes = boxes.into();
-    let n = boxes.nrows();
     let boxes_slice = boxes.as_slice().expect("boxes must be contiguous");
     let scores_slice = scores.as_slice().expect("scores must be contiguous");
-    rtree_nms_slice(boxes_slice, scores_slice, n, iou_threshold, score_threshold)
+    rtree_nms_slice(boxes_slice, scores_slice, iou_threshold, score_threshold)
 }
 
 /// Performs non-maximum suppression (NMS) on a set of oriented bounding boxes using their scores and IoU.
@@ -429,6 +503,48 @@ where
     rotated_nms_slice(boxes_slice, scores_slice, iou_threshold, score_threshold)
 }
 
+/// Performs non-maximum suppression (NMS) on a set of oriented bounding boxes using their scores and IoU.
+///
+/// # Arguments
+///
+/// * `boxes` - A 2D array of shape `(num_boxes, 5)` representing the coordinates in cxcywha format of the bounding boxes.
+/// * `scores` - A 1D array of shape `(num_boxes,)` representing the scores of the bounding boxes.
+/// * `iou_threshold` - A float representing the IoU threshold to use for filtering.
+/// * `score_threshold` - A float representing the score threshold to use for filtering.
+///
+/// # Returns
+///
+/// A 1D array of shape `(num_boxes,)` representing the indices of the oriented bounding boxes to keep.
+///
+/// # Examples
+///
+/// ```
+/// use ndarray::{arr2, Array1};
+/// use powerboxesrs::nms::rtree_rotated_nms;
+///
+/// let boxes = arr2(&[[0.0, 0.0, 2.0, 2.0, 45.0], [1.0, 1.0, 3.0, 3.0, -45.0]]);
+/// let scores = Array1::from(vec![1.0, 0.8]);
+/// let keep = rtree_rotated_nms(&boxes, &scores, 0.2, 0.8);
+/// assert_eq!(keep, vec![0]);
+/// ```
+#[cfg(feature = "ndarray")]
+pub fn rtree_rotated_nms<'a, N, BA, SA>(
+    boxes: BA,
+    scores: SA,
+    iou_threshold: f64,
+    score_threshold: f64,
+) -> Vec<usize>
+where
+    N: RTreeNum + PartialEq + PartialOrd + ToPrimitive + Copy + PartialEq + Send + Sync + 'a,
+    BA: Into<ArrayView2<'a, N>>,
+    SA: Into<ArrayView1<'a, f64>>,
+{
+    let scores = scores.into();
+    let boxes = boxes.into();
+    let boxes_slice = boxes.as_slice().expect("boxes must be contiguous");
+    let scores_slice = scores.as_slice().expect("scores must be contiguous");
+    rtree_rotated_nms_slice(boxes_slice, scores_slice, iou_threshold, score_threshold)
+}
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -462,8 +578,8 @@ mod tests {
             765.11413807,
         ];
         let scores = vec![0.9, 0.8, 0.7, 0.6, 0.5, 0.4];
-        let keep = nms_slice(&boxes, &scores, 6, 0.5, 0.0);
-        let keep_rtree = rtree_nms_slice(&boxes, &scores, 6, 0.5, 0.0);
+        let keep = nms_slice(&boxes, &scores, 0.5, 0.0);
+        let keep_rtree = rtree_nms_slice(&boxes, &scores, 0.5, 0.0);
         assert_eq!(keep, vec![0, 2, 4]);
         assert_eq!(keep_rtree, keep);
     }
@@ -475,6 +591,16 @@ mod tests {
         ];
         let scores = vec![0.9, 0.8, 0.7];
         let keep = rotated_nms_slice(&boxes, &scores, 0.5, 0.0);
+        assert_eq!(keep, vec![0, 2]);
+    }
+
+    #[test]
+    fn test_rtree_rotated_nms_slice_normal() {
+        let boxes = vec![
+            1.0, 2.0, 10.0, 5.0, 45.0, 0.0, 1.0, 9.0, 4.0, 30.0, 10.0, 20.0, 5.0, 8.0, -45.0,
+        ];
+        let scores = vec![0.9, 0.8, 0.7];
+        let keep = rtree_rotated_nms_slice(&boxes, &scores, 0.5, 0.0);
         assert_eq!(keep, vec![0, 2]);
     }
 
@@ -539,7 +665,9 @@ mod tests {
             ]);
             let scores = Array1::from(vec![0.9, 0.8, 0.7]);
             let keep = rotated_nms(&boxes, &scores, 0.5, 0.0);
+            let keep_rtree = rtree_rotated_nms(&boxes, &scores, 0.5, 0.0);
             assert_eq!(keep, vec![0, 2]);
+            assert_eq!(keep, keep_rtree);
         }
 
         #[test]
@@ -547,7 +675,9 @@ mod tests {
             let boxes = arr2(&[[0.0, 0.0, 2.0, 2.0, 10.0], [1.0, 1.0, 3.0, 3.0, 10.0]]);
             let scores = Array1::from(vec![0.0, 0.0]);
             let keep = rotated_nms(&boxes, &scores, 0.5, 1.0);
+            let keep_rtree = rtree_rotated_nms(&boxes, &scores, 0.5, 1.0);
             assert_eq!(keep, vec![]);
+            assert_eq!(keep, keep_rtree);
         }
 
         #[test]
@@ -555,7 +685,9 @@ mod tests {
             let boxes = arr2(&[[0.0, 0.0, 2.0, 2.0, 10.0], [1.0, 1.0, 3.0, 3.0, 12.0]]);
             let scores = Array1::from(vec![0.0, 1.0]);
             let keep = rotated_nms(&boxes, &scores, 0.5, 0.5);
+            let keep_rtree = rtree_rotated_nms(&boxes, &scores, 0.5, 0.5);
             assert_eq!(keep, vec![1]);
+            assert_eq!(keep, keep_rtree);
         }
 
         #[test]
@@ -563,7 +695,9 @@ mod tests {
             let boxes = arr2(&[[0.0, 0.0, 2.0, 2.0, 10.0], [1.0, 1.0, 3.0, 3.0, 45.0]]);
             let scores = Array1::from(vec![1.0, 1.0]);
             let keep = rotated_nms(&boxes, &scores, 0.8, 0.0);
+            let keep_rtree = rtree_rotated_nms(&boxes, &scores, 0.8, 0.0);
             assert_eq!(keep, vec![0, 1]);
+            assert_eq!(keep, keep_rtree);
         }
     }
 }
