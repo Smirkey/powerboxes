@@ -41,6 +41,10 @@ dev = [
     "maturin>=1.2,<2.0",
     "ruff",
 ]
+torch = [
+    "torch",
+    "torchvision",
+]
 docs = [
     "mkdocs>=1.5",
     "mkdocs-autorefs>=0.5",
