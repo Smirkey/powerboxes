@@ -18,6 +18,7 @@ from powerboxes import (
     rotated_nms,
     rotated_tiou_distance,
     rtree_nms,
+    rtree_rotated_nms,
     supported_dtypes,
     tiou_distance,
 )
@@ -254,22 +255,29 @@ def test_nms_bad_dtype():
 
 
 @pytest.mark.parametrize("dtype", ["float64", "float32", "int64", "int32", "int16"])
-def test_rtree_nms(dtype):
-    boxes1 = np.random.random((100, 4))
+@pytest.mark.parametrize(
+    "rtree_nms_func, dim", [(rtree_nms, 4), (rtree_rotated_nms, 5)]
+)
+def test_rtree_nms(dtype, rtree_nms_func, dim):
+    boxes1 = np.random.random((100, dim))
     scores = np.random.random((100,))
-    rtree_nms(boxes1.astype(dtype), scores, 0.5, 0.5)
+    rtree_nms_func(boxes1.astype(dtype), scores, 0.5, 0.5)
 
 
-def test_rtree_nms_bad_inputs():
+@pytest.mark.parametrize("rtree_nms_func", [rtree_nms, rtree_rotated_nms])
+def test_rtree_nms_bad_inputs(rtree_nms_func):
     with pytest.raises(TypeError, match="Boxes and scores must be numpy arrays"):
-        rtree_nms("foo", "bar", 0.5, 0.5)
+        rtree_nms_func("foo", "bar", 0.5, 0.5)
 
 
-def test_rtree_nms_bad_dtype():
-    boxes1 = np.random.random((100, 4))
+@pytest.mark.parametrize(
+    "rtree_nms_func, dim", [(rtree_nms, 4), (rtree_rotated_nms, 5)]
+)
+def test_rtree_nms_bad_dtype(rtree_nms_func, dim):
+    boxes1 = np.random.random((100, dim))
     scores = np.random.random((100,))
     with pytest.raises(TypeError):
-        rtree_nms(boxes1.astype(unsuported_dtype_example), scores, 0.5, 0.5)
+        rtree_nms_func(boxes1.astype(unsuported_dtype_example), scores, 0.5, 0.5)
 
 
 @pytest.mark.parametrize("dtype", ["float64"])

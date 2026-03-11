@@ -390,6 +390,17 @@ pub fn minimal_bounding_rect(points: &[Point]) -> (f64, f64, f64, f64) {
     (min_x, min_y, max_x, max_y)
 }
 
+pub fn envelopes_intersect(rect1: &Rect, rect2: &Rect) -> bool {
+    let r1_pts = rect1.points();
+    let r2_pts = rect2.points();
+
+    let (r1_min_x, r1_min_y, r1_max_x, r1_max_y) = minimal_bounding_rect(&r1_pts);
+    let (r2_min_x, r2_min_y, r2_max_x, r2_max_y) = minimal_bounding_rect(&r2_pts);
+
+    // Check if AABBs overlap
+    !(r1_max_x < r2_min_x || r2_max_x < r1_min_x || r1_max_y < r2_min_y || r2_max_y < r1_min_y)
+}
+
 #[cfg(test)]
 mod tests {
 
@@ -417,5 +428,50 @@ mod tests {
         let r2 = Rect::new(150., 150., 20., 10., 0.);
         let intersection = intersection_area(&r1, &r2);
         assert_eq!(intersection, 200.0);
+    }
+
+    #[test]
+    fn test_envelopes_intersect_overlapping() {
+        let r1 = Rect::new(10., 15., 15., 10., 30.);
+        let r2 = Rect::new(15., 15., 20., 10., 0.);
+        assert!(envelopes_intersect(&r1, &r2));
+    }
+
+    #[test]
+    fn test_envelopes_intersect_non_overlapping() {
+        let r1 = Rect::new(10., 15., 15., 10., 30.);
+        let r2 = Rect::new(150., 150., 20., 10., 0.);
+        assert!(!envelopes_intersect(&r1, &r2));
+    }
+
+    #[test]
+    fn test_envelopes_intersect_identical() {
+        let r1 = Rect::new(50., 50., 20., 10., 45.);
+        let r2 = Rect::new(50., 50., 20., 10., 45.);
+        assert!(envelopes_intersect(&r1, &r2));
+    }
+
+    #[test]
+    fn test_envelopes_intersect_touching_edge() {
+        // Two axis-aligned rectangles that touch at their edges
+        let r1 = Rect::new(10., 10., 20., 10., 0.);
+        let r2 = Rect::new(30., 10., 20., 10., 0.);
+        // AABBs touch at x=20, should be considered as intersecting
+        assert!(envelopes_intersect(&r1, &r2));
+    }
+
+    #[test]
+    fn test_envelopes_intersect_rotated_far_apart() {
+        let r1 = Rect::new(0., 0., 10., 10., 45.);
+        let r2 = Rect::new(100., 100., 10., 10., 90.);
+        assert!(!envelopes_intersect(&r1, &r2));
+    }
+
+    #[test]
+    fn test_envelopes_intersect_rotated_overlapping() {
+        // Two rotated rectangles whose envelopes overlap
+        let r1 = Rect::new(0., 0., 20., 10., 45.);
+        let r2 = Rect::new(5., 5., 20., 10., -45.);
+        assert!(envelopes_intersect(&r1, &r2));
     }
 }

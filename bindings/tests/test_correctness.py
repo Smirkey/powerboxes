@@ -21,6 +21,7 @@ from powerboxes import (
     rotated_nms,
     rotated_tiou_distance,
     rtree_nms,
+    rtree_rotated_nms,
     tiou_distance,
 )
 
@@ -390,3 +391,5 @@ def test_rotated_nms_against_shapely(seed, iou_threshold, score_threshold):
     result = rotated_nms(boxes, scores, iou_threshold, score_threshold)
     ref = _ref_rotated_nms(boxes, scores, iou_threshold, score_threshold)
     np.testing.assert_array_equal(result, ref)
+    result_rtree = rtree_rotated_nms(boxes, scores, iou_threshold, score_threshold)
+    np.testing.assert_array_equal(result_rtree, ref)
