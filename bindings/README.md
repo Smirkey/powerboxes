@@ -33,7 +33,11 @@ iou = pb.iou_distance(boxes, boxes)
 # Draw boxes on an image (CHW format, uint8)
 image = np.zeros((3, 100, 100), dtype=np.uint8)
 draw_boxes = np.array([[10.0, 10.0, 50.0, 50.0]])
-result = pb.draw_boxes(image, draw_boxes)
+result = pb.draw_boxes(image, draw_boxes, filled=True, opacity=0.35)
+
+# Draw rotated boxes in cxcywha format
+rotated_boxes = np.array([[50.0, 50.0, 30.0, 20.0, 30.0]])
+rotated = pb.draw_rotated_boxes(image, rotated_boxes)
 ```
 
 For more details, see the [full documentation](https://smirkey.github.io/powerboxes/) or the [GitHub repository](https://github.com/Smirkey/powerboxes).

@@ -1,16 +1,47 @@
-/// Draw bounding boxes on a CHW image tensor.
-///
-/// # Arguments
-/// * `image` - flat slice of length 3*H*W (CHW layout), values 0-255
-/// * `height` - image height
-/// * `width` - image width
-/// * `boxes` - flat slice of length N*4 (xyxy format, f64)
-/// * `num_boxes` - number of boxes
-/// * `colors` - flat slice of length N*3 (RGB per box), or None for default colors
-/// * `thickness` - line thickness in pixels
-///
-/// # Returns
-/// New Vec<u8> of length 3*H*W with boxes drawn
+use crate::rotation::{cxcywha_to_points, Point};
+
+const DEFAULT_COLORS: [(u8, u8, u8); 10] = [
+    (255, 0, 0),
+    (0, 255, 0),
+    (0, 0, 255),
+    (255, 255, 0),
+    (255, 0, 255),
+    (0, 255, 255),
+    (128, 0, 0),
+    (0, 128, 0),
+    (0, 0, 128),
+    (255, 128, 0),
+];
+
+#[derive(Clone, Copy, Debug)]
+pub struct DrawOptions {
+    pub thickness: usize,
+    pub filled: bool,
+    pub opacity: f64,
+}
+
+impl DrawOptions {
+    #[inline]
+    fn normalized(self) -> Self {
+        Self {
+            thickness: normalize_thickness(self.thickness),
+            filled: self.filled,
+            opacity: self.opacity.clamp(0.0, 1.0),
+        }
+    }
+}
+
+impl Default for DrawOptions {
+    fn default() -> Self {
+        Self {
+            thickness: 2,
+            filled: false,
+            opacity: 1.0,
+        }
+    }
+}
+
+/// Draw axis-aligned bounding boxes on a CHW image tensor.
 pub fn draw_boxes_slice(
     image: &[u8],
     height: usize,
@@ -18,82 +49,130 @@ pub fn draw_boxes_slice(
     boxes: &[f64],
     num_boxes: usize,
     colors: Option<&[u8]>,
-    thickness: usize,
+    options: DrawOptions,
 ) -> Vec<u8> {
     let mut output = image.to_vec();
-    let thickness = if thickness == 0 { 1 } else { thickness };
-    let half_t = thickness / 2;
-
-    // Default color palette (cycling)
-    let default_colors: [(u8, u8, u8); 10] = [
-        (255, 0, 0),
-        (0, 255, 0),
-        (0, 0, 255),
-        (255, 255, 0),
-        (255, 0, 255),
-        (0, 255, 255),
-        (128, 0, 0),
-        (0, 128, 0),
-        (0, 0, 128),
-        (255, 128, 0),
-    ];
+    let options = options.normalized();
 
     for b in 0..num_boxes {
         let base = b * 4;
-        let x1 = boxes[base].round().max(0.0) as usize;
-        let y1 = boxes[base + 1].round().max(0.0) as usize;
-        let x2 = boxes[base + 2].round().min(width as f64 - 1.0).max(0.0) as usize;
-        let y2 = boxes[base + 3].round().min(height as f64 - 1.0).max(0.0) as usize;
+        let x1 = boxes[base].round().max(0.0) as i32;
+        let y1 = boxes[base + 1].round().max(0.0) as i32;
+        let x2 = boxes[base + 2].round().min(width as f64 - 1.0).max(0.0) as i32;
+        let y2 = boxes[base + 3].round().min(height as f64 - 1.0).max(0.0) as i32;
 
-        if x1 >= width || y1 >= height {
+        if x1 > x2 || y1 > y2 || x1 >= width as i32 || y1 >= height as i32 {
             continue;
         }
 
-        let (r, g, bl) = if let Some(c) = colors {
-            let cb = b * 3;
-            (c[cb], c[cb + 1], c[cb + 2])
-        } else {
-            default_colors[b % default_colors.len()]
-        };
+        let color = box_color(colors, b);
+        if options.filled {
+            fill_rect(
+                &mut output,
+                height,
+                width,
+                x1,
+                y1,
+                x2,
+                y2,
+                color,
+                options.opacity,
+            );
+        }
+        draw_rect_outline(
+            &mut output,
+            height,
+            width,
+            x1,
+            y1,
+            x2,
+            y2,
+            color,
+            options.thickness,
+            options.opacity,
+        );
+    }
 
-        // Draw horizontal lines (top and bottom)
-        for x in x1..=x2 {
-            // Top edge
-            for dy in 0..thickness {
-                let y = (y1 + dy).saturating_sub(half_t);
-                if y < height && x < width {
-                    set_pixel_chw(&mut output, height, width, y, x, r, g, bl);
-                }
-            }
-            // Bottom edge
-            for dy in 0..thickness {
-                let y = (y2 + dy).saturating_sub(half_t);
-                if y < height && x < width {
-                    set_pixel_chw(&mut output, height, width, y, x, r, g, bl);
-                }
-            }
+    output
+}
+
+/// Draw rotated bounding boxes on a CHW image tensor.
+pub fn draw_rotated_boxes_slice(
+    image: &[u8],
+    height: usize,
+    width: usize,
+    boxes: &[f64],
+    num_boxes: usize,
+    colors: Option<&[u8]>,
+    options: DrawOptions,
+) -> Vec<u8> {
+    let mut output = image.to_vec();
+    let options = options.normalized();
+
+    for b in 0..num_boxes {
+        let base = b * 5;
+        let points = {
+            let (p1, p2, p3, p4) = cxcywha_to_points(
+                boxes[base],
+                boxes[base + 1],
+                boxes[base + 2],
+                boxes[base + 3],
+                boxes[base + 4],
+            );
+            [p1, p2, p3, p4]
+        };
+        let color = box_color(colors, b);
+
+        if options.filled {
+            fill_convex_quad(&mut output, height, width, &points, color, options.opacity);
         }
 
-        // Draw vertical lines (left and right)
-        for y in y1..=y2 {
-            // Left edge
-            for dx in 0..thickness {
-                let x = (x1 + dx).saturating_sub(half_t);
-                if y < height && x < width {
-                    set_pixel_chw(&mut output, height, width, y, x, r, g, bl);
-                }
-            }
-            // Right edge
-            for dx in 0..thickness {
-                let x = (x2 + dx).saturating_sub(half_t);
-                if y < height && x < width {
-                    set_pixel_chw(&mut output, height, width, y, x, r, g, bl);
-                }
-            }
+        for edge in 0..4 {
+            let start = points[edge];
+            let end = points[(edge + 1) % 4];
+            draw_line(
+                &mut output,
+                height,
+                width,
+                start,
+                end,
+                color,
+                options.thickness,
+                options.opacity,
+            );
         }
     }
 
     output
+}
+
+#[inline]
+fn normalize_thickness(thickness: usize) -> usize {
+    if thickness == 0 { 1 } else { thickness }
+}
+
+#[inline]
+fn box_color(colors: Option<&[u8]>, index: usize) -> (u8, u8, u8) {
+    if let Some(c) = colors {
+        let base = index * 3;
+        (c[base], c[base + 1], c[base + 2])
+    } else {
+        DEFAULT_COLORS[index % DEFAULT_COLORS.len()]
+    }
+}
+
+#[inline]
+fn pixel_index(width: usize, y: usize, x: usize) -> usize {
+    y * width + x
+}
+
+#[inline]
+fn blend_channel(dst: u8, src: u8, opacity: f64) -> u8 {
+    if opacity >= 1.0 {
+        src
+    } else {
+        (opacity * f64::from(src) + (1.0 - opacity) * f64::from(dst)).round() as u8
+    }
 }
 
 #[inline]
@@ -107,11 +186,219 @@ fn set_pixel_chw(
     r: u8,
     g: u8,
     b: u8,
+    opacity: f64,
 ) {
     let hw = height * width;
-    image[y * width + x] = r; // channel 0 (R)
-    image[hw + y * width + x] = g; // channel 1 (G)
-    image[2 * hw + y * width + x] = b; // channel 2 (B)
+    let idx = pixel_index(width, y, x);
+    image[idx] = blend_channel(image[idx], r, opacity);
+    image[hw + idx] = blend_channel(image[hw + idx], g, opacity);
+    image[2 * hw + idx] = blend_channel(image[2 * hw + idx], b, opacity);
+}
+
+#[allow(clippy::too_many_arguments)]
+fn fill_rect(
+    image: &mut [u8],
+    height: usize,
+    width: usize,
+    x1: i32,
+    y1: i32,
+    x2: i32,
+    y2: i32,
+    color: (u8, u8, u8),
+    opacity: f64,
+) {
+    for y in y1.max(0)..=y2.min(height as i32 - 1) {
+        for x in x1.max(0)..=x2.min(width as i32 - 1) {
+            set_pixel_chw(
+                image,
+                height,
+                width,
+                y as usize,
+                x as usize,
+                color.0,
+                color.1,
+                color.2,
+                opacity,
+            );
+        }
+    }
+}
+
+#[allow(clippy::too_many_arguments)]
+fn draw_rect_outline(
+    image: &mut [u8],
+    height: usize,
+    width: usize,
+    x1: i32,
+    y1: i32,
+    x2: i32,
+    y2: i32,
+    color: (u8, u8, u8),
+    thickness: usize,
+    opacity: f64,
+) {
+    let half_t = (thickness as i32) / 2;
+
+    for x in x1..=x2 {
+        for dy in 0..thickness as i32 {
+            let yt = y1 + dy - half_t;
+            let yb = y2 + dy - half_t;
+            draw_if_in_bounds(image, height, width, x, yt, color, opacity);
+            draw_if_in_bounds(image, height, width, x, yb, color, opacity);
+        }
+    }
+
+    for y in y1..=y2 {
+        for dx in 0..thickness as i32 {
+            let xl = x1 + dx - half_t;
+            let xr = x2 + dx - half_t;
+            draw_if_in_bounds(image, height, width, xl, y, color, opacity);
+            draw_if_in_bounds(image, height, width, xr, y, color, opacity);
+        }
+    }
+}
+
+#[inline]
+fn draw_if_in_bounds(
+    image: &mut [u8],
+    height: usize,
+    width: usize,
+    x: i32,
+    y: i32,
+    color: (u8, u8, u8),
+    opacity: f64,
+) {
+    if x >= 0 && y >= 0 && x < width as i32 && y < height as i32 {
+        set_pixel_chw(
+            image,
+            height,
+            width,
+            y as usize,
+            x as usize,
+            color.0,
+            color.1,
+            color.2,
+            opacity,
+        );
+    }
+}
+
+#[allow(clippy::too_many_arguments)]
+fn draw_line(
+    image: &mut [u8],
+    height: usize,
+    width: usize,
+    start: Point,
+    end: Point,
+    color: (u8, u8, u8),
+    thickness: usize,
+    opacity: f64,
+) {
+    let mut x0 = start.x.round() as i32;
+    let mut y0 = start.y.round() as i32;
+    let x1 = end.x.round() as i32;
+    let y1 = end.y.round() as i32;
+    let dx = (x1 - x0).abs();
+    let sx = if x0 < x1 { 1 } else { -1 };
+    let dy = -(y1 - y0).abs();
+    let sy = if y0 < y1 { 1 } else { -1 };
+    let mut err = dx + dy;
+    let half_t = (thickness as i32) / 2;
+
+    loop {
+        for oy in -half_t..=half_t {
+            for ox in -half_t..=half_t {
+                draw_if_in_bounds(image, height, width, x0 + ox, y0 + oy, color, opacity);
+            }
+        }
+
+        if x0 == x1 && y0 == y1 {
+            break;
+        }
+        let e2 = 2 * err;
+        if e2 >= dy {
+            err += dy;
+            x0 += sx;
+        }
+        if e2 <= dx {
+            err += dx;
+            y0 += sy;
+        }
+    }
+}
+
+fn fill_convex_quad(
+    image: &mut [u8],
+    height: usize,
+    width: usize,
+    points: &[Point; 4],
+    color: (u8, u8, u8),
+    opacity: f64,
+) {
+    let min_x = points
+        .iter()
+        .map(|p| p.x.floor() as i32)
+        .min()
+        .unwrap_or(0)
+        .max(0);
+    let max_x = points
+        .iter()
+        .map(|p| p.x.ceil() as i32)
+        .max()
+        .unwrap_or(-1)
+        .min(width as i32 - 1);
+    let min_y = points
+        .iter()
+        .map(|p| p.y.floor() as i32)
+        .min()
+        .unwrap_or(0)
+        .max(0);
+    let max_y = points
+        .iter()
+        .map(|p| p.y.ceil() as i32)
+        .max()
+        .unwrap_or(-1)
+        .min(height as i32 - 1);
+
+    if min_x > max_x || min_y > max_y {
+        return;
+    }
+
+    for y in min_y..=max_y {
+        for x in min_x..=max_x {
+            if point_in_convex_quad(x as f64 + 0.5, y as f64 + 0.5, points) {
+                set_pixel_chw(
+                    image,
+                    height,
+                    width,
+                    y as usize,
+                    x as usize,
+                    color.0,
+                    color.1,
+                    color.2,
+                    opacity,
+                );
+            }
+        }
+    }
+}
+
+fn point_in_convex_quad(x: f64, y: f64, points: &[Point; 4]) -> bool {
+    let mut sign = 0.0;
+    for edge in 0..4 {
+        let p1 = points[edge];
+        let p2 = points[(edge + 1) % 4];
+        let cross = (p2.x - p1.x) * (y - p1.y) - (p2.y - p1.y) * (x - p1.x);
+        if cross.abs() < f64::EPSILON {
+            continue;
+        }
+        if sign == 0.0 {
+            sign = cross.signum();
+        } else if cross.signum() != sign {
+            return false;
+        }
+    }
+    true
 }
 
 #[cfg(test)]
@@ -124,7 +411,18 @@ mod tests {
         let width = 10;
         let image = vec![0u8; 3 * height * width];
         let boxes = vec![2.0, 2.0, 7.0, 7.0];
-        let result = draw_boxes_slice(&image, height, width, &boxes, 1, None, 1);
+        let result = draw_boxes_slice(
+            &image,
+            height,
+            width,
+            &boxes,
+            1,
+            None,
+            DrawOptions {
+                thickness: 1,
+                ..DrawOptions::default()
+            },
+        );
 
         // Check that the top-left corner pixel (2,2) is set to the first default color (255, 0, 0)
         let hw = height * width;
@@ -146,7 +444,18 @@ mod tests {
         let image = vec![0u8; 3 * height * width];
         let boxes = vec![1.0, 1.0, 5.0, 5.0];
         let colors = vec![0u8, 255, 128];
-        let result = draw_boxes_slice(&image, height, width, &boxes, 1, Some(&colors), 1);
+        let result = draw_boxes_slice(
+            &image,
+            height,
+            width,
+            &boxes,
+            1,
+            Some(&colors),
+            DrawOptions {
+                thickness: 1,
+                ..DrawOptions::default()
+            },
+        );
 
         let hw = height * width;
         // Check top-left corner of box (1, 1) has custom color
@@ -161,7 +470,18 @@ mod tests {
         let width = 10;
         let image = vec![0u8; 3 * height * width];
         let boxes: Vec<f64> = vec![];
-        let result = draw_boxes_slice(&image, height, width, &boxes, 0, None, 1);
+        let result = draw_boxes_slice(
+            &image,
+            height,
+            width,
+            &boxes,
+            0,
+            None,
+            DrawOptions {
+                thickness: 1,
+                ..DrawOptions::default()
+            },
+        );
         assert_eq!(result, image);
     }
 
@@ -172,8 +492,66 @@ mod tests {
         let image = vec![0u8; 3 * height * width];
         // Box extends beyond image boundaries
         let boxes = vec![-2.0, -2.0, 12.0, 12.0];
-        let result = draw_boxes_slice(&image, height, width, &boxes, 1, None, 1);
+        let result = draw_boxes_slice(
+            &image,
+            height,
+            width,
+            &boxes,
+            1,
+            None,
+            DrawOptions {
+                thickness: 1,
+                ..DrawOptions::default()
+            },
+        );
         // Should not panic, and the result should have the same length
         assert_eq!(result.len(), image.len());
+    }
+
+    #[test]
+    fn test_draw_boxes_filled_with_opacity() {
+        let height = 8;
+        let width = 8;
+        let image = vec![100u8; 3 * height * width];
+        let boxes = vec![1.0, 1.0, 5.0, 5.0];
+        let result = draw_boxes_slice(
+            &image,
+            height,
+            width,
+            &boxes,
+            1,
+            None,
+            DrawOptions {
+                thickness: 1,
+                filled: true,
+                opacity: 0.5,
+            },
+        );
+
+        assert_eq!(result[3 * width + 3], 178);
+        assert_eq!(result[height * width + 3 * width + 3], 50);
+        assert_eq!(result[2 * height * width + 3 * width + 3], 50);
+    }
+
+    #[test]
+    fn test_draw_rotated_boxes_slice() {
+        let height = 20;
+        let width = 20;
+        let image = vec![0u8; 3 * height * width];
+        let boxes = vec![10.0, 10.0, 8.0, 4.0, 30.0];
+        let result = draw_rotated_boxes_slice(
+            &image,
+            height,
+            width,
+            &boxes,
+            1,
+            None,
+            DrawOptions {
+                thickness: 1,
+                ..DrawOptions::default()
+            },
+        );
+
+        assert!(result.iter().any(|&v| v != 0));
     }
 }

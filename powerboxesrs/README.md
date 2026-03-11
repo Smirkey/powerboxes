@@ -42,7 +42,8 @@ Rotated boxes use `(cx, cy, w, h, angle)` format where angle is in degrees.
 - `rtree_nms`: Non-maximum suppression using an R-tree for sub-quadratic complexity
 
 #### Drawing
-- `draw_boxes`: Draw bounding boxes on a CHW image tensor
+- `draw_boxes`: Draw axis-aligned bounding boxes on a CHW image tensor
+- `draw_rotated_boxes`: Draw rotated bounding boxes on a CHW image tensor
 
 
 ## Usage
