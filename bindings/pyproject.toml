@@ -40,9 +40,6 @@ dev = [
     "shapely>=2.0",
     "maturin>=1.2,<2.0",
     "ruff",
-]
-torch = [
-    "torch",
     "torchvision",
 ]
 docs = [
