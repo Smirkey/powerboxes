@@ -1,6 +1,6 @@
 import numpy as np
 import pytest
-from powerboxes import draw_boxes
+from powerboxes import draw_boxes, draw_rotated_boxes
 
 
 class TestDrawBoxes:
@@ -110,3 +110,47 @@ class TestDrawBoxes:
         assert not np.array_equal(result, image) or np.all(image == 0)
         # Original should still be all zeros
         assert np.all(image == 0)
+
+    def test_filled_boxes_with_opacity(self):
+        """Filled boxes alpha blend against the background."""
+        h, w = 40, 40
+        image = np.full((3, h, w), 100, dtype=np.uint8)
+        boxes = np.array([[5.0, 5.0, 20.0, 20.0]])
+        result = draw_boxes(image, boxes, filled=True, opacity=0.5)
+        assert result[0, 10, 10] == 178
+        assert result[1, 10, 10] == 50
+        assert result[2, 10, 10] == 50
+
+    def test_bad_opacity(self):
+        """Opacity must stay within the alpha range."""
+        image = np.zeros((3, 50, 50), dtype=np.uint8)
+        boxes = np.array([[10.0, 10.0, 40.0, 40.0]])
+        with pytest.raises(ValueError, match="opacity must be between 0.0 and 1.0"):
+            draw_boxes(image, boxes, opacity=1.5)
+
+
+class TestDrawRotatedBoxes:
+    def test_basic_rotated_draw(self):
+        """Rotated boxes draw non-axis-aligned edges."""
+        h, w = 100, 100
+        image = np.zeros((3, h, w), dtype=np.uint8)
+        boxes = np.array([[50.0, 50.0, 30.0, 20.0, 30.0]])
+        result = draw_rotated_boxes(image, boxes)
+        assert result.shape == (3, h, w)
+        assert result.dtype == np.uint8
+        assert np.count_nonzero(result) > 0
+
+    def test_rotated_fill(self):
+        """Filled rotated boxes color interior pixels."""
+        h, w = 100, 100
+        image = np.zeros((3, h, w), dtype=np.uint8)
+        boxes = np.array([[50.0, 50.0, 20.0, 20.0, 0.0]])
+        result = draw_rotated_boxes(image, boxes, filled=True, opacity=1.0)
+        assert result[0, 50, 50] == 255
+
+    def test_rotated_bad_boxes_shape(self):
+        """Wrong rotated boxes shape raises ValueError."""
+        image = np.zeros((3, 50, 50), dtype=np.uint8)
+        boxes = np.array([[10.0, 10.0, 40.0, 40.0]])  # missing angle
+        with pytest.raises(ValueError, match="boxes must have shape"):
+            draw_rotated_boxes(image, boxes)

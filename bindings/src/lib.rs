@@ -222,6 +222,7 @@ fn _powerboxes(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(parallel_rotated_tiou_distance, m)?)?;
     // Draw
     m.add_function(wrap_pyfunction!(draw_boxes, m)?)?;
+    m.add_function(wrap_pyfunction!(draw_rotated_boxes, m)?)?;
     Ok(())
 }
 
@@ -316,13 +317,15 @@ fn parallel_rotated_tiou_distance(
 }
 
 #[pyfunction]
-#[pyo3(signature = (image, boxes, colors=None, thickness=2))]
+#[pyo3(signature = (image, boxes, colors=None, thickness=2, filled=false, opacity=1.0))]
 fn draw_boxes(
     py: Python,
     image: &Bound<'_, PyArray3<u8>>,
     boxes: &Bound<'_, PyArray2<f64>>,
     colors: Option<&Bound<'_, PyArray2<u8>>>,
     thickness: usize,
+    filled: bool,
+    opacity: f64,
 ) -> PyResult<Py<PyArray3<u8>>> {
     let image_array = preprocess_array3(image);
     let image_shape = image_array.shape();
@@ -346,10 +349,24 @@ fn draw_boxes(
     let image_slice: Vec<u8> = image_array.iter().copied().collect();
     let boxes_slice: Vec<f64> = boxes_array.iter().copied().collect();
 
-    let colors_vec: Option<Vec<u8>> = colors.map(|c| {
-        let c_array = unsafe { c.as_array() };
-        c_array.iter().copied().collect()
-    });
+    let colors_vec: Option<Vec<u8>> = colors
+        .map(|c| {
+            let c_array = unsafe { c.as_array() };
+            let c_shape = c_array.shape();
+            if c_shape.len() != 2 || c_shape[0] != num_boxes || c_shape[1] != 3 {
+                return Err(pyo3::exceptions::PyValueError::new_err(
+                    "colors must have shape (N, 3)",
+                ));
+            }
+            Ok(c_array.iter().copied().collect())
+        })
+        .transpose()?;
+
+    if !(0.0..=1.0).contains(&opacity) {
+        return Err(pyo3::exceptions::PyValueError::new_err(
+            "opacity must be between 0.0 and 1.0",
+        ));
+    }
 
     let result = draw::draw_boxes_slice(
         &image_slice,
@@ -358,7 +375,82 @@ fn draw_boxes(
         &boxes_slice,
         num_boxes,
         colors_vec.as_deref(),
-        thickness,
+        draw::DrawOptions {
+            thickness,
+            filled,
+            opacity,
+        },
+    );
+
+    let result_array = ndarray::Array3::from_shape_vec((3, height, width), result)
+        .map_err(|e| pyo3::exceptions::PyValueError::new_err(e.to_string()))?;
+    let numpy_array = utils::array_to_numpy(py, result_array)?;
+    Ok(numpy_array.unbind())
+}
+
+#[pyfunction]
+#[pyo3(signature = (image, boxes, colors=None, thickness=2, filled=false, opacity=1.0))]
+fn draw_rotated_boxes(
+    py: Python,
+    image: &Bound<'_, PyArray3<u8>>,
+    boxes: &Bound<'_, PyArray2<f64>>,
+    colors: Option<&Bound<'_, PyArray2<u8>>>,
+    thickness: usize,
+    filled: bool,
+    opacity: f64,
+) -> PyResult<Py<PyArray3<u8>>> {
+    let image_array = preprocess_array3(image);
+    let image_shape = image_array.shape();
+    if image_shape[0] != 3 {
+        return Err(pyo3::exceptions::PyValueError::new_err(
+            "image must have shape (3, H, W)",
+        ));
+    }
+    let height = image_shape[1];
+    let width = image_shape[2];
+
+    let boxes_array = unsafe { boxes.as_array() };
+    let boxes_shape = boxes_array.shape();
+    if boxes_shape.len() != 2 || (boxes_shape[0] > 0 && boxes_shape[1] != 5) {
+        return Err(pyo3::exceptions::PyValueError::new_err(
+            "boxes must have shape (N, 5)",
+        ));
+    }
+    let num_boxes = boxes_shape[0];
+
+    let colors_vec: Option<Vec<u8>> = colors
+        .map(|c| {
+            let c_array = unsafe { c.as_array() };
+            let c_shape = c_array.shape();
+            if c_shape.len() != 2 || c_shape[0] != num_boxes || c_shape[1] != 3 {
+                return Err(pyo3::exceptions::PyValueError::new_err(
+                    "colors must have shape (N, 3)",
+                ));
+            }
+            Ok(c_array.iter().copied().collect())
+        })
+        .transpose()?;
+
+    if !(0.0..=1.0).contains(&opacity) {
+        return Err(pyo3::exceptions::PyValueError::new_err(
+            "opacity must be between 0.0 and 1.0",
+        ));
+    }
+
+    let image_slice: Vec<u8> = image_array.iter().copied().collect();
+    let boxes_slice: Vec<f64> = boxes_array.iter().copied().collect();
+    let result = draw::draw_rotated_boxes_slice(
+        &image_slice,
+        height,
+        width,
+        &boxes_slice,
+        num_boxes,
+        colors_vec.as_deref(),
+        draw::DrawOptions {
+            thickness,
+            filled,
+            opacity,
+        },
     );
 
     let result_array = ndarray::Array3::from_shape_vec((3, height, width), result)

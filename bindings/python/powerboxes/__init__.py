@@ -19,6 +19,7 @@ from ._dispatch import (
     _dtype_to_func_tiou_distance,
 )
 from ._powerboxes import draw_boxes as _draw_boxes
+from ._powerboxes import draw_rotated_boxes as _draw_rotated_boxes
 from ._powerboxes import masks_to_boxes as _masks_to_boxes
 from ._powerboxes import (
     parallel_rotated_giou_distance as _parallel_rotated_giou_distance,
@@ -568,6 +569,8 @@ def draw_boxes(
     boxes: npt.NDArray[np.float64],
     colors: npt.NDArray[np.uint8] = None,
     thickness: int = 2,
+    filled: bool = False,
+    opacity: float = 1.0,
 ) -> npt.NDArray[np.uint8]:
     """Draw bounding boxes on an image.
 
@@ -576,6 +579,8 @@ def draw_boxes(
         boxes: 2d array of boxes in xyxy format, float64
         colors: optional 2d array of shape (N, 3) with RGB colors per box, uint8
         thickness: line thickness in pixels (default 2)
+        filled: whether to fill box interiors before drawing outlines
+        opacity: alpha blend strength in the range [0.0, 1.0]
 
     Raises:
         TypeError: if image or boxes are not numpy arrays
@@ -585,7 +590,36 @@ def draw_boxes(
     """
     if not isinstance(image, np.ndarray) or not isinstance(boxes, np.ndarray):
         raise TypeError("image and boxes must be numpy arrays")
-    return _draw_boxes(image, boxes, colors, thickness)
+    return _draw_boxes(image, boxes, colors, thickness, filled, opacity)
+
+
+def draw_rotated_boxes(
+    image: npt.NDArray[np.uint8],
+    boxes: npt.NDArray[np.float64],
+    colors: npt.NDArray[np.uint8] = None,
+    thickness: int = 2,
+    filled: bool = False,
+    opacity: float = 1.0,
+) -> npt.NDArray[np.uint8]:
+    """Draw rotated bounding boxes on an image.
+
+    Args:
+        image: 3d array of shape (3, H, W) in CHW format, uint8
+        boxes: 2d array of boxes in cxcywha format, float64
+        colors: optional 2d array of shape (N, 3) with RGB colors per box, uint8
+        thickness: line thickness in pixels (default 2)
+        filled: whether to fill box interiors before drawing outlines
+        opacity: alpha blend strength in the range [0.0, 1.0]
+
+    Raises:
+        TypeError: if image or boxes are not numpy arrays
+
+    Returns:
+        np.ndarray: 3d array of shape (3, H, W) with boxes drawn
+    """
+    if not isinstance(image, np.ndarray) or not isinstance(boxes, np.ndarray):
+        raise TypeError("image and boxes must be numpy arrays")
+    return _draw_rotated_boxes(image, boxes, colors, thickness, filled, opacity)
 
 
 __all__ = [
@@ -608,7 +642,9 @@ __all__ = [
     "nms",
     "rotated_nms",
     "rtree_nms",
+    "rtree_rotated_nms",
     "draw_boxes",
+    "draw_rotated_boxes",
     "supported_dtypes",
     "__version__",
 ]
