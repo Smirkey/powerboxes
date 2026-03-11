@@ -148,7 +148,11 @@ pub fn draw_rotated_boxes_slice(
 
 #[inline]
 fn normalize_thickness(thickness: usize) -> usize {
-    if thickness == 0 { 1 } else { thickness }
+    if thickness == 0 {
+        1
+    } else {
+        thickness
+    }
 }
 
 #[inline]
@@ -210,15 +214,7 @@ fn fill_rect(
     for y in y1.max(0)..=y2.min(height as i32 - 1) {
         for x in x1.max(0)..=x2.min(width as i32 - 1) {
             set_pixel_chw(
-                image,
-                height,
-                width,
-                y as usize,
-                x as usize,
-                color.0,
-                color.1,
-                color.2,
-                opacity,
+                image, height, width, y as usize, x as usize, color.0, color.1, color.2, opacity,
             );
         }
     }
@@ -270,15 +266,7 @@ fn draw_if_in_bounds(
 ) {
     if x >= 0 && y >= 0 && x < width as i32 && y < height as i32 {
         set_pixel_chw(
-            image,
-            height,
-            width,
-            y as usize,
-            x as usize,
-            color.0,
-            color.1,
-            color.2,
-            opacity,
+            image, height, width, y as usize, x as usize, color.0, color.1, color.2, opacity,
         );
     }
 }
@@ -368,14 +356,7 @@ fn fill_convex_quad(
         for x in min_x..=max_x {
             if point_in_convex_quad(x as f64 + 0.5, y as f64 + 0.5, points) {
                 set_pixel_chw(
-                    image,
-                    height,
-                    width,
-                    y as usize,
-                    x as usize,
-                    color.0,
-                    color.1,
-                    color.2,
+                    image, height, width, y as usize, x as usize, color.0, color.1, color.2,
                     opacity,
                 );
             }
