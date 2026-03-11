@@ -1773,6 +1773,8 @@ dev = [
     { name = "ruff" },
     { name = "shapely", version = "2.0.7", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.10'" },
     { name = "shapely", version = "2.1.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.10'" },
+    { name = "torchvision", version = "0.23.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.10'" },
+    { name = "torchvision", version = "0.25.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.10'" },
 ]
 docs = [
     { name = "mkdocs" },
@@ -1783,12 +1785,6 @@ docs = [
     { name = "mkdocstrings", version = "1.0.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.10'" },
     { name = "mkdocstrings-python", version = "1.18.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.10'" },
     { name = "mkdocstrings-python", version = "2.0.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.10'" },
-]
-torch = [
-    { name = "torch", version = "2.8.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.10'" },
-    { name = "torch", version = "2.10.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.10'" },
-    { name = "torchvision", version = "0.23.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.10'" },
-    { name = "torchvision", version = "0.25.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.10'" },
 ]
 
 [package.metadata]
@@ -1803,6 +1799,7 @@ dev = [
     { name = "pytest-cov" },
     { name = "ruff" },
     { name = "shapely", specifier = ">=2.0" },
+    { name = "torchvision" },
 ]
 docs = [
     { name = "mkdocs", specifier = ">=1.5" },
@@ -1811,10 +1808,6 @@ docs = [
     { name = "mkdocs-material-extensions", specifier = ">=1.3" },
     { name = "mkdocstrings", specifier = ">=0.24" },
     { name = "mkdocstrings-python", specifier = ">=1.8" },
-]
-torch = [
-    { name = "torch" },
-    { name = "torchvision" },
 ]
 
 [[package]]
