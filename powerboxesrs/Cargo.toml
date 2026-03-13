@@ -20,16 +20,16 @@ default = ["ndarray"]
 ndarray = ["dep:ndarray"]
 
 [dependencies]
-ndarray = { version = ">=0.15, <=0.16", features = ["rayon"], optional = true }
-num-traits = "0.2.17"
+ndarray = { version = ">=0.15, <=0.17", features = ["rayon"], optional = true }
+num-traits = "0.2.19"
 rayon = "1.8.0"
-rstar = "0.11.0"
-wide = "0.7"
+rstar = "0.12.2"
+wide = "1.1"
 
 [dev-dependencies]
-codspeed-criterion-compat = "2.3.1"
-criterion = "0.5.1"
-ndarray = { version = ">=0.15, <=0.16", features = ["rayon"] }
+codspeed-criterion-compat = "4.4.1"
+criterion = "0.8.2"
+ndarray = { version = ">=0.15, <=0.17", features = ["rayon"] }
 
 
 [[bench]]
