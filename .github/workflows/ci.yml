@@ -400,7 +400,7 @@ jobs:
       - run: twine check --strict bindings/dist/*
 
       - name: upload to pypi
-        run: twine upload bindings/dist/*
+        run: twine upload --skip-existing bindings/dist/*
         env:
           TWINE_USERNAME: __token__
           TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}
