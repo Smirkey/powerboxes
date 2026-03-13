@@ -14,11 +14,11 @@ name = "_powerboxes"
 crate-type = ["cdylib"]
 
 [dependencies]
-num-traits = "0.2.17"
+num-traits = "0.2.19"
 numpy = "0.27"
 pyo3 = "0.27"
 powerboxesrs = { path = "../powerboxesrs/" }
-ndarray = { version = "0.15.6", features = ["rayon"] }
+ndarray = { version = "0.17.2", features = ["rayon"] }
 paste = "1"
 
 [dev-dependencies]
