@@ -26,6 +26,7 @@ def _build_dispatch(prefix: str, suffixes=_ALL_SUFFIXES) -> dict:
 
 _dtype_to_func_iou_distance = _build_dispatch("iou_distance")
 _dtype_to_func_parallel_iou_distance = _build_dispatch("parallel_iou_distance")
+_dtype_to_func_ciou_distance = _build_dispatch("ciou_distance", ("f64", "f32"))
 _dtype_to_func_diou_distance = _build_dispatch("diou_distance", ("f64", "f32"))
 _dtype_to_func_giou_distance = _build_dispatch("giou_distance")
 _dtype_to_func_parallel_giou_distance = _build_dispatch("parallel_giou_distance")

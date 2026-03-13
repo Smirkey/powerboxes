@@ -28,6 +28,7 @@ All core functions have a `_slice` variant operating on flat `&[N]` slices. ndar
 - `parallel_iou_distance`: Compute the intersection over union matrix of two sets of boxes in parallel
 - `giou_distance`: Compute the generalized intersection over union matrix of two sets of boxes
 - `parallel_giou_distance`: Compute the generalized intersection over union matrix of two sets of boxes in parallel
+- `ciou_distance`: Compute the complete intersection over union matrix of two sets of boxes
 - `diou_distance`: Compute the distance intersection over union matrix of two sets of boxes
 - `tiou_distance`: Compute the tracking intersection over union matrix of two sets of boxes
 
