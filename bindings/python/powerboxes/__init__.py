@@ -46,7 +46,7 @@ supported_dtypes = [
     "uint32",
     "uint64",
 ]
-__version__ = "0.3.0"
+__version__ = "0.3.1"
 
 T = TypeVar(
     "T",
