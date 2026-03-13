@@ -6,6 +6,8 @@
 
 ::: powerboxes.parallel_giou_distance
 
+::: powerboxes.ciou_distance
+
 ::: powerboxes.diou_distance
 
 ::: powerboxes.tiou_distance

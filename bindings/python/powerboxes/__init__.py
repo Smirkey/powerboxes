@@ -6,6 +6,7 @@ import numpy.typing as npt
 from ._dispatch import (
     _dtype_to_func_box_areas,
     _dtype_to_func_box_convert,
+    _dtype_to_func_ciou_distance,
     _dtype_to_func_diou_distance,
     _dtype_to_func_giou_distance,
     _dtype_to_func_iou_distance,
@@ -97,6 +98,29 @@ def _dispatch1(dispatch_map, boxes, *args):
 # ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
+
+
+def ciou_distance(
+    boxes1: npt.NDArray[Union[np.float32, np.float64]],
+    boxes2: npt.NDArray[Union[np.float32, np.float64]],
+) -> npt.NDArray[np.float64]:
+    """Compute pairwise box CIoU distances.
+
+    CIoU distance is defined in https://arxiv.org/pdf/1911.08287.pdf
+    It extends DIoU with an aspect ratio consistency penalty.
+
+    Args:
+        boxes1: 2d array of boxes in xyxy format
+        boxes2: 2d array of boxes in xyxy format
+
+    Raises:
+        TypeError: if boxes1 or boxes2 are not numpy arrays
+        ValueError: if boxes1 and boxes2 have different dtypes
+
+    Returns:
+        np.ndarray: 2d matrix of pairwise distances
+    """
+    return _dispatch2(_dtype_to_func_ciou_distance, boxes1, boxes2)
 
 
 def diou_distance(
@@ -623,6 +647,7 @@ def draw_rotated_boxes(
 
 
 __all__ = [
+    "ciou_distance",
     "diou_distance",
     "iou_distance",
     "parallel_iou_distance",

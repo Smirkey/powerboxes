@@ -5,6 +5,7 @@ from powerboxes import (
     _BOXES_NOT_SAME_TYPE,
     box_convert,
     boxes_areas,
+    ciou_distance,
     diou_distance,
     giou_distance,
     iou_distance,
@@ -384,6 +385,36 @@ def test_rotated_tiou_distance_dtype():
     boxes2 = np.random.random((100, 5))
     with pytest.raises(TypeError):
         rotated_tiou_distance(
+            boxes1.astype(unsuported_dtype_example),
+            boxes2.astype(unsuported_dtype_example),
+        )
+
+
+@pytest.mark.parametrize("dtype", ["float64", "float32"])
+def test_ciou_distance(dtype):
+    boxes1 = np.random.random((100, 4))
+    boxes2 = np.random.random((100, 4))
+    ciou_distance(
+        boxes1.astype(dtype),
+        boxes2.astype(dtype),
+    )
+
+
+def test_ciou_distance_bad_inputs():
+    with pytest.raises(TypeError, match=_BOXES_NOT_NP_ARRAY):
+        ciou_distance("foo", "bar")
+    with pytest.raises(Exception):
+        try:
+            ciou_distance(np.random.random((100, 23)), np.random.random((100, 23)))
+        except:  # noqa: E722
+            raise RuntimeError()
+
+
+def test_ciou_distance_dtype():
+    boxes1 = np.random.random((100, 4))
+    boxes2 = np.random.random((100, 4))
+    with pytest.raises(TypeError):
+        ciou_distance(
             boxes1.astype(unsuported_dtype_example),
             boxes2.astype(unsuported_dtype_example),
         )

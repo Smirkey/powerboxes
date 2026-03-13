@@ -51,6 +51,7 @@
 //! - `parallel_iou_distance`: Compute the intersection over union matrix of two sets of boxes in parallel
 //! - `giou_distance`: Compute the generalized intersection over union matrix of two sets of boxes
 //! - `parallel_giou_distance`: Compute the generalized intersection over union matrix of two sets of boxes in parallel
+//! - `ciou_distance`: Compute the complete intersection over union matrix of two sets of boxes
 //! - `diou_distance`: Compute the distance intersection over union matrix of two sets of boxes
 //! - `tiou_distance`: Compute the tracking intersection over union matrix of two sets of boxes
 //!
@@ -72,6 +73,7 @@
 //! - `draw_rotated_boxes`: Draw rotated bounding boxes on a CHW image tensor
 //!
 pub mod boxes;
+pub mod ciou;
 pub mod diou;
 pub mod draw;
 pub mod giou;

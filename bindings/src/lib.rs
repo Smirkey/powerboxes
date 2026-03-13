@@ -5,7 +5,7 @@ use std::fmt::Debug;
 use ndarray::Array1;
 use num_traits::{Bounded, Float, Num, Signed, ToPrimitive};
 use numpy::{PyArray1, PyArray2, PyArray3, PyArrayMethods};
-use powerboxesrs::{boxes, diou, draw, giou, iou, nms, tiou};
+use powerboxesrs::{boxes, ciou, diou, draw, giou, iou, nms, tiou};
 use pyo3::prelude::*;
 use utils::{preprocess_array1, preprocess_array3, preprocess_boxes, preprocess_rotated_boxes};
 
@@ -174,6 +174,8 @@ fn _powerboxes(m: &Bound<'_, PyModule>) -> PyResult<()> {
         parallel_iou_distance,
         [f64, f32, i64, i32, i16, u64, u32, u16, u8]
     );
+    // CIoU (float only)
+    register_typed!(m, ciou_distance, [f64, f32]);
     // DIoU (float only)
     register_typed!(m, diou_distance, [f64, f32]);
     // GIoU
@@ -462,6 +464,28 @@ fn draw_rotated_boxes(
 // ---------------------------------------------------------------------------
 // Generic implementations + typed wrappers via macros
 // ---------------------------------------------------------------------------
+
+// CIoU
+fn ciou_distance_generic<T>(
+    py: Python,
+    boxes1: &Bound<'_, PyArray2<T>>,
+    boxes2: &Bound<'_, PyArray2<T>>,
+) -> PyResult<Py<PyArray2<f64>>>
+where
+    T: Num + Float + numpy::Element,
+{
+    let boxes1 = preprocess_boxes(boxes1).unwrap();
+    let boxes2 = preprocess_boxes(boxes2).unwrap();
+    let iou = ciou::ciou_distance(&boxes1, &boxes2);
+    let iou_as_numpy = utils::array_to_numpy(py, iou).unwrap();
+    Ok(iou_as_numpy.unbind())
+}
+for_each_numeric_type!(
+    impl_distance2_fn,
+    ciou_distance,
+    ciou_distance_generic,
+    floats
+);
 
 // DIoU
 fn diou_distance_generic<T>(
