@@ -21,8 +21,8 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v5
+      - uses: actions/checkout@v6
+      - uses: astral-sh/setup-uv@v7
       - name: install rust stable
         uses: dtolnay/rust-toolchain@stable
         with:
@@ -44,9 +44,9 @@ jobs:
   coverage:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v5
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v6
+      - uses: astral-sh/setup-uv@v7
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
       - name: install rust stable
@@ -82,7 +82,7 @@ jobs:
           cargo check
           cargo test
           cargo llvm-cov report --lcov --output-path coverage.lcov
-      - uses: codecov/codecov-action@v4
+      - uses: codecov/codecov-action@v5
         env:
           TOKEN: ${{ secrets.CODECOV_TOKEN }}
         with:
@@ -104,8 +104,8 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v5
+      - uses: actions/checkout@v6
+      - uses: astral-sh/setup-uv@v7
       - name: install rust stable
         uses: dtolnay/rust-toolchain@stable
 
@@ -115,7 +115,7 @@ jobs:
           key: test-v4
 
       - name: set up python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
 
@@ -136,8 +136,8 @@ jobs:
 
     runs-on: ${{ matrix.os }}-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v5
+      - uses: actions/checkout@v6
+      - uses: astral-sh/setup-uv@v7
       - name: install rust stable
         uses: dtolnay/rust-toolchain@stable
 
@@ -147,7 +147,7 @@ jobs:
           key: ${{ matrix.os }}-v2
 
       - name: set up python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: '3.12'
 
@@ -176,14 +176,14 @@ jobs:
     name: build sdist
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: PyO3/maturin-action@v1
         with:
           command: sdist
           args: --out dist
           rust-toolchain: stable
           working-directory: bindings
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: pypi_files_sdist
           path: bindings/dist
@@ -246,10 +246,10 @@ jobs:
 
     runs-on: ${{ (matrix.os == 'linux' && 'ubuntu') || matrix.os }}-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: set up python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: '3.12'
           architecture: ${{ matrix.python-architecture || 'x64' }}
@@ -270,7 +270,7 @@ jobs:
 
       - run: twine check --strict bindings/dist/*
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: pypi_files-${{ matrix.os }}-${{ matrix.target }}-${{ matrix.interpreter || 'all' }}-${{ matrix.manylinux }}
           path: bindings/dist
@@ -295,11 +295,11 @@ jobs:
 
     runs-on: ${{ matrix.runs-on }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v5
+      - uses: actions/checkout@v6
+      - uses: astral-sh/setup-uv@v7
 
       - name: set up python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.interpreter }}
 
@@ -357,7 +357,7 @@ jobs:
 
       - run: ${{ matrix.ls || 'ls -lh' }} bindings/dist/
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: pypi_files_pgo-${{ matrix.os }}-${{ matrix.interpreter }}
           path: bindings/dist
@@ -368,30 +368,30 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: set up python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: '3.12'
 
       - run: pip install -U twine
 
       - name: get dist artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           pattern: pypi_files-*
           merge-multiple: true
           path: bindings/dist
 
       - name: get sdist artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: pypi_files_sdist
           path: bindings/dist
 
       - name: get PGO dist artifacts (overrides non-PGO builds)
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           pattern: pypi_files_pgo-*
           merge-multiple: true
