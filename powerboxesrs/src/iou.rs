@@ -6,7 +6,7 @@ use crate::{
     utils,
 };
 #[cfg(feature = "ndarray")]
-use ndarray::{Array2, ArrayView2, Zip};
+use ndarray::{Array2, ArrayView2};
 use num_traits::{Num, ToPrimitive};
 use rstar::RTree;
 
@@ -29,7 +29,7 @@ pub fn iou_distance_slice<N>(boxes1: &[N], boxes2: &[N], n1: usize, n2: usize) -
 where
     N: Num + PartialOrd + ToPrimitive + Copy,
 {
-    let mut result = vec![0.0f64; n1 * n2];
+    let mut result = vec![utils::ONE; n1 * n2];
     let areas1 = boxes::box_areas_slice(boxes1, n1);
     let areas2 = boxes::box_areas_slice(boxes2, n2);
 
@@ -45,7 +45,6 @@ where
             let x2 = utils::min(a1_x2, a2_x2);
             let y2 = utils::min(a1_y2, a2_y2);
             if x2 < x1 || y2 < y1 {
-                result[i * n2 + j] = utils::ONE;
                 continue;
             }
             let intersection = (x2 - x1) * (y2 - y1);
@@ -54,6 +53,52 @@ where
             result[i * n2 + j] = utils::ONE - (intersection / (area1 + area2 - intersection));
         }
     }
+
+    result
+}
+
+/// Calculates the intersection over union (IoU) distance between two sets of bounding boxes,
+/// in parallel using Rayon.
+///
+/// # Arguments
+///
+/// * `boxes1` - A flat slice of length `n1 * 4` representing N bounding boxes in xyxy format (row-major).
+/// * `boxes2` - A flat slice of length `n2 * 4` representing M bounding boxes in xyxy format (row-major).
+/// * `n1` - The number of boxes in the first set.
+/// * `n2` - The number of boxes in the second set.
+///
+/// # Returns
+///
+/// A flat `Vec<f64>` of length `n1 * n2` (row-major) representing the IoU distance
+/// between each pair of bounding boxes.
+pub fn parallel_iou_distance_slice<N>(boxes1: &[N], boxes2: &[N], n1: usize, n2: usize) -> Vec<f64>
+where
+    N: Num + PartialOrd + ToPrimitive + Copy + Sync,
+{
+    let mut result = vec![utils::ONE; n1 * n2];
+    let areas1 = boxes::box_areas_slice(boxes1, n1);
+    let areas2 = boxes::box_areas_slice(boxes2, n2);
+
+    result.par_chunks_mut(n2).enumerate().for_each(|(i, row) | {
+        let (a1_x1, a1_y1, a1_x2, a1_y2) = utils::row4(boxes1, i);
+        let area1 = areas1[i];
+
+        for j in 0..n2 {
+            let (a2_x1, a2_y1, a2_x2, a2_y2) = utils::row4(boxes2, j);
+            let area2 = areas2[j];
+            let x1 = utils::max(a1_x1, a2_x1);
+            let y1 = utils::max(a1_y1, a2_y1);
+            let x2 = utils::min(a1_x2, a2_x2);
+            let y2 = utils::min(a1_y2, a2_y2);
+            if x2 < x1 || y2 < y1 {
+                continue;
+            }
+            let intersection = (x2 - x1) * (y2 - y1);
+            let intersection = intersection.to_f64().unwrap();
+            let intersection = utils::min(intersection, utils::min(area1, area2));
+            row[j] = utils::ONE - (intersection / (area1 + area2 - intersection));
+        }
+    });
 
     result
 }
@@ -274,46 +319,14 @@ where
     N: Num + PartialEq + PartialOrd + ToPrimitive + Send + Sync + Copy + 'a,
     BA: Into<ArrayView2<'a, N>>,
 {
-    let boxes1 = boxes1.into();
-    let boxes2 = boxes2.into();
-    let num_boxes1 = boxes1.nrows();
-    let num_boxes2 = boxes2.nrows();
-
-    let mut iou_matrix = Array2::<f64>::zeros((num_boxes1, num_boxes2));
-    let areas_boxes1 = boxes::box_areas(boxes1);
-    let areas_boxes2 = boxes::box_areas(boxes2);
-    Zip::indexed(iou_matrix.rows_mut()).par_for_each(|i, mut row| {
-        let a1 = boxes1.row(i);
-        let a1_x1 = a1[0];
-        let a1_y1 = a1[1];
-        let a1_x2 = a1[2];
-        let a1_y2 = a1[3];
-        let area1 = areas_boxes1[i];
-        row.indexed_iter_mut()
-            .zip(boxes2.rows())
-            .for_each(|((j, d), box2)| {
-                let a2_x1 = box2[0];
-                let a2_y1 = box2[1];
-                let a2_x2 = box2[2];
-                let a2_y2 = box2[3];
-                let area2 = areas_boxes2[j];
-
-                let x1 = utils::max(a1_x1, a2_x1);
-                let y1 = utils::max(a1_y1, a2_y1);
-                let x2 = utils::min(a1_x2, a2_x2);
-                let y2 = utils::min(a1_y2, a2_y2);
-                if x2 < x1 || y2 < y1 {
-                    *d = utils::ONE;
-                } else {
-                    let intersection = (x2 - x1) * (y2 - y1);
-                    let intersection = intersection.to_f64().unwrap();
-                    let intersection = utils::min(intersection, utils::min(area1, area2));
-                    *d = 1. - (intersection / (area1 + area2 - intersection));
-                }
-            });
-    });
-
-    iou_matrix
+    let b1 = boxes1.into();
+    let b2 = boxes2.into();
+    let n1 = b1.nrows();
+    let n2 = b2.nrows();
+    let s1 = b1.as_slice().expect("boxes1 must be contiguous");
+    let s2 = b2.as_slice().expect("boxes2 must be contiguous");
+    let result = parallel_iou_distance_slice(s1, s2, n1, n2);
+    Array2::from_shape_vec((n1, n2), result).unwrap()
 }
 
 /// Calculates the Rotated Intersection over Union (IoU) distance matrix between two sets of rotated bounding boxes.
