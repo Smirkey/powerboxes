@@ -169,12 +169,9 @@ where
     } else {
         iou_func(boxes2, boxes1, n2, n1)
     };
-    // kuhn_munkres_min expects i64 type, so we scale the values before type casting
+    // hungarian_matching function needs a numeric type that implements the `Ord` trait
     let costs_flat: Vec<i64> = iou_dist.iter().map(|&d| (d * SCALE) as i64).collect();
 
-    // let matrix = Matrix::from_vec(nrows, ncols, costs_flat).unwrap();
-
-    // let (_, assignments) = kuhn_munkres_min(&matrix);
     let assignments = hungarian_matching(&costs_flat, nrows, ncols);
 
     let (raw_idx1, raw_idx2) = if transposed {
