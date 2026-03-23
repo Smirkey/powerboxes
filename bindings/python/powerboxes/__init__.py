@@ -18,7 +18,7 @@ from ._dispatch import (
     _dtype_to_func_rtree_nms,
     _dtype_to_func_rtree_rotated_nms,
     _dtype_to_func_tiou_distance,
-    _dtype_to_func_hungarian_matching_iou,
+    _dtype_to_func_lsap_iou,
 )
 from ._powerboxes import draw_boxes as _draw_boxes
 from ._powerboxes import draw_rotated_boxes as _draw_rotated_boxes
@@ -647,10 +647,12 @@ def draw_rotated_boxes(
     return _draw_rotated_boxes(image, boxes, colors, thickness, filled, opacity)
 
 
-def hungarian_matching_iou(
+def lsap_iou(
     boxes1: npt.NDArray[T], boxes2: npt.NDArray[T], iou_threshold: float = 0.0
 ) -> list[tuple[int]]:
     """Perform optimal asssignement between 2 sets of axis-aligned boxes, based on their IoU.
+
+    Uses Shortest Augmenting Path Algorithm.
 
     Args:
         boxes1: first set of boxes with shape (N, 4)
@@ -661,9 +663,7 @@ def hungarian_matching_iou(
         list of assignments. An assignment is a tuple (x, y) where x is the indice in boxes1 and
         y is the matching indice in boxes2.
     """
-    return _dispatch2(
-        _dtype_to_func_hungarian_matching_iou, boxes1, boxes2, iou_threshold
-    )
+    return _dispatch2(_dtype_to_func_lsap_iou, boxes1, boxes2, iou_threshold)
 
 
 __all__ = [
@@ -690,7 +690,7 @@ __all__ = [
     "rtree_rotated_nms",
     "draw_boxes",
     "draw_rotated_boxes",
-    "hungarian_matching_iou",
+    "lsap_iou",
     "supported_dtypes",
     "__version__",
 ]

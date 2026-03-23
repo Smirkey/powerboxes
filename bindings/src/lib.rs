@@ -227,7 +227,7 @@ fn _powerboxes(m: &Bound<'_, PyModule>) -> PyResult<()> {
     // Hungarian Matching on IoU
     register_typed!(
         m,
-        hungarian_matching_iou,
+        lsap_iou,
         [f64, f32, i64, i32, i16, u64, u32, u16, u8]
     );
     // Masks to boxes
@@ -821,8 +821,8 @@ for_each_numeric_type!(
     signed
 );
 
-// Hungarian Matching on IoU
-fn hungarian_matching_iou_generic<T>(
+// Linear Sum Assignments IoU
+fn lsap_iou_generic<T>(
     boxes1: &Bound<'_, PyArray2<T>>,
     boxes2: &Bound<'_, PyArray2<T>>,
     iou_threshold: f64,
@@ -832,7 +832,7 @@ where
 {
     let boxes1 = preprocess_boxes(boxes1).unwrap();
     let boxes2 = preprocess_boxes(boxes2).unwrap();
-    let asgmt = assignments::hungarian_matching_iou(boxes1, boxes2, iou_threshold);
+    let asgmt = assignments::lsap_iou(boxes1, boxes2, iou_threshold);
     Ok(asgmt)
 }
-for_each_numeric_type!(impl_assignment_fn, hungarian_matching_iou, hungarian_matching_iou_generic);
+for_each_numeric_type!(impl_assignment_fn, lsap_iou, lsap_iou_generic);
