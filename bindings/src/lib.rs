@@ -68,7 +68,7 @@ macro_rules! impl_distance2_fn {
     };
 }
 
-/// Generate a typed `#[pyfunction]` for `(py, boxes1, boxes2, iou_threshold) -> Array2<f64>`.
+/// Generate a typed `#[pyfunction]` for `(py, boxes1, boxes2, iou_threshold) -> Vec<(usize, usize)>`.
 macro_rules! impl_assignment_fn {
     ($prefix:ident, $generic:ident, $T:ty, $suffix:ident) => {
         ::paste::paste! {
@@ -224,7 +224,7 @@ fn _powerboxes(m: &Bound<'_, PyModule>) -> PyResult<()> {
     register_typed!(m, rtree_nms, [f64, f32, i64, i32, i16]);
     // Rtree Rotated NMS (signed + float only)
     register_typed!(m, rtree_rotated_nms, [f64, f32, i64, i32, i16]);
-    // Hungarian Matching on IoU
+    // LSAP on IoU
     register_typed!(
         m,
         lsap_iou,
