@@ -10,7 +10,6 @@ const PARALLEL_IOU_MIN_BOXES: usize = 90_000;
 // If more than 75% boxes dont overlap, lsap_simd is slower than lsap
 const SIMD_MAX_SPARSITY: f32 = 0.75;
 
-
 /// Shortest Augmenting Path algorithm for the Linear Sum Assignment Problem.
 ///
 /// Based on: Crouse, "On implementing 2D rectangular assignment algorithms",
@@ -478,6 +477,49 @@ where
 mod tests {
     use super::*;
 
+    // tests for lsap and lsap_simd
+    #[test]
+    fn test_identical_costs() {
+        let cost_matrix = vec![1.0_f32, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0];
+        let asgmt = lsap(&cost_matrix, 3, 3);
+        let asgmt_simd = lsap_simd(&cost_matrix, 3, 3);
+        // all costs are equal: matches are made starting from the end
+        assert_eq!(asgmt, vec![2, 1, 0]);
+        assert_eq!(asgmt_simd, vec![2, 1, 0]);
+    }
+
+    #[test]
+    fn test_known_assignment() {
+        let costs_f32 = vec![8_f32, 5., 9., 4., 2., 4., 7., 3., 8.];
+        assert_eq!(lsap(&costs_f32, 3, 3), vec![0, 2, 1]);
+        assert_eq!(lsap_simd(&costs_f32, 3, 3), vec![0, 2, 1]);
+
+        let costs_i64 = vec![8_i64, 5, 9, 4, 2, 4, 7, 3, 8];
+        assert_eq!(lsap(&costs_i64, 3, 3), vec![0, 2, 1]);
+    }
+
+    #[test]
+    fn test_single_element() {
+        let costs = vec![42.0_f32];
+        assert_eq!(lsap(&costs, 1, 1), vec![0]);
+        assert_eq!(lsap_simd(&costs, 1, 1), vec![0]);
+    }
+
+    #[test]
+    fn test_rectangular() {
+        let costs = vec![3.0_f32, 1., 2., 1., 3., 2.];
+        assert_eq!(lsap(&costs, 2, 3), vec![1, 0]);
+        assert_eq!(lsap_simd(&costs, 2, 3), vec![1, 0]);
+    }
+
+    #[test]
+    fn test_optimal_in_diagonal() {
+        let costs = vec![0.0_f32, 1., 1., 1., 0., 1., 1., 1., 0.];
+        assert_eq!(lsap(&costs, 3, 3), vec![0, 1, 2]);
+        assert_eq!(lsap_simd(&costs, 3, 3), vec![0, 1, 2]);
+    }
+
+    // tests for lsap_iou_slice
     #[test]
     fn test_identical_boxes() {
         let boxes = vec![0.0_f64, 0.0, 1.0, 1.0, 2.0, 2.0, 3.0, 3.0];
@@ -573,6 +615,7 @@ mod tests {
         );
     }
 
+    // test for ndarray lsap_iou
     #[cfg(feature = "ndarray")]
     mod ndarray_tests {
         use super::*;
