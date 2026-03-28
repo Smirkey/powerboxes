@@ -79,7 +79,7 @@ where
     let areas1 = boxes::box_areas_slice(boxes1, n1);
     let areas2 = boxes::box_areas_slice(boxes2, n2);
 
-    result.par_chunks_mut(n2).enumerate().for_each(|(i, row) | {
+    result.par_chunks_mut(n2).enumerate().for_each(|(i, row)| {
         let (a1_x1, a1_y1, a1_x2, a1_y2) = utils::row4(boxes1, i);
         let area1 = areas1[i];
 
