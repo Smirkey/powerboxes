@@ -5,7 +5,7 @@ use std::fmt::Debug;
 use ndarray::Array1;
 use num_traits::{Bounded, Float, Num, Signed, ToPrimitive};
 use numpy::{PyArray1, PyArray2, PyArray3, PyArrayMethods};
-use powerboxesrs::{boxes, ciou, diou, draw, giou, iou, nms, tiou, assignments};
+use powerboxesrs::{assignments, boxes, ciou, diou, draw, giou, iou, nms, tiou};
 use pyo3::prelude::*;
 use utils::{preprocess_array1, preprocess_array3, preprocess_boxes, preprocess_rotated_boxes};
 
@@ -225,11 +225,7 @@ fn _powerboxes(m: &Bound<'_, PyModule>) -> PyResult<()> {
     // Rtree Rotated NMS (signed + float only)
     register_typed!(m, rtree_rotated_nms, [f64, f32, i64, i32, i16]);
     // LSAP on IoU
-    register_typed!(
-        m,
-        lsap_iou,
-        [f64, f32, i64, i32, i16, u64, u32, u16, u8]
-    );
+    register_typed!(m, lsap_iou, [f64, f32, i64, i32, i16, u64, u32, u16, u8]);
     // Masks to boxes
     m.add_function(wrap_pyfunction!(masks_to_boxes, m)?)?;
     // Rotated IoU
