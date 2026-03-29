@@ -40,3 +40,4 @@ _dtype_to_func_rtree_nms = _build_dispatch("rtree_nms", _SIGNED_SUFFIXES)
 _dtype_to_func_rtree_rotated_nms = _build_dispatch(
     "rtree_rotated_nms", _SIGNED_SUFFIXES
 )
+_dtype_to_func_lsap_iou = _build_dispatch("lsap_iou")

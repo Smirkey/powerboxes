@@ -20,8 +20,10 @@ default = ["ndarray"]
 ndarray = ["dep:ndarray"]
 
 [dependencies]
+bytemuck = "1.15"
 ndarray = { version = ">=0.15, <=0.16", features = ["rayon"], optional = true }
 num-traits = "0.2.17"
+pulp = "0.20"
 rayon = "1.8.0"
 rstar = "0.11.0"
 wide = "0.7"

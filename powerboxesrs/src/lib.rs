@@ -72,6 +72,7 @@
 //! - `draw_boxes`: Draw axis-aligned bounding boxes on a CHW image tensor
 //! - `draw_rotated_boxes`: Draw rotated bounding boxes on a CHW image tensor
 //!
+pub mod assignments;
 pub mod boxes;
 pub mod ciou;
 pub mod diou;
