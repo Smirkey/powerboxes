@@ -7,8 +7,8 @@ use pulp::{Arch, Simd, WithSimd};
 
 // Cost matrix size above which we use parallel_iou_distance_slice
 const PARALLEL_IOU_MIN_BOXES: usize = 90_000;
-// If more than 65% boxes dont overlap, lsap_simd is slower than lsap
-const SIMD_MAX_SPARSITY: f32 = 0.65;
+// If more than 95% boxes dont overlap, lsap_simd is slower than lsap
+const SIMD_MAX_SPARSITY: f64 = 0.95;
 
 /// Shortest Augmenting Path algorithm for the Linear Sum Assignment Problem.
 ///
@@ -413,13 +413,11 @@ where
     let costs_flat: Vec<f32> = iou_dist.iter().map(|&d| d as f32).collect();
 
     // check matrix "sparsity": ie many boxes dont overlap (iou is 0, distance is 1)
-    let non_overlapping_ratio =
-        costs_flat
-            .iter()
-            .fold(0_f32, |acc, x| if *x == 1_f32 { &acc + 1_f32 } else { acc })
-            / costs_flat.len() as f32;
-
-    println!("Sparsity rust: {}", non_overlapping_ratio);
+    let non_overlapping_ratio = costs_flat
+        .iter()
+        .filter_map(|x| if *x < 1_f32 { None } else { Some(1_f64) })
+        .sum::<f64>()
+        / (costs_flat.len() as f64);
 
     // if cost matrix is too sparse, the overhead of calling InnerScan in the SIMD
     // implementation dominates so it's much faster to use the scalar implementation.
