@@ -28,7 +28,7 @@ where
 {
     let two = N::one() + N::one();
     let four_over_pi_sq: f64 = 4.0 / (std::f64::consts::PI * std::f64::consts::PI);
-    let mut result = vec![0.0f64; n1 * n2];
+    let mut result = vec![utils::ONE; n1 * n2];
     let areas1 = boxes::box_areas_slice(boxes1, n1);
     let areas2 = boxes::box_areas_slice(boxes2, n2);
 
@@ -44,7 +44,6 @@ where
             let x2 = utils::min(a1_x2, a2_x2);
             let y2 = utils::min(a1_y2, a2_y2);
             if x2 < x1 || y2 < y1 {
-                result[i * n2 + j] = utils::ONE;
                 continue;
             }
             let intersection = (x2 - x1) * (y2 - y1);
