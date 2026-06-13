@@ -91,7 +91,13 @@ where
     raw_idx1
         .into_iter()
         .zip(raw_idx2)
-        .filter(|&(i, j)| iou_dist[i * ncols + j] <= max_dist)
+        .filter(|&(i, j)| {
+            iou_dist[if transposed {
+                j * ncols + i
+            } else {
+                i * ncols + j
+            }] <= max_dist
+        })
         .collect()
 }
 
@@ -146,11 +152,11 @@ mod tests {
         ];
         let pred = vec![
             2.0, 2.0, 3.0, 3.0, // match with gt 1
-            0.0_f64, 0.0, 1.0, 1.0, // match with gt 0
+            4.0_f64, 4.0, 5.0, 5.0, // match with gt 2
         ];
         let pairs = lsap_iou_slice(&gt, &pred, 3, 2, 0.0);
         assert_eq!(pairs.len(), 2);
-        assert_eq!(pairs, vec![(1, 0), (0, 1)]);
+        assert_eq!(pairs, vec![(1, 0), (2, 1)]);
     }
 
     #[test]
