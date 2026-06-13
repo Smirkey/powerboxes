@@ -1,5 +1,7 @@
 use codspeed_criterion_compat::{black_box, criterion_group, criterion_main, Criterion};
 use ndarray::Array2;
+use powerboxesrs::ciou::ciou_distance;
+use powerboxesrs::diou::diou_distance;
 use powerboxesrs::giou::{
     giou_distance, parallel_giou_distance, parallel_rotated_giou_distance, rotated_giou_distance,
 };
@@ -80,6 +82,34 @@ pub fn parallel_giou_distance_benchmark(c: &mut Criterion) {
     });
 }
 
+pub fn ciou_distance_benchmark(c: &mut Criterion) {
+    let mut boxes1 = Array2::<f64>::zeros((100, 4));
+    for i in 0..100 {
+        for j in 2..4 {
+            boxes1[[i, j]] = 10.0;
+        }
+    }
+    let boxes2 = boxes1.clone();
+
+    c.bench_function("ciou distance benchmark", |b| {
+        b.iter(|| ciou_distance(black_box(&boxes1), black_box(&boxes2)))
+    });
+}
+
+pub fn diou_distance_benchmark(c: &mut Criterion) {
+    let mut boxes1 = Array2::<f64>::zeros((100, 4));
+    for i in 0..100 {
+        for j in 2..4 {
+            boxes1[[i, j]] = 10.0;
+        }
+    }
+    let boxes2 = boxes1.clone();
+
+    c.bench_function("diou distance benchmark", |b| {
+        b.iter(|| diou_distance(black_box(&boxes1), black_box(&boxes2)))
+    });
+}
+
 /// Generate 100x5 rotated boxes with varied angles for benchmarking
 fn make_rotated_boxes(n: usize) -> Array2<f64> {
     let mut boxes = Array2::<f64>::zeros((n, 5));
@@ -154,6 +184,8 @@ criterion_group!(
     parallel_iou_distance_benchmark,
     giou_distance_benchmark,
     parallel_giou_distance_benchmark,
+    ciou_distance_benchmark,
+    diou_distance_benchmark,
     rotated_iou_distance_benchmark,
     parallel_rotated_iou_distance_benchmark,
     rotated_giou_distance_benchmark,
