@@ -85,12 +85,8 @@ pub fn parallel_giou_distance_benchmark(c: &mut Criterion) {
 pub fn ciou_distance_benchmark(c: &mut Criterion) {
     let mut boxes1 = Array2::<f64>::zeros((100, 4));
     for i in 0..100 {
-        for j in 0..4 {
-            if j < 2 {
-                boxes1[[i, j]] = 0.0;
-            } else {
-                boxes1[[i, j]] = 10.0;
-            }
+        for j in 2..4 {
+            boxes1[[i, j]] = 10.0;
         }
     }
     let boxes2 = boxes1.clone();
@@ -103,12 +99,8 @@ pub fn ciou_distance_benchmark(c: &mut Criterion) {
 pub fn diou_distance_benchmark(c: &mut Criterion) {
     let mut boxes1 = Array2::<f64>::zeros((100, 4));
     for i in 0..100 {
-        for j in 0..4 {
-            if j < 2 {
-                boxes1[[i, j]] = 0.0;
-            } else {
-                boxes1[[i, j]] = 10.0;
-            }
+        for j in 2..4 {
+            boxes1[[i, j]] = 10.0;
         }
     }
     let boxes2 = boxes1.clone();
